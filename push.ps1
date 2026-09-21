@@ -1,0 +1,105 @@
+# Usage: .\push.ps1 "your commit message"
+# Runs a secret scan, stages the tracked folders, commits, and pushes to GitHub.
+# Aborts (and unstages) if a secret is found or anything under docs/source/ is staged.
+# Works for the very first push to a new, empty GitHub repo and tells you before it does anything unusual.
+# NOTE: ASCII only on purpose - Windows PowerShell 5.1 misreads UTF-8 without a BOM.
+param([string]$msg = "")
+
+if (-not $msg) {
+    $msg = "update: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
+}
+
+# --- 0. Sanity: inside a git repo, with a remote already set -----------------
+git rev-parse --is-inside-work-tree *> $null
+if ($LASTEXITCODE -ne 0) { Write-Host "ABORT: not inside a git repository." -ForegroundColor Red; exit 1 }
+
+$remote = (git remote get-url origin 2>$null)
+if (-not $remote) {
+    Write-Host "ABORT: no 'origin' remote is set. This script will not set it silently." -ForegroundColor Red
+    Write-Host "       Set it yourself, e.g.: git remote add origin https://github.com/davidjeyam-cloud/ccar-f-101.git"
+    exit 1
+}
+$branch = (git symbolic-ref --short HEAD 2>$null)
+if (-not $branch) { Write-Host "ABORT: detached HEAD - check out a branch first." -ForegroundColor Red; exit 1 }
+
+# --- 1. Stage only the tracked folders/files that exist -----------------------
+# The build prompt's list, plus config files added at the owner's request (2026-09-21) so everything is committed.
+# .env, .venv, docs/source/, progress.json and output/ are gitignored and never staged.
+$paths = @("app.py", "pages", "utils", "docs", "sandbox_project", "AGENTS.md", "CLAUDE.md",
+           ".gitignore", "requirements.txt", ".env.example", ".streamlit", ".claude", "push.ps1")
+$toAdd = $paths | Where-Object { Test-Path $_ }
+if (-not $toAdd) { Write-Host "Nothing to stage: none of the tracked paths exist yet." -ForegroundColor Yellow; exit 0 }
+git add -- $toAdd
+
+# --- 2. Guard: nothing under docs/source/ may be staged -----------------------
+$staged = @(git diff --cached --name-only)
+$forbidden = $staged | Where-Object { $_ -like "docs/source/*" }
+if ($forbidden) {
+    git reset -q
+    Write-Host "ABORT: files under docs/source/ are staged (the official guide is copyrighted):" -ForegroundColor Red
+    $forbidden | ForEach-Object { Write-Host "  $_" }
+    exit 1
+}
+if (-not $staged) { Write-Host "Nothing to commit - no staged changes." -ForegroundColor Yellow; exit 0 }
+
+# --- 3. Secret scan over ADDED lines of the staged diff -----------------------
+# Flags real-looking values only. Placeholders (your_..., <...>, example, xxx, ${VAR}, os.getenv) are allowed.
+# push.ps1 is itself staged, so skip only its own rule-definition lines (they contain the patterns as text).
+$added = git diff --cached -U0 --no-color | Where-Object { $_ -match '^\+' -and $_ -notmatch '^\+\+\+' -and $_ -notmatch '^\+\s*@\{ Name = ' }
+$placeholder = '(?i)your[_-]|<[^>]+>|example|placeholder|changeme|xxxx|\$\{|os\.getenv|environ|\.\.\.'
+$rules = @(
+    @{ Name = "Google/Gemini key (AIza)"; Rx = 'AIza[0-9A-Za-z_\-]{20,}' },
+    @{ Name = "Anthropic key (sk-ant-)"; Rx = 'sk-ant-[A-Za-z0-9_\-]{16,}' },
+    @{ Name = "API key (sk-)";           Rx = 'sk-[A-Za-z0-9]{20,}' },
+    @{ Name = "KEY= assignment";         Rx = '(?i)[A-Z0-9_]*_KEY\s*=\s*["'']?[^\s"'']{8,}' },
+    @{ Name = "password= assignment";    Rx = '(?i)password\s*[=:]\s*["'']?[^\s"'']{4,}' },
+    @{ Name = "secret= assignment";      Rx = '(?i)secret\s*[=:]\s*["'']?[^\s"'']{4,}' },
+    @{ Name = "token= assignment";       Rx = '(?i)token\s*[=:]\s*["'']?[^\s"'']{8,}' }
+)
+$hits = @()
+foreach ($line in $added) {
+    foreach ($r in $rules) {
+        if ($line -match $r.Rx -and $line -notmatch $placeholder) {
+            $hits += "[{0}] {1}" -f $r.Name, $line.Trim()
+        }
+    }
+}
+if ($hits) {
+    git reset -q
+    Write-Host "ABORT: possible secret in staged changes. Nothing was committed; everything was unstaged." -ForegroundColor Red
+    $hits | Select-Object -Unique | ForEach-Object { Write-Host "  $_" }
+    Write-Host "If it is a false positive, make it an obvious placeholder (e.g. your_api_key_here) and re-run."
+    exit 1
+}
+
+# --- 4. Commit ---------------------------------------------------------------
+git commit -m $msg
+if ($LASTEXITCODE -ne 0) { Write-Host "ABORT: commit failed." -ForegroundColor Red; exit 1 }
+
+# --- 5. Push (tell the user first if this is unusual) ------------------------
+$remoteHeads = @(git ls-remote --heads origin 2>$null)
+$hasUpstream = $false
+git rev-parse --abbrev-ref --symbolic-full-name "@{u}" *> $null
+if ($LASTEXITCODE -eq 0) { $hasUpstream = $true }
+
+if (-not $remoteHeads) {
+    Write-Host ""
+    Write-Host "NOTICE: the remote is empty - this is the FIRST push." -ForegroundColor Yellow
+    Write-Host "  Remote : $remote"
+    Write-Host "  Branch : $branch  (will be created on the remote and set as upstream)"
+    $ans = Read-Host "Continue? (y/N)"
+    if ($ans -notmatch '^(y|yes)$') { Write-Host "Cancelled. Your commit is local only; nothing was pushed."; exit 0 }
+    git push -u origin $branch
+}
+elseif (-not $hasUpstream) {
+    Write-Host ""
+    Write-Host "NOTICE: branch '$branch' has no upstream. Pushing and setting origin/$branch as upstream." -ForegroundColor Yellow
+    $ans = Read-Host "Continue? (y/N)"
+    if ($ans -notmatch '^(y|yes)$') { Write-Host "Cancelled. Your commit is local only; nothing was pushed."; exit 0 }
+    git push -u origin $branch
+}
+else {
+    git push
+}
+if ($LASTEXITCODE -ne 0) { Write-Host "Push failed - see the message above." -ForegroundColor Red; exit 1 }
+Write-Host "Done." -ForegroundColor Green
