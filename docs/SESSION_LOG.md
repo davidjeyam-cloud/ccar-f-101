@@ -92,3 +92,20 @@ User called it off for the day. State: **Stage A complete, Stage B not started**
 1. Buy the Claude API key (Claude Console, https://platform.claude.com/, low spend limit) before Day 1 / page 1.1.
 2. Still-open questions: `APPROACH_SCORECARD` purpose; whether `push.ps1` should also stage `.gitignore`, `requirements.txt`, `.streamlit/`, `.env.example`, `.claude/commands/`, `push.ps1`; branch `master` vs "pushes to main"; named community sources; page slugs for phases 1–6.
 3. Nothing has been pushed. When ready for a first commit, run `.\push.ps1 "docs: Stage A setup"` yourself (it asks before the first push).
+
+---
+
+## 2026-09-22 — First commit (local) and push.ps1 fixes
+
+**Question from user:** "is the code committed to GitHub? I want it committed before I exit each time." Answer: it was not — no commits, GitHub repo empty.
+
+**Done:**
+- Added `.gitignore`, `requirements.txt`, `.env.example`, `.streamlit`, `.claude` (commands + arch-diagram skill) and `push.ps1` itself to the `push.ps1` staging list (resolves the earlier open question 3). `.env`, `.venv`, `docs/source/`, `progress.json`, `output/` stay excluded.
+- The secret scan now skips only `push.ps1`'s own rule-definition lines (they contain the patterns as text); a secret anywhere else in `push.ps1` is still caught (tested).
+- `push.ps1` now also **pushes already-committed but unpushed work**: it scans the unpushed commits, blocks `docs/source/`, then goes to push. Before this fix, running it with nothing staged would have exited without pushing. Tested: clean unpushed commit, unpushed commit with a leak (aborts), already up to date.
+- Set repo-local git identity `davidjeyam-cloud <davidjeyam@gmail.com>` (same as agents101).
+- **Committed locally:** `55e6d5a docs: Stage A setup - project docs, config, push script` (16 files; staged tree was byte-identical to the tree that passed the scan). A follow-up commit holds the push.ps1 fixes and this log entry.
+
+**NOT pushed.** GitHub is still empty. The user runs `.\push.ps1` (it asks before the first push).
+
+**Standing rule (user, 2026-09-22):** before the user exits a session, check `git status` / `git log` / remote heads and say plainly whether everything is committed and pushed; commit outstanding work (Claude may commit, never push).

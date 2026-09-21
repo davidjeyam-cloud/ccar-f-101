@@ -40,12 +40,35 @@ if ($forbidden) {
     $forbidden | ForEach-Object { Write-Host "  $_" }
     exit 1
 }
-if (-not $staged) { Write-Host "Nothing to commit - no staged changes." -ForegroundColor Yellow; exit 0 }
+$skipCommit = $false
+$scanBase = $null
+if (-not $staged) {
+    # Nothing new to commit - but there may be commits that were made earlier and never pushed.
+    git rev-parse --verify HEAD *> $null
+    if ($LASTEXITCODE -ne 0) { Write-Host "Nothing to commit and no commits yet." -ForegroundColor Yellow; exit 0 }
+    git rev-parse --abbrev-ref --symbolic-full-name "@{u}" *> $null
+    if ($LASTEXITCODE -ne 0) {
+        $scanBase = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"   # git's empty tree: scan everything in HEAD
+    } else {
+        $ahead = [int](git rev-list --count "@{u}..HEAD")
+        if ($ahead -eq 0) { Write-Host "Nothing to commit and nothing to push - already up to date." -ForegroundColor Yellow; exit 0 }
+        $scanBase = "@{u}"
+    }
+    Write-Host "Nothing new to commit, but there are unpushed commits. Scanning them, then going straight to push." -ForegroundColor Yellow
+    $skipCommit = $true
+    $forbiddenCommitted = @(git diff --name-only $scanBase HEAD) | Where-Object { $_ -like "docs/source/*" }
+    if ($forbiddenCommitted) {
+        Write-Host "ABORT: unpushed commits contain files under docs/source/ (copyrighted guide):" -ForegroundColor Red
+        $forbiddenCommitted | ForEach-Object { Write-Host "  $_" }
+        exit 1
+    }
+}
 
 # --- 3. Secret scan over ADDED lines of the staged diff -----------------------
 # Flags real-looking values only. Placeholders (your_..., <...>, example, xxx, ${VAR}, os.getenv) are allowed.
 # push.ps1 is itself staged, so skip only its own rule-definition lines (they contain the patterns as text).
-$added = git diff --cached -U0 --no-color | Where-Object { $_ -match '^\+' -and $_ -notmatch '^\+\+\+' -and $_ -notmatch '^\+\s*@\{ Name = ' }
+if ($skipCommit) { $diffText = git diff $scanBase HEAD -U0 --no-color } else { $diffText = git diff --cached -U0 --no-color }
+$added = $diffText | Where-Object { $_ -match '^\+' -and $_ -notmatch '^\+\+\+' -and $_ -notmatch '^\+\s*@\{ Name = ' }
 $placeholder = '(?i)your[_-]|<[^>]+>|example|placeholder|changeme|xxxx|\$\{|os\.getenv|environ|\.\.\.'
 $rules = @(
     @{ Name = "Google/Gemini key (AIza)"; Rx = 'AIza[0-9A-Za-z_\-]{20,}' },
@@ -65,16 +88,23 @@ foreach ($line in $added) {
     }
 }
 if ($hits) {
-    git reset -q
-    Write-Host "ABORT: possible secret in staged changes. Nothing was committed; everything was unstaged." -ForegroundColor Red
+    if ($skipCommit) {
+        Write-Host "ABORT: possible secret in commits that are not pushed yet. NOTHING WAS PUSHED." -ForegroundColor Red
+        Write-Host "       The commit(s) still exist locally - remove the secret and fix or undo the commit before pushing."
+    } else {
+        git reset -q
+        Write-Host "ABORT: possible secret in staged changes. Nothing was committed; everything was unstaged." -ForegroundColor Red
+    }
     $hits | Select-Object -Unique | ForEach-Object { Write-Host "  $_" }
     Write-Host "If it is a false positive, make it an obvious placeholder (e.g. your_api_key_here) and re-run."
     exit 1
 }
 
 # --- 4. Commit ---------------------------------------------------------------
-git commit -m $msg
-if ($LASTEXITCODE -ne 0) { Write-Host "ABORT: commit failed." -ForegroundColor Red; exit 1 }
+if (-not $skipCommit) {
+    git commit -m $msg
+    if ($LASTEXITCODE -ne 0) { Write-Host "ABORT: commit failed." -ForegroundColor Red; exit 1 }
+}
 
 # --- 5. Push (tell the user first if this is unusual) ------------------------
 $remoteHeads = @(git ls-remote --heads origin 2>$null)
