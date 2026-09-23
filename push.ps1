@@ -31,13 +31,27 @@ $toAdd = $paths | Where-Object { Test-Path $_ }
 if (-not $toAdd) { Write-Host "Nothing to stage: none of the tracked paths exist yet." -ForegroundColor Yellow; exit 0 }
 git add -- $toAdd
 
-# --- 2. Guard: nothing under docs/source/ may be staged -----------------------
+# --- 2. Guard: nothing under docs/source/ may be staged, and no PDF anywhere --
+# The docs/source/ check catches the canonical copy. The blanket *.pdf check is
+# defense in depth: on 2026-09-22 a byte-identical stray copy of the copyrighted
+# guide was found sitting directly under docs/ (not docs/source/), with no
+# clear origin - it was never staged or committed, but docs/source/-only
+# guards would not have caught it if it had been. This repo's docs pipeline
+# never intentionally produces a PDF deliverable, so any staged .pdf aborts.
 $staged = @(git diff --cached --name-only)
 $forbidden = $staged | Where-Object { $_ -like "docs/source/*" }
 if ($forbidden) {
     git reset -q
     Write-Host "ABORT: files under docs/source/ are staged (the official guide is copyrighted):" -ForegroundColor Red
     $forbidden | ForEach-Object { Write-Host "  $_" }
+    exit 1
+}
+$forbiddenPdf = $staged | Where-Object { $_ -like "*.pdf" }
+if ($forbiddenPdf) {
+    git reset -q
+    Write-Host "ABORT: a .pdf file is staged. This repo never commits a PDF - the exam guide" -ForegroundColor Red
+    Write-Host "       must stay local-only in docs/source/, and nothing else here should be a PDF:"
+    $forbiddenPdf | ForEach-Object { Write-Host "  $_" }
     exit 1
 }
 $skipCommit = $false
@@ -56,10 +70,17 @@ if (-not $staged) {
     }
     Write-Host "Nothing new to commit, but there are unpushed commits. Scanning them, then going straight to push." -ForegroundColor Yellow
     $skipCommit = $true
-    $forbiddenCommitted = @(git diff --name-only $scanBase HEAD) | Where-Object { $_ -like "docs/source/*" }
+    $touchedFiles = @(git diff --name-only $scanBase HEAD)
+    $forbiddenCommitted = $touchedFiles | Where-Object { $_ -like "docs/source/*" }
     if ($forbiddenCommitted) {
         Write-Host "ABORT: unpushed commits contain files under docs/source/ (copyrighted guide):" -ForegroundColor Red
         $forbiddenCommitted | ForEach-Object { Write-Host "  $_" }
+        exit 1
+    }
+    $forbiddenPdfCommitted = $touchedFiles | Where-Object { $_ -like "*.pdf" }
+    if ($forbiddenPdfCommitted) {
+        Write-Host "ABORT: unpushed commits contain a .pdf file - this repo never commits a PDF:" -ForegroundColor Red
+        $forbiddenPdfCommitted | ForEach-Object { Write-Host "  $_" }
         exit 1
     }
 }
@@ -70,11 +91,17 @@ if (-not $staged) {
 if ($skipCommit) { $diffText = git diff $scanBase HEAD -U0 --no-color } else { $diffText = git diff --cached -U0 --no-color }
 $added = $diffText | Where-Object { $_ -match '^\+' -and $_ -notmatch '^\+\+\+' -and $_ -notmatch '^\+\s*@\{ Name = ' }
 $placeholder = '(?i)your[_-]|<[^>]+>|example|placeholder|changeme|xxxx|\$\{|os\.getenv|environ|\.\.\.'
+# "KEY= assignment" captures the right-hand-side VALUE in group 1 so it can be
+# checked separately: a value that itself spells "key" (GEMINI_API_KEY, api_key,
+# gemini_key, PAGE_KEY, ...) is a variable/constant NAME being referenced in code,
+# not a literal secret - a real secret token never spells the word "key" in its
+# own random-looking character content. This keeps the rule catching an actual
+# leaked value while not flagging every line that passes a key variable around.
 $rules = @(
     @{ Name = "Google/Gemini key (AIza)"; Rx = 'AIza[0-9A-Za-z_\-]{20,}' },
     @{ Name = "Anthropic key (sk-ant-)"; Rx = 'sk-ant-[A-Za-z0-9_\-]{16,}' },
     @{ Name = "API key (sk-)";           Rx = 'sk-[A-Za-z0-9]{20,}' },
-    @{ Name = "KEY= assignment";         Rx = '(?i)[A-Z0-9_]*_KEY\s*=\s*["'']?[^\s"'']{8,}' },
+    @{ Name = "KEY= assignment";         Rx = '(?i)[A-Z0-9_]*_KEY\s*=\s*["'']?([^\s"'']{8,})'; ValueMustNotContain = 'key' },
     @{ Name = "password= assignment";    Rx = '(?i)password\s*[=:]\s*["'']?[^\s"'']{4,}' },
     @{ Name = "secret= assignment";      Rx = '(?i)secret\s*[=:]\s*["'']?[^\s"'']{4,}' },
     @{ Name = "token= assignment";       Rx = '(?i)token\s*[=:]\s*["'']?[^\s"'']{8,}' }
@@ -82,9 +109,9 @@ $rules = @(
 $hits = @()
 foreach ($line in $added) {
     foreach ($r in $rules) {
-        if ($line -match $r.Rx -and $line -notmatch $placeholder) {
-            $hits += "[{0}] {1}" -f $r.Name, $line.Trim()
-        }
+        if ($line -notmatch $r.Rx -or $line -match $placeholder) { continue }
+        if ($r.ValueMustNotContain -and $Matches[1] -match $r.ValueMustNotContain) { continue }
+        $hits += "[{0}] {1}" -f $r.Name, $line.Trim()
     }
 }
 if ($hits) {

@@ -2,7 +2,7 @@
 
 > Progressive-disclosure doc, same pattern as agents101. Canonical index is `AGENTS.md`; full rules are in `CLAUDE.md`.
 
-**Status: Stage A — docs and configuration only. No app code exists yet.** Everything below describes the *target* structure. Update this file whenever it changes.
+**Status: Stage B in progress.** `app.py`, `utils/` and the first page (`00_Hello_Claude`) exist and pass the commit checklist. Everything else below still describes the *target* structure. Update this file whenever it changes.
 
 ---
 
@@ -81,7 +81,7 @@ The official exam guide (`docs/source/`, local only) is the ground truth for top
 
 | Phase | Title | Weight | Pages | Status |
 |---|---|---|---|---|
-| 0 | Foundations | n/a | Hello Claude, Home (30-cell map), Exam Blueprint, Study Plan, Approach Scorecard, Tool-Use Primer, Quiz Hub | 🔜 |
+| 0 | Foundations | n/a | Hello Claude ✅, Home ✅, Exam Blueprint ✅, Study Plan, Approach Scorecard, Tool-Use Primer, Quiz Hub | 🔜 (3/7) |
 | 1 | Agentic Architecture & Orchestration | 27% | 1.1 ★ · 1.2 · 1.3 · 1.4 ★ · 1.5 · 1.6 · 1.7 | 🔜 |
 | 2 | Tool Design & MCP Integration | 18% | 2.1 ★ · 2.2 · 2.3 ★ · 2.4 · 2.5 | 🔜 |
 | 3 | Claude Code Configuration & Workflows | 20% | 3.1 ★ · 3.2 · 3.3 ★ · 3.4 · 3.5 · 3.6 ★ | 🔜 |

@@ -129,6 +129,11 @@ utils/
   quiz.py                 # PHASE_SEEDS + LLM question generator (output labelled "unverified")
   question_bank.py        # NEW: curated, original, verified questions tagged by task statement + scenario
   progress.py             # NEW: personal progress (progress.json — gitignored)
+  course_map.py           # NEW: structured mirror of the Phase Status tables below — drives app.py's
+                          #   sidebar nav and (from page 2) the Home page's 30-cell coverage map. Keep
+                          #   in sync with this file's Phase Status tables (docs-sync checklist item 5).
+  placeholder.py          # NEW: shared "coming soon" page for every 🔜 entry in course_map.py — see
+                          #   its docstring for the 3-step checklist when a placeholder becomes real
 sandbox_project/          # NEW: real Claude Code exercises (CLAUDE.md, .claude/rules, commands,
                           #   skills, .mcp.json) — fake data only
 docs/
@@ -136,6 +141,9 @@ docs/
   reference/              # agents101_CLAUDE.md (template we mirror)
   images/                 # exported diagrams
   ARCHITECTURE.md · APPROACH_SCORECARD.md · SOURCES.md · STUDY_PLAN.md
+  GUIDE_MAP.md            # auto-generated from utils/course_map.py — every page traced to a guide
+                          #   domain/task-statement/scenario. Regenerate, don't hand-edit (see that
+                          #   module's render_guide_map_markdown() docstring).
   SESSION_LOG.md          # append-only record of every session — Claude adds an entry before stopping
 .claude/
   skills/arch-diagram/    # HTML architecture-diagram generator (from agents101)
@@ -295,6 +303,7 @@ All data is obviously fake (`example.com`, "Customer A"). No real data ever.
 - [ ] New diagram function → export PNG to `docs/images/` and reference it
 - [ ] `requirements.txt` changed → update `AGENTS.md` Stack table and `docs/ARCHITECTURE.md` stack table
 - [ ] New source consulted → `docs/SOURCES.md`
+- [ ] `utils/course_map.py`'s matching `PageEntry.built` flipped to `True` → regenerate `docs/GUIDE_MAP.md` (see that module's `render_guide_map_markdown()` docstring)
 
 ### 6. Commit message convention
 ```
@@ -314,9 +323,9 @@ All pages are 🔜 (Stage A: docs and config only). 🔑 = the Claude API key gi
 ### Phase 0 — Foundations  (weight n/a)
 | Page file | Module | Status |
 |---|---|---|
-| `00_Hello_Claude.py` | Hello Claude — API setup & verify (works without key) | 🔜 |
-| `00a_Home.py` | Home — dashboard + 30-cell coverage map | 🔜 |
-| `00b_Exam_Blueprint.py` | Exam Blueprint — domains, weights, scenarios, out-of-scope | 🔜 |
+| `00_Hello_Claude.py` | Hello Claude — three-key setup & first live call (works without ANTHROPIC_API_KEY) | ✅ |
+| `00a_Home.py` | Home — dashboard, guide-grounded project intent, 30-cell coverage map | ✅ |
+| `00b_Exam_Blueprint.py` | Exam Blueprint — format, timing, scoring, policies, out-of-scope (domains/weights/scenarios moved to Home's blueprint table) | ✅ |
 | `00c_Study_Plan.py` | Study Plan — 17-day plan | 🔜 |
 | `00d_Approach_Scorecard.py` | Approach Scorecard — *(purpose to be confirmed with user)* | 🔜 |
 | `00e_ToolUse_Primer.py` | Tool-Use Primer — the request/response mechanics | 🔜 |

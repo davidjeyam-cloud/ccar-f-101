@@ -16,15 +16,15 @@ The learning happens in VS Code with Claude Code: each topic is built by hand (l
 
 ## Status
 
-**Stage A — docs and configuration only.** No pages, demos or labs exist yet. **0 of 46 pages built.**
+**Stage B in progress.** `app.py`, `utils/`, and three pages (`00_Hello_Claude`, `00a_Home`, `00b_Exam_Blueprint`) now exist. **3 of 46 pages built.**
 
 | Group | Pages | Built |
 |---|---|---|
-| Phase 0 Foundations | 7 | 0 |
+| Phase 0 Foundations | 7 | 3 |
 | Phases 1–5 task statements | 30 | 0 |
 | Phase 6 Capstones | 6 | 0 |
 | Phase 7 Exam Readiness | 3 | 0 |
-| **Total** | **46** | **0** |
+| **Total** | **46** | **3** |
 
 ---
 
@@ -62,7 +62,7 @@ Open **http://localhost:8501**. Work in VS Code; view the app in the browser. (`
 ## Phase Map
 
 ```
-Phase 0   Foundations       Hello Claude · Home · Exam Blueprint · Study Plan · Approach Scorecard
+Phase 0   Foundations       Hello Claude ✅ · Home ✅ · Exam Blueprint ✅ · Study Plan · Approach Scorecard
                             · Tool-Use Primer · Quiz Hub
 Phase 1   Agentic (27%)     1.1 Loops ★ · 1.2 Coordinator · 1.3 Subagents · 1.4 Enforcement ★
                             · 1.5 Hooks · 1.6 Decomposition · 1.7 Sessions
@@ -90,6 +90,7 @@ Phase 7   Readiness         Timed Mock · Error Log (gates) · Exam Day
 | `docs/SOURCES.md` | Ground truth, out-of-scope list, unverified community claims |
 | `docs/APPROACH_SCORECARD.md` | *(stub — purpose to be confirmed)* |
 | `docs/SESSION_LOG.md` | Append-only log of every session: done, decisions, open questions, next step |
+| `docs/GUIDE_MAP.md` | Every page traced to its guide domain/task-statement/scenario — auto-generated from `utils/course_map.py` |
 | `docs/reference/agents101_CLAUDE.md` | The agents101 template we mirror |
 | `push.ps1` | Secret scan + stage + commit + push (run by you, never by Claude) |
 | `.claude/commands/next-page.md` | `/next-page` — build the next pending page |

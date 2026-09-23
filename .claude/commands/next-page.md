@@ -34,6 +34,7 @@ If the guide is missing, say so and stop.
 1. `py_compile` on `app.py`, `pages/*.py`, `utils/*.py`
 2. App starts clean (with and without `GEMINI_API_KEY`)
 3. New-page checklist — every box
+3b. Sidebar: add this page's slug -> file path to `app.py`'s `_REAL_PAGES` dict, and flip its `PageEntry.built` to `True` in `utils/course_map.py` (see `utils/placeholder.py`'s docstring) — otherwise it stays a placeholder in the sidebar even though it's built
 4. Quiz sync: `PHASE_SEEDS` entry (8–12 concepts, 3 snippets) **and** original bank questions tagged by task statement in `utils/question_bank.py`
 5. Docs sync: Phase Status table, `pages/00a_Home.py` count/coverage map, `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/images/` for new diagrams, `docs/SOURCES.md`
 6. Secret scan of what would be staged (see `push.ps1`)

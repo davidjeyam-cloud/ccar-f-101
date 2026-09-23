@@ -109,3 +109,91 @@ User called it off for the day. State: **Stage A complete, Stage B not started**
 **NOT pushed.** GitHub is still empty. The user runs `.\push.ps1` (it asks before the first push).
 
 **Standing rule (user, 2026-09-22):** before the user exits a session, check `git status` / `git log` / remote heads and say plainly whether everything is committed and pushed; commit outstanding work (Claude may commit, never push).
+
+---
+
+## 2026-09-22 — Stage B: first page built (00_Hello_Claude)
+
+**Page name confirmed by user:** keep `00_Hello_Claude.py` (not renamed to Hello_Gemini).
+
+**Built (checklist passed):**
+- `app.py` — entry point, `st.navigation`, Phase 0 group with one page so far.
+- `utils/styles.py`, `utils/llm.py`, `utils/trace.py`, `utils/diagrams.py`, `utils/quiz.py`, `utils/question_bank.py`, `utils/progress.py` — all new, mirroring agents101's patterns where one exists (styles/llm/trace/quiz), original for `progress.py`/`question_bank.py` (no agents101 equivalent).
+- `pages/00_Hello_Claude.py` — explains the three-key architecture (Claude Code subscription / GEMINI_API_KEY now / ANTHROPIC_API_KEY later), live Gemini call with an Execution Trace that maps the finish reason to the Claude term, a 4-row key-comparison table, a 4-row traps table, sandbox_project/ build step, progress ticks.
+- `docs/images/00_hello.png` exported.
+- `PHASE_SEEDS["0"]` (9 concepts, 3 snippets) added to `utils/quiz.py`. No `question_bank.py` entries — Phase 0 has no task-statement number, documented in that module's docstring.
+- Verified: `py_compile` clean; `streamlit.testing.v1.AppTest` run against `app.py` with zero exceptions, both with and without `GEMINI_API_KEY` (`.env` moved aside and restored — restore confirmed by byte count).
+- Docs synced: `CLAUDE.md` Phase Status row -> ✅, `AGENTS.md` page count 0->1 and Phase Map, `docs/ARCHITECTURE.md` status line and Phase 0 row.
+
+**Bugs found and fixed while building:**
+1. matplotlib + DejaVu Sans has no emoji glyphs (same lesson agents101 already learned for wkhtmltoimage) - a 🔑 in `diagrams.py` produced a missing-glyph warning; replaced with plain text ("KEY pages"). Diagram layout also needed rework (arrow labels were overlapping boxes) - fixed with an opaque background patch behind each label.
+2. `st.image(..., use_container_width=True)` is deprecated - switched to `width="stretch"`.
+3. **push.ps1 false positives:** the "KEY= assignment" secret-scan rule flagged ordinary code (`Client(api_key=GEMINI_API_KEY)`, `Client(api_key=gemini_key)`) and a page-identifier constant (`PAGE_KEY = "00_Hello_Claude"`) as possible secrets. Fixed two ways: (a) the rule now exempts a captured value that itself contains the word "key" (a real secret token never spells "key" in its own content - only a variable/constant *name* does), tested against 4 cases including two negative controls (a real AIza key and a real unquoted `_KEY=` literal must still be caught, and both still are); (b) renamed the page constant from `PAGE_KEY` to `PAGE_SLUG` and added a naming note to `utils/progress.py` so no future page reintroduces the collision.
+
+**Security near-miss, investigated and closed:**
+A byte-identical stray copy of the copyrighted exam guide PDF was found at `docs/Claude_Certified_Architect_Foundations_Exam_Guide.pdf` (628,815 bytes, matches `docs/source/instructor_...pdf` exactly) - outside `docs/source/`, so neither `.gitignore` nor `push.ps1`'s old `docs/source/*`-only guard would have caught it. Origin unknown - nothing run this session referenced that path or filename, and `git log --all` confirms it was never staged or committed. Deleted the stray copy; confirmed no other stray PDFs exist in the repo (only matplotlib's own bundled PDFs under the gitignored `.venv/`). Hardened `push.ps1` with a second, repo-wide guard that blocks staging or committing **any** `.pdf` file, in both the normal-commit and unpushed-commit code paths - tested, catches a stray `docs/stray.pdf`. **The user should keep an eye out for this file reappearing** - if it does, that would identify the source (some tool/hook writing it), which is not yet known.
+
+**Verification before hand-off:** full sandbox clone of the real working tree committed cleanly (26 files, 0 secret-scan hits) with all three fixes in place; four negative-control tests confirmed the scan still catches a real AIza key, a real unquoted password, a real unquoted `_KEY=` literal, and now a stray PDF.
+
+**Not committed.** Per `/next-page` protocol, Claude does not stage or commit mid-build - only hands over the commit message. The user runs `.\push.ps1 "<message>"` when ready.
+
+**Next step:** user builds the `sandbox_project/CLAUDE.md` step from this page's "Build it in VS Code with Claude Code" box, then types `/next-page` again for `00a_Home`.
+
+---
+
+## 2026-09-22 (continued) — Page 2: Home, plus a guide-traceability layer
+
+**Trigger:** user asked (1) whether the study plan and sidebar are grounded against the guide PDF, (2) for a mapping between sidebar names/sub-topics and the guide, then (3) to update Home's project intent (grounded) and add a visual table for the blueprint sub-topics.
+
+**Grounding audit (before building):** re-extracted `docs/source/*.pdf` fresh with `pdftotext`, confirmed byte-identical to the extraction used on 2026-09-21, and cross-checked all 30 task statements, all 5 domain names/weights (27/18/20/20/15%), and all 6 scenarios (numbering + exact primary domains) against that fresh text. All match `CLAUDE.md`. Caveat surfaced to the user: the *day-by-day schedule* in `docs/STUDY_PLAN.md` is not guide content (the guide has no calendar) - it came from the build prompt, using the guide's task-statement order as its backbone.
+
+**Traceability layer added (utils/course_map.py):**
+- `DOMAINS` dict: official domain name + weight + guide section, verified against guide §4/§6.
+- `SCENARIOS` dict: guide scenario number + title + primary domains, verified against guide §5.
+- `PageEntry.guide_ref()`: one-line citation for any page (domain+weight+task-statement, or scenario+primary-domains).
+- `render_guide_map_markdown()`: generates `docs/GUIDE_MAP.md` (new, committed) - a standalone, off-app traceability table for all 46 pages, regenerable, not hand-maintained.
+- `utils/placeholder.py` updated to show each unbuilt page's guide reference inline.
+
+**Page built: `00a_Home`** (Phase 0, dashboard - not a lesson page, so it skips the concept/demo/quiz steps, matching agents101's own Home page precedent):
+- "What this project is for" section, paraphrased from guide §1 (About This Certification) and §2 (Intended Audience), explicitly citing both.
+- Visual blueprint table: 5 domain rows × task-statement badge cells (30 cells total, verified via markdown inspection, not just eyeballed), colour-coded by build status, ★/🔑 markers, driven live from `course_map.py` - can't go stale the way agents101's own hand-typed Home page did (its CLAUDE.md admits 4 stale CSS/count bugs).
+- Scenario table (6 rows, guide-numbered, primary domains, status).
+- Built with this app's own light theme tokens (`utils/styles.py`), not copied from agents101's dark-neon Home page, which is a different, inconsistent palette.
+
+**Verified:**
+- `py_compile` clean across app.py + all pages + all utils.
+- `AppTest` on the default page (Hello Claude): 0 exceptions.
+- `AppTest.switch_page("pages/00a_Home.py")` (direct `from_file` on a page fails outside app.py's navigation context - `sys.path` doesn't include the repo root; this is a test-harness artifact, not an app bug): 0 exceptions.
+- Regex-verified the rendered blueprint table has exactly 30 task-statement cells in the right order/markers, and exactly 6 scenario rows.
+- **No headless browser available in this environment** to screenshot the live CSS render - structural correctness verified, visual layout was not eyeballed by Claude. Asked the user to confirm it looks right.
+- Sandbox secret scan: clean, 30 files.
+
+**Docs synced:** `CLAUDE.md` (both Phase Status rows -> ✅), `AGENTS.md` (2/46, Phase Map), `docs/ARCHITECTURE.md`, `docs/GUIDE_MAP.md` regenerated.
+
+**Not committed** - handing over the commit message per `/next-page` protocol norms (this was a direct content request, not a `/next-page` run, but the same "don't commit unless asked" convention was kept).
+
+**Next step:** user reviews Home's visual layout in the browser; then either more direction, or `/next-page` for `00b_Exam_Blueprint`.
+
+---
+
+## 2026-09-22 (continued) — Page 3: Exam Blueprint
+
+**Trigger:** user clicked the Exam Blueprint placeholder and asked "is it empty?" - confirmed it was working as designed (unbuilt placeholder), then user asked to build it.
+
+**Content split decided:** the original CLAUDE.md description for this page ("domains, weights, scenarios, out-of-scope") would have duplicated Home's new blueprint table. Repurposed: Home = *what* is tested (domains/task-statements/scenarios, built earlier today); Exam Blueprint = *how the exam itself works* (format, timing, scoring, policies, out-of-scope). Documented the split in both pages and in CLAUDE.md's Phase Status row.
+
+**Refactor:** extracted the card/table/stat CSS Home had defined locally into `utils/styles.py` (`DASHBOARD_CSS` / `apply_dashboard_css()`), since Exam Blueprint needed the identical pattern. Updated Home to use the shared classes (`wb-card`, `wb-table`, `wb-stat*`, `wb-cite`) instead of its own duplicate `cf-*` copies, keeping only the blueprint-grid-specific classes (`cf-cell`, `cf-domain-name`, `cf-weight-badge`) local to Home.
+
+**Page built: `00b_Exam_Blueprint`** - three tables, all grounded and cross-checked against the fresh guide extraction:
+- Exam details at a glance (10 rows) - guide §3.
+- How it's scored (criterion-referenced, not curved) - guide §10.
+- Policies worth planning around (8 rows: ID, accommodations, retake waits/limits, no-show, exam-day conduct, misconduct, recertification) - guide §12, §13, §15.
+- Out-of-scope topics (16 rows, matches the guide's Appendix count exactly) - guide Appendix.
+
+**Verified:** `py_compile` clean; `AppTest` via real navigation on all 3 built pages (default/Hello Claude, Home, Exam Blueprint) - 0 exceptions each; regex-counted Exam Blueprint's rendered output: 3 tables, 34 data rows (10+8+16, matches exactly what was written); sandbox secret scan clean, 31 files.
+
+**Docs synced:** `CLAUDE.md` (row -> ✅, description updated), `AGENTS.md` (3/46, Phase Map), `docs/ARCHITECTURE.md`, `docs/GUIDE_MAP.md` regenerated.
+
+**Not committed** - same pending commit as the rest of today's Stage B work.
+
+**Next step:** user reviews the live app (still no headless browser available to screenshot); then more direction, or `/next-page` for `00c_Study_Plan`.
