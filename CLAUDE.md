@@ -38,7 +38,8 @@ Push script: `.\push.ps1 "message"` — runs the secret scan, stages the tracked
 2. **Paraphrase** the guide. Never copy long passages. Never reproduce or try to recall real exam questions. Every question in this repo is original.
 3. Anything from community sources is labelled **"community claim, verify in current docs"**. This includes CLI flags beyond `-p`, `--output-format json` and `--json-schema`; model-specific behaviour; and exam-policy claims not in the guide.
 4. Respect the guide's **out-of-scope list**. Never build pages or questions on those topics (see below). Prompt caching is "know that it exists" only.
-5. If unsure, ask the user. Never fill a gap with a plausible guess. Never state a claim about the exam or Claude Code behaviour that has not been verified against the guide or current docs — say "I'm not sure".
+5. **Official Claude docs = technical truth (user rule, 2026-09-26).** "The official docs" means BOTH `platform.claude.com/docs` (Messages API, tool use, stop reasons, refusals, batch, structured outputs, prompt engineering, guardrails, models, Managed Agents) AND `code.claude.com/docs` (Claude Code and the Agent SDK — the platform docs redirect `/agent-sdk/*` there). Hierarchy: **the guide decides SCOPE (what is examinable); the official docs decide TECHNICAL FACTS (how it actually behaves); community sources are unverified.** Where the guide and the docs differ in detail, show both, follow the docs on technical facts, follow the guide on what the exam expects, and note it in `docs/SOURCES.md`. Example: the guide names two `stop_reason` values for the loop (`tool_use`, `end_turn`); the docs list seven.
+6. If unsure, ask the user. Never fill a gap with a plausible guess. Never state a claim about the exam or Claude Code behaviour that has not been verified against the guide or current docs — say "I'm not sure".
 
 ### Exam at a glance (from the official guide)
 | # | Item | Value |
@@ -115,10 +116,30 @@ Phase 7 : Exam Readiness — timed mock, error log with readiness gates, exam-da
 
 **Suggested purchase time:** before Day 1 of the study plan (page 1.1 is the first 🔑 page). Set a low credit/spend limit in the Console.
 
+## CONCEPTS section (added 2026-09-26 at the user's request)
+
+A second learning surface next to the phases: learn **one concept at a time** by reading it, watching a flowchart, and **editing and running code** against a simulated Claude — including the exam distractors, run on purpose so you can watch them fail. It has its own sidebar sections ("CONCEPTS", "CONCEPTS · D1 …") shown at the **TOP of the sidebar** (moved there 2026-09-26; `pages/00_Hello_Claude.py` stays the landing page via `default=True`) and **does not change the 46-page phase structure, `utils/course_map.py`, Home's counts, or any existing page.**
+
+- **Taxonomy:** 71 concepts mirroring the layout of a community concept list (claudearchitectcertification.com/concepts — third-party, unverified, structure only, no content copied). 30 are numbered D1.1 – D5.2 (sidebar, under their domain); 41 are unnumbered "cross-cutting" (registered but hidden from the sidebar; reachable from the index page's cards).
+- **The official guide decides scope, not that list.** Every concept has a status — Claude's judgment from a keyword search and reading of guide v1.0 on 2026-09-26, so verify it in `docs/CONCEPTS_MAP.md`: 🎯 in the guide · ◐ partly in the guide · ℹ️ awareness only · ⛔ explicitly out of scope · ⚪ not in the guide. **Exam concepts = 🎯 and ◐**, built first. ⛔ / ℹ️ get an honest stub — never a page or question on an out-of-scope topic. (At creation: 22 in the guide, 15 partial, 1 awareness, 3 out of scope, 30 not in the guide.)
+- **EXTRAS (user decision, 2026-09-26: "yes" to building the not-in-the-guide concepts).** A ⚪ concept can be built as an **➕ extra** — labelled "not on the CCAR-F exam" on screen — **only if an official docs page covers it** (`concepts_map.EXTRA_DOCS` lists candidate pages, fetched and read at build time). Those with no docs basis are **ungroundable**: they stay stubs that say so, because of the grounding rule below. Kinds (`concepts_map.kind()`): exam 37 · extra 9 · ungroundable 21 · excluded 4. Extras are built after the exam concepts; out-of-scope (⛔) topics stay unbuilt unless the user explicitly overrides. Extras' practice items are shown on the page but never enter the exam question bank (`in_bank=False`).
+- **GROUNDING RULE — every concept is 100% grounded in the official Claude docs (user rule, 2026-09-26).** Before writing a concept: **fetch and read** the relevant official docs pages (WebFetch), plus the guide's task statements for exam concepts. The content module must carry `docs_refs` (pages read) + `docs_verified_on` (date) + `grounding` (each substantive claim tagged 📘 docs / 🎓 guide / 💡 my recommendation / 🧪 simulated, with where it comes from); the page shows all of it. No claim from memory; if a claim cannot be grounded, label it or omit it; **if a concept cannot be grounded at all, do not build it.** Distractors come from the guide's anti-pattern lists AND the docs' own pitfall lists, each with its Source. Reason for the rule: the first Agentic Loops page taught only the guide's two stop reasons and treated every other stop as an error — the docs list seven and require each to be handled.
+- **MENTAL MODEL RULE (user rule, 2026-09-26): every concept AND every sub-concept gets a mental model.** A *mental model* is one or two plain sentences that give the learner a picture to hold — an analogy plus the one trap it protects against — shown in a 🧭 box. Example (D1.1): "`stop_reason` is the steering wheel — text is just what the model said out loud. And 'the loop ended' is not the same as 'the task succeeded'." **Concept** = a CONCEPTS page: its `mental_model` field is required (shown under the Summary). **Sub-concept** = each distinct mechanism, term or branch the page teaches on its own (e.g. each `stop_reason` value and each docs-derived distractor on D1.1; each hook type, each `tool_choice` mode, each CLAUDE.md scope elsewhere): it gets its own one-line 🧭 mental model beside its explanation — in the sub-concept table or the distractor row, not buried in prose. Rules: it must be *true* (grounded like everything else — an analogy may simplify, never contradict the docs/guide); short enough to remember; plain words, no jargon it doesn't explain; and it names the failure it prevents. A concept or sub-concept without one is not finished. The same rule applies to the 46 phase pages: their `📖` concept expander opens with a 🧭 mental model line.
+- **EXAM HIGHLIGHT RULE (user rule, 2026-09-26): always mark what the exam demands, pinned to the exact place in the guide PDF.** Everything the guide requires is shown with a **⭐ and gold colour**; everything else (docs pitfalls, extras, my recommendations) is visibly not gold, so the learner always knows "this is an EXAM topic". Reference format (`utils/guide_index.py`): `Guide §6 · TS 1.1 · Knowledge 2 · p.5` — §6 = "Detailed Objectives by Domain", TS = task statement, Knowledge/Skill N = the Nth bullet under "Knowledge of:" / "Skills in:" (the guide does not number its bullets; this workbench counts them in order and says so on the page), p. = the PDF page. Scenarios: `Guide §5 · Scenario N · p.3–4`; out-of-scope list: `§17 Appendix · p.36`. On every **exam** concept page: (1) a gold **⭐ EXAM TOPIC** chip with the TS and page; (2) a gold **"What the exam demands"** box — one `ExamPoint` per guide bullet, paraphrased (never copied), with its exact reference and where the page exercises it; (3) ⭐ on exam-named items in the stop-reason-style tables, the flowchart (plus a key row) and the lab's variant labels; (4) every distractor carries `source="guide:<ts>:<K|S><n>"` so its Source cell reads `⭐ EXAM — TS 1.1 · Skill 3 · p.5` (docs-only pitfalls read `📘 official docs (beyond the guide)`); (5) sidebar/index/stub markers ⭐ for exam concepts. `guide_index.point_ref()` raises if a cited bullet doesn't exist, so a wrong reference fails loudly. Positions were read from the PDF on 2026-09-26 and cross-checked twice; re-derive them if the guide is reissued. The same rule applies to the 46 phase pages: their `📖` expander and traps table cite the guide reference the same way.
+- **AGENT PLAYGROUND RULE (user request, 2026-09-26): every concept whose sub-concepts are behaviours or limits gets a message box per sub-concept.** Next to the code lab, the page has an **Agent playground** (`utils/playground_ui.py`, engine `utils/agent_playground.py`): one tab per sub-concept (for D1.1: `tool_use → end_turn`, `max_tokens`, `refusal`, `pause_turn`, `stop_sequence`, context window, `max_turns`, `max_budget_usd`), each with its **own message box**, its **own knobs for the developer-side constraints** that sub-concept is about (hard-coded stubs the learner can change: `max_tokens`, `max_turns`, a spending limit, refusal / pause / max_tokens handling policy, stop sequence, simulated context window), and a transcript of exactly how the agent handled the message (each call's `stop_reason`, the action taken, tokens, simulated cost, the final result subtype). Defined by a `PlayTab` per sub-concept in the concept's `playground` tuple: `mental_model` (MENTAL MODEL RULE), `exam_source` (`guide:<ts>:<K|S><n>` for ⭐ tabs, empty for docs-only), docs-grounded `meaning` + a `docs` page/section, `knobs`, `defaults`, example messages, experiments. Rules: the agent loop is trusted workbench code in the Streamlit process (learner *code* still runs in the subprocess lab); the model is SIMULATED and labelled so; result labels are the Agent SDK's documented subtypes (`error_max_turns`, `error_max_budget_usd`, `error_during_execution`, `success`) or prefixed `playground:` so they are never mistaken for SDK subtypes; **dollar figures are illustrative rates, not real pricing** (pricing maths is out of scope); every playground behaviour must be run (all tabs, default and changed knobs) and its "try this" text seen happening before it is written; anything the docs don't specify (e.g. when a budget is checked) is stated as a simulation choice. Extend `mock_claude.py` additively for new conditions.
+- **Page template** (`utils/concept_page.py` + `utils/concepts_content/<slug>.py`): Summary + mental model · What it is · How it works (flowchart) · Where you'll see it · **Code lab** · **Agent playground** · Looks right, isn't · Side-by-side · Decision tree · Practice · FAQ · Related.
+- **Code lab:** the learner edits Python and presses Run. It executes in a **separate Python process** (`utils/lab_runner.py`: 10 s timeout, throw-away working directory, **no API keys in its environment**, secret values redacted from output) against a **SIMULATED** Claude-shaped client (`utils/mock_claude.py`) and a fake backend (`utils/tools.py`). It is **not a security sandbox** — it runs on the user's machine with their permissions. The flowchart then lights up along the path the run took (green = correct, red = where it went wrong).
+- **Distractors are observed, not asserted.** Every distractor is a runnable variant, and its failure was seen (all variants × all scenarios through the real runner) before its explanation was written. Distractors come from the guide's own anti-pattern lists; anything else is labelled "my recommendation".
+- **SIMULATED rule:** the lab's model is scripted; it must be labelled SIMULATED on screen and in traces and never presented as real Claude. Real-API twins are the 🔑 phase pages.
+- **Adding a concept:** `/next-concept` (`.claude/commands/next-concept.md`) — one concept per session, template `utils/concepts_content/agentic_loops.py`. A concept is *built* when its content module exists (no flag to flip); then regenerate `docs/CONCEPTS_MAP.md`.
+- **Questions:** each built concept's exam-basis practice items are registered in `utils/question_bank.py` under its primary task statement, flagged `reviewed_by_user: False` until the owner signs them off.
+- **Reference implementation:** D1.1 Agentic Loops (re-grounded 2026-09-26: the canonical loop handles all seven stop reasons; 9 distractors — 5 from the guide, 4 from the docs). Current counts: `docs/CONCEPTS_MAP.md`.
+
 ## Structure
 ```
 app.py                    # Streamlit entry point — run this
 pages/                    # One page per task statement / capstone / readiness page
+                          #   concepts_index.py = the CONCEPTS index (domain tabs + card grid)
 utils/
   llm.py                  # Gemini wrapper (google-genai) — pinned model, retry wrapper (mirrors agents101)
   tools.py                # Fake customer-support backend: customers, orders, refund, escalate
@@ -134,6 +155,18 @@ utils/
                           #   in sync with this file's Phase Status tables (docs-sync checklist item 5).
   placeholder.py          # NEW: shared "coming soon" page for every 🔜 entry in course_map.py — see
                           #   its docstring for the 3-step checklist when a placeholder becomes real
+  concepts_map.py         # NEW (CONCEPTS): the 71-concept taxonomy + each concept's scope status vs the guide
+  concept_page.py         # NEW (CONCEPTS): generic concept-page renderer (flowchart, code lab, distractors…)
+  concept_types.py        # NEW (CONCEPTS): ConceptContent / Variant / Question / ExamPoint dataclasses
+  agent_playground.py     # NEW (CONCEPTS): the playground's agent loop + developer-side knobs (SIMULATED model)
+  playground_ui.py        # NEW (CONCEPTS): one message box + knobs + transcript per sub-concept tab
+  guide_index.py          # NEW (CONCEPTS): exact guide-PDF positions (section, page, bullet counts) — positions only, no text
+  concepts_content/       # NEW (CONCEPTS): one module per built concept (template: agentic_loops.py)
+  lab_runner.py           # NEW (CONCEPTS): runs learner code in a separate process (timeout, no keys)
+  lab_harness.py          # NEW (CONCEPTS): the child-process side of lab_runner — not run by hand
+  lab_trace.py            # NEW (CONCEPTS): event log the lab reads back to colour the flowchart
+  mock_claude.py          # NEW (CONCEPTS): SIMULATED Claude-shaped client + scripted scenarios
+  # tools.py (above) is now real: fake support backend used by the labs
 sandbox_project/          # NEW: real Claude Code exercises (CLAUDE.md, .claude/rules, commands,
                           #   skills, .mcp.json) — fake data only
 docs/
@@ -144,10 +177,13 @@ docs/
   GUIDE_MAP.md            # auto-generated from utils/course_map.py — every page traced to a guide
                           #   domain/task-statement/scenario. Regenerate, don't hand-edit (see that
                           #   module's render_guide_map_markdown() docstring).
+  CONCEPTS_MAP.md         # auto-generated from utils/concepts_map.py — every concept vs the guide, with
+                          #   its scope status and evidence. Regenerate, don't hand-edit.
   SESSION_LOG.md          # append-only record of every session — Claude adds an entry before stopping
 .claude/
   skills/arch-diagram/    # HTML architecture-diagram generator (from agents101)
   commands/next-page.md   # /next-page — builds the next pending page
+  commands/next-concept.md # /next-concept — builds the next CONCEPTS page (one per session)
 .streamlit/config.toml    # Light theme (same as agents101)
 .env / .env.example       # key (gitignored) / template
 ```
@@ -226,7 +262,8 @@ Pages with no live demo are allowed. Mark them **concept + build** in the status
 | 9 | Subagent spawning | Task tool, `allowedTools` includes `"Task"` | no equivalent — `st.code()` + built for real in `sandbox_project/` |
 
 ### C. Claude API facts (exam ground truth — taught with `st.code()`, not executed)
-- **Agentic loop:** read `stop_reason`. Keep looping only while it is `"tool_use"`; stop on `"end_turn"`. Do not parse assistant text to decide termination; do not use an iteration cap as the primary stop condition.
+- **Agentic loop** *(docs: platform.claude.com/docs/en/build-with-claude/handling-stop-reasons and …/refusals-and-fallback; guide TS 1.1)*: read `stop_reason`. Keep looping **while it is `"tool_use"`**. **Any other value exits the loop and MUST be handled** — `end_turn` = the model finished (check the answer isn't empty); `max_tokens` = truncated (raise it / continue; an incomplete `tool_use` is retried with a higher limit); `stop_sequence` = a custom stop sequence hit; `pause_turn` = server-tool loop paused, send the response back as-is; `refusal` = a normal **HTTP 200** response (not an error) — retry on a **different** model and stay on it; `model_context_window_exceeded` = context full (beta per docs). The exam guide names only `tool_use` and `end_turn`. Do not parse assistant text to decide termination; an iteration cap must not be the *primary* stop condition — the Agent SDK's `max_turns` / `max_budget_usd` are optional guards that surface as error results (`error_max_turns`, `error_max_budget_usd`), never as success.
+- **`tool_result` formatting** *(docs: …/tool-use/handle-tool-calls)*: results follow the assistant `tool_use` turn immediately, all in ONE user message, `tool_result` blocks FIRST (text before them → 400 error); text added after results can lead to empty `end_turn` responses. Failures use `is_error: true`.
 - **Tool results** go back in a **user** message as `tool_result` blocks, matched to the `tool_use` id. Append them to the history so the model can reason about the next step.
 - **Three `tool_choice` modes:** `auto` (may answer in text), `any` (must call some tool), forced `{"type": "tool", "name": "..."}` (must call that tool).
 - **Verify:** one community source says a newer model may reject a forced `tool_choice`. *(community claim, verify in current docs)*
@@ -304,6 +341,7 @@ All data is obviously fake (`example.com`, "Customer A"). No real data ever.
 - [ ] `requirements.txt` changed → update `AGENTS.md` Stack table and `docs/ARCHITECTURE.md` stack table
 - [ ] New source consulted → `docs/SOURCES.md`
 - [ ] `utils/course_map.py`'s matching `PageEntry.built` flipped to `True` → regenerate `docs/GUIDE_MAP.md` (see that module's `render_guide_map_markdown()` docstring)
+- [ ] A CONCEPTS page was built → its `docs_refs` / `docs_verified_on` / `grounding` come from docs actually fetched that session (grounding rule), then regenerate `docs/CONCEPTS_MAP.md` (see `utils/concepts_map.py`'s `render_concepts_map_markdown()`)
 
 ### 6. Commit message convention
 ```
@@ -447,6 +485,7 @@ The timed mock draws 4 random scenarios and pulls tagged questions. Target 60 it
 | 6 | Execution Trace standard | Kept, plus finish reason (with the Claude term beside it), function_call/response blocks, function-calling mode and token counts. |
 | 8 | Gemini everywhere (LLM, SDK, key) | **Kept from agents101 by the user's decision (2026-09-21)**, reversing the build prompt's `anthropic` SDK / `ANTHROPIC_API_KEY`. Claude-specific mechanics are taught via `st.code()` and real Claude Code in `sandbox_project/`; quiz and bank stay Claude-specific. **Exception:** 🔑 pages use the real Claude API and remind the user to buy the key (see Claude API Key Reminder Standard). |
 | 7 | Patterns first, frameworks last | Official guide first, then build, then quiz. |
+| 9 | (no agents101 equivalent) | **CONCEPTS section** (user request, 2026-09-26): a concept-by-concept learning surface with runnable code labs, added alongside the phases without changing them. Scope follows the guide, not the community list its layout mirrors; every concept is grounded in the official docs (platform.claude.com + code.claude.com); ➕ extras allowed only when docs-grounded. See the CONCEPTS section above. |
 
 ## Deferred Work
 *(empty)*

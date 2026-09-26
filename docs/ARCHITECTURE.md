@@ -95,6 +95,33 @@ Coverage: **30 task statements** across 5 domains + **6 scenarios** = the full g
 
 ---
 
+## CONCEPTS section
+
+A second learning surface beside the phases (added 2026-09-26). It changes none of the structure above.
+
+```
+sidebar:  (top)  CONCEPTS ─ All concepts (index: domain tabs + cards)
+          CONCEPTS · D1 … D5 ─ the 30 numbered concepts   (41 cross-cutting concepts: registered, hidden)
+          (then) the 8 phase groups, unchanged; Hello Claude remains the landing page (default=True)
+
+concept page = utils/concept_page.py  ← utils/concepts_content/<slug>.py  (ConceptContent)
+  code lab: editor ─ Run ─▶ utils/lab_runner.py ─▶ separate Python process (10 s timeout, no API keys)
+                                                     ├─ utils/mock_claude.py  SIMULATED Claude-shaped client
+                                                     └─ utils/tools.py        fake support backend
+            events ◀─ utils/lab_trace.py ─ JSON ─▶ step table + flowchart coloured along the path taken
+```
+
+| # | Design point | Why |
+|---|---|---|
+| 1 | Scope follows the official guide; the community list only supplies the layout | 30 of the 71 listed concepts have no matching guide content; 3 are explicitly out of scope |
+| 2 | Learner code runs in a child process with a timeout and no keys | An accidental infinite loop can't hang the app; no secret can leak into a lab |
+| 3 | The model is simulated and labelled SIMULATED | Deterministic, free, offline — and honest: it is not real Claude |
+| 4 | Distractors are runnable variants whose failure was observed | Every "why it fails" claim was seen happening before it was written |
+| 5 | Every concept is grounded in the official Claude docs (platform.claude.com + code.claude.com); pages list what was read, when, and tag each claim docs / guide / recommendation / simulated | The first Agentic Loops page taught two stop reasons where the docs list seven — grounding is now a rule, not a habit |
+| 6 | Kinds: exam · ➕ extra (not in the guide, docs-covered) · ungroundable · excluded | The guide decides scope; the docs decide what can be built and how it behaves. Extras never enter the exam question bank |
+
+---
+
 ## Key Design Principles
 
 ### 1. The official guide is ground truth
@@ -125,11 +152,14 @@ Six comparison tables are mandatory (see `CLAUDE.md`).
 ```
 ccar-f-101/
 ├── app.py                      # Streamlit entry — navigation           (Stage B)
-├── pages/                      # 46 pages                               (Stage B)
+├── pages/                      # 46 pages + concepts_index.py           (Stage B)
 ├── utils/
 │   ├── llm.py · tools.py · diagrams.py · styles.py · trace.py · quiz.py
 │   ├── question_bank.py        # curated, original questions
-│   └── progress.py             # personal progress (progress.json, gitignored)
+│   ├── progress.py             # personal progress (progress.json, gitignored)
+│   ├── concepts_map.py · concept_page.py · concept_types.py     # CONCEPTS taxonomy / renderer / types
+│   ├── lab_runner.py · lab_harness.py · lab_trace.py · mock_claude.py   # CONCEPTS code lab engine
+│   └── concepts_content/       # one module per built concept (agentic_loops.py = template)
 ├── sandbox_project/            # real Claude Code exercises, fake data only
 ├── docs/
 │   ├── ARCHITECTURE.md         # this file

@@ -207,3 +207,61 @@ A byte-identical stray copy of the copyrighted exam guide PDF was found at `docs
 **State:** 3 of 46 pages built (Hello Claude, Home, Exam Blueprint), all following the Page Structure Standard variant for dashboard pages. Sidebar shows the full 46-page roadmap via placeholders. `docs/GUIDE_MAP.md` traces every page to the guide.
 
 **Resume with:** run `.\push.ps1` to push everything (3 local commits) to GitHub, then either give direction for the next page or type `/next-page` for `00c_Study_Plan`.
+
+---
+
+## 2026-09-26 — New CONCEPTS section (concept-by-concept learning with runnable code labs)
+
+**Request (user):** add a section called CONCEPTS, structured like claudearchitectcertification.com/concepts (concepts + sub-concepts), without modifying any other structure. Intent: learn each concept one at a time with code snippets and flowcharts, and be able to *edit the code and press Run in Streamlit* to see how each flow works and where it fails or hallucinates (exam distractors). Example given: Agentic Loops.
+
+**What was checked first:** fetched the site's concept index and its Agentic Loops page (structure only). It lists 71 concepts: 30 numbered D1.1–D5.2 plus 41 unnumbered "cross-cutting" ones; each concept page has Summary, What it is, How it works, Where you'll see it, Code examples, Looks right isn't, Side-by-side, Decision tree, Question patterns, FAQ. It has no runnable code and no execution flow, exactly as the user said.
+
+**Decision taken (flag to the user):** the site is a **community** source. Mirrored its layout and taxonomy, but **scope follows the official guide**. Keyword-searched guide v1.0: zero hits for guardrails, prompt injection, GDPR/HIPAA, bias, stakeholders, governance, Projects, connectors, Artifacts, Managed Agents, Client SDK, "4D". Result of tagging all 71: 22 in the guide, 15 partial, 1 awareness (prompt caching), 3 explicitly out of scope (Vision, Streaming, Auth & access control), 30 not in the guide. Only in-guide/partial concepts get built; the rest get an honest stub. This respects CLAUDE.md's out-of-scope rule; the user can override any of it. Statuses are Claude's judgment — verify in `docs/CONCEPTS_MAP.md`.
+
+**Built (additive — no existing page, `course_map.py`, Home counts or phase structure changed):**
+- `utils/concepts_map.py` (taxonomy + scope status), `utils/concept_page.py` (generic renderer), `utils/concept_types.py`, `pages/concepts_index.py` (domain tabs + card grid), additive block in `app.py` (sidebar sections "CONCEPTS" and "CONCEPTS · D1…D5"; the 41 cross-cutting pages are registered but hidden).
+- **Code lab engine:** `utils/lab_runner.py` + `lab_harness.py` (learner code runs in a **separate process**: 10 s timeout, temp cwd, **no API keys in env**, secrets redacted), `utils/mock_claude.py` (**SIMULATED** Claude Messages-API-shaped client, stateless — decides only from the messages it is sent, and enforces tool_use/tool_result pairing), `utils/tools.py` (fake support backend — the planned tools.py; deliberately permissive so bugs show as visible consequences), `utils/lab_trace.py`.
+- **D1.1 Agentic Loops** (reference implementation, `utils/concepts_content/agentic_loops.py`): flowchart that lights up along the path the run took; 6 runnable variants (correct loop + 5 exam distractors taken from the guide's Task Statement 1.1 anti-patterns and skills); 5 scenarios; result checker; distractors table; side-by-side; decision tree; 3 original practice questions (also registered in `utils/question_bank.py`, `reviewed_by_user: False`); FAQ; experiments.
+- `/next-concept` command (`.claude/commands/next-concept.md`) so remaining concepts are built one at a time to the same template and the same verify-before-claiming discipline.
+- Docs: CLAUDE.md (new CONCEPTS section, structure, checklist, deviation 9), AGENTS.md, docs/ARCHITECTURE.md, docs/SOURCES.md (community source consulted, 2 new unverified-claim rows, 1 disagreement row), docs/CONCEPTS_MAP.md (generated).
+
+**Verification (this is what caught real problems):**
+- Ran every variant × every scenario through the real subprocess runner. Confirmed each distractor fails as its text claims, and that the correct loop passes all 5 scenarios. Notable: distractors A, C and E *pass* on easy scenarios and only break on the right trigger — which is exactly why they are exam traps.
+- Edge cases: busy loop killed at the timeout; syntax error surfaced; missing assistant turn → simulated API error and the SEND node goes red; loop with no backstop trips the simulated spend guard; a key placed in the parent env is absent in the child and redacted if printed; oversize code rejected; relative `.env` read finds nothing.
+- Validated all 32 generated Graphviz graphs with an independent parser (pydot, isolated `uv run --no-project`; project venv untouched).
+- `AppTest`: existing pages unaffected (default, Home, Exam Blueprint); index renders with 7 tabs; concept page renders all 11 sections; Run → success/failed result check + highlighted chart; switching to distractor A loads its code and scenario and its run marks exactly the ABANDON node red; edited code runs; Reset restores; practice question right/wrong feedback; 7 stub statuses render.
+- Two of my own test mistakes caught along the way (wrong graphviz element index made a "green nodes" assertion pass vacuously; a scenario expectation that wrongly failed a hard-coded sequence on the happy path) — both fixed and re-verified.
+- Sandbox secret scan via `push.ps1`: clean, 43 files; no stray PDFs.
+- **Not verified:** the visual layout (Graphviz rendering, CSS, monospace editor) — no headless browser in this environment; the user must look.
+
+**Limits stated to the user:** the lab is not a security sandbox (runs with the user's permissions); the simulated model is not real Claude and its API error wording is an approximation (marked SIMULATED, listed in SOURCES.md as unverified); the 🔑 phase page for TS 1.1 will check the same mechanics against the real API once the key is bought.
+
+**Not committed.** Work is uncommitted on top of commit `bcd6e44`.
+
+**Next step:** user reviews the CONCEPTS section in the browser (http://localhost:8501/concepts) and says what to change; then `/next-concept` builds D1.2 Subagents (first buildable concept without a content module) — or names another. Open questions for the user: keep CONCEPTS at the bottom of the sidebar or move it to the top? Build any of the "not in guide" concepts anyway as clearly-labelled extras?
+
+
+## 2026-09-26 (later) — CONCEPTS to the top, extras, and 100% official-docs grounding
+
+**Request (user):** (1) move CONCEPTS to the top of the sidebar; (2) "yes" to building the not-in-the-guide concepts as extras; (3) the Agentic Loops concept is not fully aligned with the official platform docs (handling-stop-reasons, refusals-and-fallback) — as a rule ALL concepts must be 100% grounded against the Claude platform docs; (4) update CLAUDE.md and any interim memory snapshot.
+
+**What was wrong:** my D1.1 page taught two stop reasons (`tool_use`, `end_turn`) and raised a generic error on anything else, and called the iteration cap "my recommendation". The docs list seven stop reasons and require each to be handled; a refusal is an HTTP 200 (retry on a different model); `max_tokens` is truncation; `pause_turn` means send the response back; tool_result blocks must come first in one user message; text after results can cause an empty `end_turn`; the Agent SDK's `max_turns` / `max_budget_usd` return error subtypes. (The guide itself names only two — recorded in docs/SOURCES.md as a refinement.)
+
+**Docs read (2026-09-26):** platform: handling-stop-reasons, refusals-and-fallback, how-tool-use-works, handle-tool-calls, tool-use overview, build-a-tool-using-agent, llms.txt index; code.claude.com: agent-sdk/agent-loop (platform `/agent-sdk/*` 307-redirects there — so "platform docs" was read as both sites).
+
+**Done:**
+- `utils/mock_claude.py` rewritten docs-aligned (refusal HTTP-200 shape, max_tokens truncation, pause_turn, empty end_turn after text-after-results, tool_result ordering/pairing rules, model + max_tokens in trace); scenarios now 8.
+- `utils/concept_types.py`: DocRef / Claim provenance / Variant.source / Question.basis + in_bank.
+- `utils/concepts_content/agentic_loops.py` rewritten docs-first: canonical loop handles all seven stop reasons; 9 distractors (A–E from the guide, F–I from the docs' pitfalls); flowchart with TRUNC/REFUSAL/PAUSE; docs list + provenance table (21 tagged claims); 2 docs-based questions (`in_bank=False`).
+- `utils/concept_page.py`: "Grounded in the official docs" section, provenance expander, Source column, ➕ extra badge/stubs; `pages/concepts_index.py` counts by kind; `utils/question_bank.py` skips `in_bank=False`.
+- `utils/concepts_map.py`: `EXTRA_DOCS` (9 candidate extras), `kind()` → exam 37 · extra 9 · ungroundable 21 · excluded 4; nav markers ➕ / ⚪ / ⛔ / ℹ️; CONCEPTS_MAP.md gains Kind + Candidate-docs columns.
+- `app.py`: CONCEPTS sections first in the sidebar; Hello Claude still default (`default=True`).
+- Rules/memory: CLAUDE.md (source-of-truth rule 5 = official docs technical truth, grounding rule + extras policy in the CONCEPTS section, corrected Critical SDK Notes C, checklist, deviation 9), `.claude/commands/next-concept.md` (fetch docs first), AGENTS.md, docs/ARCHITECTURE.md, docs/SOURCES.md (docs consulted + "where docs refine the guide"), memory (`feedback_ground-concepts-in-platform-docs.md`, project memory, index), `session_resume.md`.
+
+**Verified by running:** all 10 variants × 8 scenarios through the real subprocess runner; every "observe" claim seen happening (F: half-sentence / empty answer / abandoned pause; G: 3 refusals; H: empty end_turn; I: 400; C with a cap of 8 works, i.e. the trap); edge cases (timeout, syntax error, missing assistant append, no backstop, env-leak, oversize, relative .env); 82 DOT graphs (pydot); AppTest (default, Home, Exam Blueprint, index, concept page Run/variant/reset/practice, extra + ungroundable + excluded stubs); py_compile. One check bug found and fixed: the `runaway` check counted a simulated API error as a "loud failure".
+**Not verified:** visual layout (no browser). Docs-derived claims reflect the pages as fetched today.
+
+**Not committed.** Work is uncommitted on top of bcd6e44; 4 local commits + this work are unpushed — run `.\push.ps1`.
+
+**Next step:** user reviews http://localhost:8501/concepts; then `/next-concept` (D1.2 Subagents — needs code.claude.com sub-agents docs fetched first).
+

@@ -80,6 +80,12 @@ Phase 7   Readiness         Timed Mock · Error Log (gates) · Exam Day
 
 ---
 
+## CONCEPTS (separate from the 46 pages)
+
+A concept-by-concept learning surface — flowchart, **editable code you can run**, and the exam distractors run on purpose so you can watch them fail. 71 concepts listed (layout mirrors a community list; **scope is decided by the official guide** — each concept is tagged in-guide / partial / awareness / out-of-scope / not-in-guide; exam concepts (in-guide / partial) are built first, then ➕ *extras* — not-in-the-guide concepts an official docs page covers, labelled "not on the exam"; concepts with no docs basis stay stubs). **Every concept is 100% grounded in the official Claude docs** (platform.claude.com + code.claude.com; each page lists what was read and when, and tags every claim). The CONCEPTS sections are at the **top** of the sidebar. Reference implementation: **D1.1 Agentic Loops**. Build the next one with `/next-concept`. Full status: `docs/CONCEPTS_MAP.md`. The lab's model is **SIMULATED**.
+
+---
+
 ## Key Files
 
 | File | Purpose |
@@ -91,6 +97,7 @@ Phase 7   Readiness         Timed Mock · Error Log (gates) · Exam Day
 | `docs/APPROACH_SCORECARD.md` | *(stub — purpose to be confirmed)* |
 | `docs/SESSION_LOG.md` | Append-only log of every session: done, decisions, open questions, next step |
 | `docs/GUIDE_MAP.md` | Every page traced to its guide domain/task-statement/scenario — auto-generated from `utils/course_map.py` |
+| `docs/CONCEPTS_MAP.md` | Every CONCEPTS entry vs the guide (scope status + evidence) — auto-generated from `utils/concepts_map.py` |
 | `docs/reference/agents101_CLAUDE.md` | The agents101 template we mirror |
 | `push.ps1` | Secret scan + stage + commit + push (run by you, never by Claude) |
 | `.claude/commands/next-page.md` | `/next-page` — build the next pending page |
@@ -114,6 +121,7 @@ Phase 7   Readiness         Timed Mock · Error Log (gates) · Exam Day
 11. **Docs must always reflect the code** — update this file, `CLAUDE.md` and `docs/ARCHITECTURE.md` on every commit.
 12. **Never state an unverified claim** about the exam or Claude Code. Say "I'm not sure".
 13. **🔑 pages must flash a big "BUY THE CLAUDE API KEY" banner** when `ANTHROPIC_API_KEY` is missing — the exam is worth the small cost. Gemini stays the default elsewhere. See `CLAUDE.md` → Claude API Key Reminder Standard.
+14. **CONCEPTS lab output is SIMULATED** — label it so, never present it as real Claude; never build a concept the guide places out of scope.
 
 ---
 

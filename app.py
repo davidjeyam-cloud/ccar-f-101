@@ -16,6 +16,8 @@ import streamlit as st
 from utils.styles import apply_theme
 from utils.course_map import PHASES, nav_title
 from utils.placeholder import render_placeholder
+from utils import concepts_map as cm
+from utils.concept_page import render_concept
 
 st.set_page_config(
     page_title="CCAR-F Study Workbench",
@@ -40,7 +42,9 @@ for phase_group, entries in PHASES.items():
     pages = []
     for entry in entries:
         if entry.built and entry.slug in _REAL_PAGES:
-            pages.append(st.Page(_REAL_PAGES[entry.slug], title=nav_title(entry)))
+            # Hello Claude stays the landing page even though CONCEPTS now sit first in the sidebar.
+            pages.append(st.Page(_REAL_PAGES[entry.slug], title=nav_title(entry),
+                                 default=(entry.slug == "00_Hello_Claude")))
         else:
             pages.append(st.Page(
                 functools.partial(render_placeholder, entry, phase_group),
@@ -52,6 +56,33 @@ for phase_group, entries in PHASES.items():
                 url_path=entry.slug,
             ))
     nav[phase_group] = pages
+
+# ── CONCEPTS (shown at the TOP of the sidebar; the phase groups above are unchanged) ──
+# One Page per concept in utils/concepts_map.py. The 30 numbered concepts (D1.1 …
+# D5.2) get sidebar entries under their domain; the 41 unnumbered "cross-cutting"
+# ones are registered but hidden from the sidebar (still reachable from the index
+# page's cards) so the sidebar isn't flooded with topics that mostly aren't in the
+# guide. The Page objects are shared via session state so the index and "related
+# concepts" links can st.page_link to them.
+concept_pages = {
+    c.slug: st.Page(
+        functools.partial(render_concept, c.slug),
+        title=cm.nav_title(c),
+        url_path=cm.page_url_path(c.slug),
+        visibility="visible" if c.code else "hidden",
+    )
+    for c in cm.CONCEPTS
+}
+st.session_state["_concept_pages"] = concept_pages
+
+concepts_nav: dict[str, list] = {
+    "CONCEPTS": [st.Page("pages/concepts_index.py", title="All concepts", icon="🧪", url_path="concepts")] + [
+        concept_pages[c.slug] for c in cm.cross_cutting()
+    ]
+}
+for domain, short in cm.DOMAIN_SHORT.items():
+    concepts_nav[f"CONCEPTS · D{domain} {short}"] = [concept_pages[c.slug] for c in cm.by_domain(domain)]
+nav = {**concepts_nav, **nav}
 
 pg = st.navigation(nav)
 pg.run()
