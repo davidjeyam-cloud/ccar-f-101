@@ -415,100 +415,115 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("An extraction service asks Claude to “reply with JSON only” and parses the text. About 2% of responses break "
-           "the parser: a trailing comment, a missing bracket, or prose before the JSON. What's the most reliable fix?"),
-        opts=("Add “your JSON must be valid” to the prompt.",
-              "Repair the JSON with a tolerant parser.",
+        q=("An extraction service asks Claude to “reply with JSON only” and parses the text. About 2% of 50,000 daily "
+           "responses break the parser: a trailing comment, a missing bracket, or prose before the JSON. The current fix is a "
+           "regex that strips any text outside the outermost braces. What is the most reliable fix?"),
+        opts=("Improve the regex so that it also repairs missing brackets and removes comments before parsing.",
+              "Add three examples of perfect JSON output to the prompt, and retry any response that fails to parse.",
               "Define an extraction tool whose input is the JSON schema, and read the data from the tool_use block.",
-              "Retry every response that fails to parse."),
+              "Lower the temperature to zero, so that the model produces the same well-formed JSON every time."),
         ans=2,
-        explain=("Tool use with a JSON schema is the most reliable route to schema-compliant output and removes JSON "
-                 "syntax errors. Prompt wording and repair or retry loops only reduce the rate."),
+        explain=("Tool use with a JSON schema is the most reliable way to get schema-compliant output, and removes syntax errors "
+                 "at the source. A patches the parser forever. B lowers the rate but still relies on the prompt. D makes "
+                 "output repeatable, not valid."),
         scenarios=(6,), points=("4.3:K1", "4.3:S1"),
     ),
     Question(
-        q=("The pipeline now uses strict tool use, so every invoice extraction is valid JSON. Audits still find invoices "
-           "whose line items add up to £1,200 while total says £1,240. What's needed?"),
-        opts=("A semantic validation step (for example, checking that line items sum to the total), because schemas can't catch this.",
-              "A stricter schema with more required fields.",
-              "Switching tool_choice to “any”.",
-              "A higher max_tokens so the model has room to add up."),
-        ans=0,
-        explain=("Strict schemas remove syntax errors but not semantic errors: values that don't add up or sit in the "
-                 "wrong field. Those need separate validation."),
+        q=("The pipeline now uses strict tool use, and every invoice extraction is valid JSON that matches the schema. "
+           "Audits still find 3% of invoices whose line items add up to £1,200 while the total says £1,240. A teammate "
+           "proposes tightening the schema with number ranges. What is needed?"),
+        opts=("Tighter schema ranges on the total and line items, as proposed, so impossible values are rejected.",
+              "A semantic check, such as confirming that the line items sum to the total; schemas can't catch this.",
+              "A switch from tool use to structured outputs, which also guarantees that numeric fields are consistent.",
+              "A second extraction of every invoice, keeping the total whenever the two extractions agree."),
+        ans=1,
+        explain=("A schema removes syntax errors, not semantic ones, such as totals that don't add up. That takes a separate "
+                 "validation step. A: £1,240 is a perfectly possible value. C: structured outputs also guarantee shape, not "
+                 "consistency. D: two extractions can agree on the same misread."),
         scenarios=(6,), points=("4.3:K3", "4.4:K4"),
     ),
     Question(
-        q=("When validation fails, the pipeline retries with “The previous output was invalid, please try again”, and the "
-           "model often repeats the same mistake. What should the retry request contain?"),
-        opts=("The same prompt with a higher temperature, to get a different answer.",
-              "Just the validation errors.",
-              "A request to double-check its work.",
-              "The original document, the failed extraction, and the specific validation errors."),
-        ans=3,
-        explain=("Retry with error feedback: append the specific validation errors, along with the original document and "
-                 "the failed extraction, so the model knows exactly what to correct."),
+        q=("When validation fails, the pipeline retries with “The previous output was invalid, please try again.” Logs show "
+           "that 70% of retries repeat the same mistake, and those invoices then go to manual review. What should the retry "
+           "request contain?"),
+        opts=("The original document, the failed extraction, and the specific validation errors that were found.",
+              "The same message, sent up to five times instead of two, since some retries do eventually succeed.",
+              "Only the specific validation errors, so the model can focus on them without the whole document.",
+              "A stronger warning that invalid output will be rejected, plus a reminder to check the arithmetic."),
+        ans=0,
+        explain=("Retry with error feedback: send the document, the failed output and the specific errors, so the model can "
+                 "correct itself. B repeats a request that gives no guidance. C drops the source needed to fix the values. D "
+                 "adds pressure without adding information."),
         scenarios=(6,), points=("4.4:K1", "4.4:S1"),
     ),
     Question(
-        q=("Invoices often say “PO: see attached purchase order”, but the attachment isn't sent to the model. The "
-           "pipeline retries up to three times for the missing po_number and still fails. What's the right handling?"),
-        opts=("Increase the retries to ten.",
-              "Stop retrying: the information isn't in the source, so return po_number as null and flag it for follow-up.",
-              "Tell the model the PO number is required and must be found.",
-              "Ask the model to infer a likely PO number from the invoice date."),
-        ans=1,
-        explain=("Retries help with format or structure errors, not when the information is absent from the source. "
-                 "Here the data lives in an external document that was never provided."),
+        q=("Invoices often say “PO: see attached purchase order”, but the attachment is never sent to the model. The pipeline "
+           "retries up to three times for the missing po_number and fails on every one of these invoices, about 900 a month. "
+           "What is the right handling?"),
+        opts=("Raise the retry limit to five, and add the validation error to each retry so the model can correct itself.",
+              "Ask the model to infer the PO number from the invoice number and supplier, which usually follow a pattern.",
+              "Stop retrying: the value isn't in the source, so return po_number as null and flag it for follow-up.",
+              "Make po_number optional in the schema and drop it silently, since it is so often missing anyway."),
+        ans=2,
+        explain=("Retries fix formatting or structural errors, not information that isn't in the source. Return null and flag "
+                 "the gap. A retries something no retry can fix. B invents data. D loses track of the missing value, when it "
+                 "should be flagged."),
         scenarios=(6,), points=("4.4:K2", "4.4:S2"),
     ),
     Question(
-        q=("Developers dismiss many of the CI reviewer's findings, but the team can't tell which kinds of code trigger the "
-           "false positives. What schema change enables that analysis?"),
-        opts=("Add a free-text “notes” field to each finding.",
-              "Remove low-severity findings.",
-              "Add a detected_pattern field to each structured finding, so dismissals can be grouped by the code construct that triggered them.",
-              "Ask the reviewer to explain its reasoning at length."),
-        ans=2,
-        explain=("A detected_pattern field creates a feedback loop: you can analyse which constructs lead to dismissed "
-                 "findings and refine the criteria for those."),
+        q=("Developers dismiss about 35% of the CI reviewer's findings, but the team can't tell which kinds of code trigger "
+           "the false positives, so every prompt change is a guess. The findings are structured with file, line, severity and "
+           "message fields. What schema change makes that analysis possible?"),
+        opts=("Add a confidence field to each finding, and hide any finding the model rates below a set threshold.",
+              "Add a longer explanation field, so developers understand each finding before they dismiss it.",
+              "Add a dismissed_by field, so the team can see which developers dismiss findings most often.",
+              "Add a detected_pattern field, so dismissals can be grouped by the code construct behind them."),
+        ans=3,
+        explain=("Recording which pattern triggered each finding lets dismissals be analysed by construct. That is where the "
+                 "false positives cluster. A uses self-reported confidence to hide findings. B may change behaviour but not "
+                 "enable analysis. C analyses people, not code."),
         scenarios=(5,), points=("4.4:K3", "4.4:S3"),
     ),
     Question(
-        q=("Some invoices contain their own arithmetic errors, and some list a total in the summary that differs from the "
-           "total on the payment slip. The pipeline should catch both and never silently pick one. What's the best schema "
-           "design?"),
-        opts=("Extract calculated_total alongside stated_total, and add a conflict_detected boolean for sources that disagree.",
-              "Extract one total and let the model choose the more plausible value.",
-              "Always use the larger total, to be safe.",
-              "Drop the total field and compute it downstream."),
-        ans=0,
-        explain=("Extracting calculated and stated totals side by side lets the pipeline self-check. A conflict flag "
-                 "surfaces inconsistent sources instead of hiding them."),
+        q=("Some invoices contain their own arithmetic errors, and some list a summary total that differs from the total on "
+           "the payment slip. Today the pipeline outputs a single total field, and the model quietly picks one value in 4% of "
+           "invoices. The pipeline must catch both problems and never silently choose. What is the best schema design?"),
+        opts=("Keep one total field, and instruct the model to always use the payment slip's total when the two differ.",
+              "Extract calculated_total alongside stated_total, and add a conflict_detected flag for sources that disagree.",
+              "Keep one total field, and have the model recompute it from the line items, ignoring any stated totals.",
+              "Extract only the line items, and let the downstream code compute the total from them after extraction is done."),
+        ans=1,
+        explain=("Extracting both the calculated and the stated values, with a conflict flag, makes each inconsistency visible "
+                 "instead of resolved silently. A and C choose silently. D hides stated totals that differ from the maths, so "
+                 "the invoice's own error is never flagged."),
         scenarios=(6,), points=("4.4:S4",),
     ),
     Question(
-        q=("Due dates arrive as “05/04/2026” (UK invoices), “April 5th” and “2026-04-05”, and extractions put some of them "
-           "into the wrong month. The schema already requires an ISO date string. What else is needed?"),
-        opts=("A regex check that the output looks like YYYY-MM-DD.",
-              "More retries when the date looks wrong.",
-              "Change the field type from string to date.",
-              "Format-normalisation rules in the prompt, such as how to read day/month order for UK sources, alongside the strict schema."),
-        ans=3,
-        explain=("Put format-normalisation rules in the prompt alongside strict schemas to handle inconsistent source "
-                 "formatting. The schema checks the shape but can't know that 05/04 means 5 April."),
+        q=("Due dates arrive as “05/04/2026” (UK invoices), “April 5th” and “2026-04-05”, and about 6% of extractions put the "
+           "date in the wrong month. The schema already requires an ISO 8601 date string, and every output passes "
+           "validation. What else is needed?"),
+        opts=("Format-normalisation rules in the prompt, such as how to read the day/month order on UK invoices.",
+              "A stricter regex on the date field, so that only real calendar dates can ever pass schema validation.",
+              "A change of field type from string to integer, storing every date as a Unix timestamp instead.",
+              "A retry whenever the day is 12 or lower, since those are the only dates that can be ambiguous."),
+        ans=0,
+        explain=("A strict schema fixes the format but not the interpretation. Normalisation rules in the prompt tell the model "
+                 "how to read ambiguous inputs. B: 5 April and 4 May are both real dates. C changes the format, not the "
+                 "reading. D retries without new information."),
         scenarios=(6,), points=("4.3:S6",),
     ),
     Question(
-        q=("A team assumes that because they use a strict JSON schema, extracted values are guaranteed correct. According "
-           "to the structured-outputs docs, what's actually guaranteed?"),
-        opts=("That every value is copied exactly from the source.",
-              "That the output conforms to the schema (types, required fields); not that the values are right.",
-              "That numeric fields are arithmetically consistent.",
-              "Nothing; strict mode is only a hint."),
-        ans=1,
-        explain=("Per the docs, structured outputs guarantee schema conformance. Whether the values are correct still "
-                 "needs validation."),
+        q=("A team assumes that because they use a strict JSON schema, extracted values are guaranteed correct, and they plan "
+           "to remove their validation checks to save 200 ms per document. According to the structured-outputs docs, what "
+           "is actually guaranteed?"),
+        opts=("That every value is correct and consistent with the source document the model was given.",
+              "That the output is correct whenever the document fits within the model's context window.",
+              "That numeric fields are always correct, while text fields may still contain transcription mistakes.",
+              "That the output conforms to the schema (types, required fields); not that the values are right."),
+        ans=3,
+        explain=("Structured outputs guarantee schema conformance: valid JSON, the right types and the required fields. They say "
+                 "nothing about whether the values are accurate, so keep the semantic validation. A, B and C each overstate "
+                 "the guarantee."),
         scenarios=(6,), basis="docs", in_bank=False,
     ),
 )

@@ -469,78 +469,89 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A research agent has two tools, analyze_content and analyze_document, both described as “Analyzes content "
-           "and returns key information.” About a third of requests go to the wrong one. What's the root cause?"),
-        opts=("The model needs a lower temperature to choose tools consistently.",
-              "The descriptions are too minimal and overlapping for the model to tell the tools apart.",
-              "Two analysis tools is too many; agents should have only one tool.",
-              "The tools return results in different formats."),
+        q=("A research agent has two tools, analyze_content and analyze_document, both described as “Analyzes content and "
+           "returns key information.” Logs from 1,000 requests show that about a third go to the wrong tool, and the "
+           "misrouted calls are split roughly evenly between the two. What is the most likely root cause?"),
+        opts=("The model is too small to tell apart two tools with similar names, so it should be upgraded to a larger tier.",
+              "The descriptions are minimal and identical, so the model has nothing to tell the two tools apart with.",
+              "The system prompt lacks few-shot examples showing which of the two tools each kind of request should use.",
+              "The tools' input schemas share parameter names, so the model treats the two tools as interchangeable."),
         ans=1,
-        explain=("Tool descriptions are the model's main basis for choosing a tool. Minimal, overlapping descriptions "
-                 "make selection between similar tools unreliable."),
+        explain=("Tool descriptions are the main input the model uses to choose a tool. Two identical, minimal descriptions "
+                 "give it nothing to decide with, which is why the errors are split evenly. A blames the model for a design "
+                 "gap. C adds examples to work around the missing descriptions. D may add to the confusion, but it isn't the "
+                 "primary cause."),
         scenarios=(3,), points=("2.1:K1", "2.1:K3"),
     ),
     Question(
-        q=("In the same system, analyze_content is actually only for processing web search results, and analyze_document "
-           "is for uploaded PDFs. Which change best removes the misrouting?"),
-        opts=("Add a system prompt rule: “prefer analyze_document when unsure”.",
-              "Merge both into one analyze tool with a mode parameter.",
-              "Give the tools random, distinct names so the model can't confuse them.",
-              "Rename analyze_content to extract_web_results and rewrite both descriptions to say what each takes and when to use it."),
-        ans=3,
-        explain=("Renaming tools and rewriting descriptions to remove the overlap addresses the cause. A tie-break rule "
-                 "keeps the ambiguity, and meaningless names give the model less to go on."),
+        q=("In the same system, analyze_content is meant only for processing web search results, and analyze_document only "
+           "for uploaded PDFs. The team has room for one change this sprint. Misrouting currently makes about 1 in 3 reports "
+           "cite the wrong material. Which change best removes the misrouting?"),
+        opts=("Merge both tools into one analyze tool that detects internally whether it received web results or a PDF.",
+              "Add a routing layer that inspects each input and calls the correct tool before the model sees the request.",
+              "Rename analyze_content to extract_web_results, and rewrite both descriptions to say what each takes and when.",
+              "Add five few-shot examples to the system prompt, showing which of the tools handles each type of input material."),
+        ans=2,
+        explain=("Renaming and rewriting the descriptions removes the functional overlap at its source. It is low effort and "
+                 "high leverage. A is a bigger architectural change than the problem needs. B is an over-engineered layer "
+                 "that bypasses the model's own tool selection. D adds tokens while leaving the tools just as ambiguous."),
         scenarios=(3,), points=("2.1:S2",),
     ),
     Question(
-        q=("Customers say things like “order 1001”, but lookup_order only accepts ids like ORD-1001. Lookups keep "
-           "failing, and the agent sometimes calls get_customer instead. Its description is “Looks up an order.” What's "
-           "the best first fix?"),
-        opts=("Expand the description: the accepted id format with examples, what to do with bare numbers, and when not to use it.",
-              "Tell customers to always type the ORD- prefix.",
-              "Retry every failed lookup three times.",
-              "Merge lookup_order into get_customer."),
-        ans=0,
-        explain=("Good descriptions include input formats, example queries, edge cases and boundaries, and separate each "
-                 "tool from similar ones. Retries repeat the same bad input."),
+        q=("Customers say things like “order 1001”, but lookup_order accepts only IDs like ORD-1001. Its description is "
+           "“Looks up an order.” Logs show that 28% of lookups fail on the ID format, and in another 9% of cases the agent "
+           "calls get_customer instead. What is the best first fix?"),
+        opts=("Add a PreToolUse hook that rewrites bare numbers into ORD- identifiers before lookup_order runs.",
+              "Add a line to the system prompt telling the agent to always prefix bare order numbers with ORD- before any lookup.",
+              "Merge lookup_order and get_customer into one lookup tool that accepts any identifier the customer gives.",
+              "Expand the description: the accepted ID format with examples, how to handle bare numbers, when not to use it."),
+        ans=3,
+        explain=("A detailed description (input formats, examples, edge cases and boundaries against similar tools) fixes both "
+                 "the format failures and the wrong tool choice. A fixes the format but not the choice of get_customer. B "
+                 "addresses one symptom from outside the tool. C is a larger redesign than a first step needs."),
         scenarios=(1,), points=("2.1:K2", "2.1:S1"),
     ),
     Question(
         q=("A single analyze_document tool is used to pull out figures, write summaries and check claims. Downstream code "
-           "often can't parse what comes back, because the output shape depends on what the model decided to do. What's "
-           "the most robust redesign?"),
-        opts=("Add “always return JSON” to the tool description.",
-              "Post-process every result with a regex parser.",
-              "Split it into purpose-specific tools (extract_data_points, summarize_content, verify_claim_against_source), each with a defined input/output contract.",
-              "Let the model choose the output format and document it in the response."),
-        ans=2,
-        explain=("Splitting a generic tool into purpose-specific tools with defined input/output contracts makes both "
-                 "selection and output predictable. A JSON instruction doesn't fix a tool doing three different jobs."),
+           "fails to parse about 15% of its outputs, because the shape of each result depends on which of the three jobs "
+           "the model decided to do. What is the most robust redesign?"),
+        opts=("Split it into purpose-specific tools (extract_data_points, summarize_content, verify_claim_against_source).",
+              "Keep the tool, and add a mode parameter that the downstream parser can read to guess the shape of each output.",
+              "Keep the tool, and tell the model in its description to always return JSON whichever job it performs.",
+              "Add a post-processing step that uses a second model call to convert each output into the expected shape."),
+        ans=0,
+        explain=("Splitting a generic tool into purpose-specific tools gives each one a defined input/output contract, and "
+                 "makes the model's choice explicit. B still leaves one tool with shifting outputs, now with a guess added. C "
+                 "gives consistent syntax but no consistent shape. D adds another model call that can fail in the same way."),
         scenarios=(3,), points=("2.1:S3",),
     ),
     Question(
-        q=("Tool descriptions were carefully rewritten, yet any request mentioning a “report”, such as “summarise this "
-           "report”, still goes to generate_report. What should the team check next?"),
-        opts=("Whether generate_report's description is too long.",
-              "The system prompt, for keyword-driven instructions like “when the user mentions a report, use generate_report”.",
-              "Whether the model supports more than five tools.",
-              "The order in which tools are listed."),
-        ans=1,
-        explain=("System prompt wording influences tool choice: keyword-sensitive instructions create unintended "
-                 "associations that can override good descriptions. Review the system prompt for them."),
+        q=("After the team carefully rewrote every tool description, misrouting fell from 30% to 8%. The remaining errors "
+           "share a pattern: any request that mentions a “report”, such as “summarise this report”, goes to generate_report. "
+           "Both tools' descriptions are accurate. What should the team check next?"),
+        opts=("The model's temperature setting, which may be making tool choice random on requests that mention reports.",
+              "The order of the tools in the request, since the model may favour whichever tool is listed first.",
+              "The system prompt, for keyword-driven instructions such as “if the user mentions a report, use generate_report”.",
+              "The generate_report input schema, which may accept so many different input types that the model never rules the tool out."),
+        ans=2,
+        explain=("An error that follows a keyword points to a keyword-sensitive instruction in the system prompt, which can "
+                 "override good descriptions. A would give random errors, not a consistent pattern. B: nothing in the "
+                 "errors points to position. They follow a word. D doesn't explain why the word “report” triggers it."),
         scenarios=(3,), points=("2.1:K4", "2.1:S4"),
     ),
     Question(
-        q=("To save tokens, a platform team caps every tool description at one short line. Tool selection gets noticeably "
-           "worse across the developer-productivity agents. What does the tool-use documentation suggest?"),
-        opts=("Keep descriptions short and move guidance into tool names instead.",
-              "Descriptions don't matter; add few-shot examples of tool calls instead.",
-              "Detailed descriptions are the most important factor; aim for several sentences covering what, when and caveats.",
-              "Reduce the number of parameters so one line is enough."),
-        ans=2,
-        explain=("Per the tool-use docs, detailed descriptions are by far the most important factor in tool performance. "
-                 "They say what the tool does, when to use it, and its limits, and they suggest at least three to four "
-                 "sentences for most tools."),
+        q=("To save tokens, a platform team caps every tool description at one short line across 12 developer-productivity "
+           "agents. Within a week, wrong-tool calls rise from 4% to 15%. The team asks whether to add few-shot routing "
+           "examples to compensate. What does the tool-use documentation suggest?"),
+        opts=("Add the few-shot examples, since they are the documented primary lever for tool-selection accuracy.",
+              "Restore detailed descriptions, the most important factor: several sentences on what, when and caveats.",
+              "Keep the one-line descriptions, and move the lost detail into each tool's parameter names instead.",
+              "Cut each agent to three tools, since short descriptions work well enough when there are only a few tools."),
+        ans=1,
+        explain=("The docs call detailed descriptions the most important factor in tool performance, and suggest several "
+                 "sentences covering what the tool does, when to use it and its caveats. A treats examples as the primary "
+                 "lever, which descriptions are. C squeezes documentation into parameter names. D cuts functionality to fit "
+                 "a token-saving rule."),
         scenarios=(4,), basis="docs", in_bank=False,
     ),
 )

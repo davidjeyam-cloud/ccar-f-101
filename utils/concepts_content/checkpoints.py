@@ -382,78 +382,83 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("Two hours into exploring a legacy codebase, the session is full of verbose search and file output, and "
-           "Claude's answers are getting vaguer. The developer wants to keep going in this session with the key findings "
-           "intact. What should they do?"),
-        opts=("Run /clear and restate the task from memory.",
-              "Open a second terminal and start again.",
+        q=("Two hours into exploring a legacy codebase, the session is full of verbose search and file output, and Claude's "
+           "answers are getting vaguer. The developer wants to keep working in this session with the key findings intact, "
+           "without losing the thread of the investigation. What should they do?"),
+        opts=("Run /clear, then paste in whatever they remember of the key findings to start the next part.",
               "Run /compact, so the history is summarised and the key findings carry on in less context.",
-              "Raise max_tokens for the rest of the session."),
-        ans=2,
-        explain=("/compact reduces context usage when verbose discovery output fills the context during long "
-                 "exploration. /clear throws the findings away."),
+              "Run /rewind to the start of the session, so the verbose output is removed from the history.",
+              "Open a second terminal with a new session, and alternate between the two sessions as needed."),
+        ans=1,
+        explain=("/compact summarises the history, freeing context from verbose discovery output while keeping the thread. A "
+                 "throws everything away and relies on memory. C also rewinds away the findings. D splits the work across "
+                 "two contexts, and neither has the full picture."),
         scenarios=(2, 4), points=("5.4:S5",),
     ),
     Question(
-        q=("After a shared analysis, a developer tries refactoring approach A, rewinds, tries approach B, and now can't "
-           "compare them properly because A's exploration is gone. What should they have used to explore both from the "
-           "same starting point?"),
+        q=("After a shared 40-minute analysis, a developer tried refactoring approach A, rewound, then tried approach B. "
+           "Now they can't compare the two properly, because A's exploration is gone. The team lead asks what they should "
+           "have used to explore both from the same starting point. What is the answer?"),
         opts=("Forked sessions from the analysis point, one branch per approach.",
-              "One session that tries A, then B, then compares.",
-              "/clear between the two attempts.",
-              "Two unrelated new sessions that each redo the analysis."),
+              "Two /compact runs, one after each approach, to keep both summaries.",
+              "One session, exploring both approaches one after the other in turn.",
+              "/clear between the approaches, with a scratchpad note about approach A."),
         ans=0,
-        explain=("Forking creates independent branches from a shared analysis baseline, so both approaches exist side by "
-                 "side. Rewinding replaces one path with the other."),
+        explain=("Forking creates independent branches from a shared baseline, so both explorations survive side by side. B and "
+                 "C let A's exploration influence B's. D keeps only a note about A and loses the shared analysis as well."),
         scenarios=(2,), points=("1.7:K2", "1.7:S2"),
     ),
     Question(
-        q=("A developer plans to /clear the session before starting the next part of a long investigation, but the "
-           "findings so far (which classes own which tables, and two confirmed bugs) must not be lost. What's the best "
-           "practice?"),
-        opts=("Trust that /clear keeps a summary automatically.",
-              "Scroll back later to find the findings in the terminal output.",
-              "Skip /clear and keep working until the context runs out.",
-              "Write the key findings to a scratchpad file first, and point the new context at it."),
-        ans=3,
-        explain=("Scratchpad files persist key findings across context boundaries and can be referenced for later "
-                 "questions. /clear starts a fresh context with no summary."),
+        q=("A developer plans to /clear the session before the next part of a long investigation. The findings so far (which "
+           "classes own which of 14 tables, and two confirmed bugs) must not be lost. Last time they relied on memory and got "
+           "3 of the table owners wrong. What is the best practice?"),
+        opts=("Skip /clear and keep going, since the findings are safer in the current context than anywhere else.",
+              "Run /compact instead of /clear, and trust the summary to keep all 14 owners and both bugs exact.",
+              "Write the key findings to a scratchpad file first, and point the new context at that file.",
+              "Ask Claude after the /clear to restate the findings from what it recalls of the earlier context."),
+        ans=2,
+        explain=("A scratchpad file persists findings across context boundaries and can be referenced later. A keeps a degrading "
+                 "context. B hopes a summary keeps 16 exact facts. D asks for recall of a context that /clear has "
+                 "discarded."),
         scenarios=(4,), points=("5.4:K2", "5.4:S2"),
     ),
     Question(
-        q=("In one session Claude ran rm old_config.json through Bash, then edited two source files with its edit "
-           "tools. The developer opens /rewind to go back to before both changes. What will be restored?"),
-        opts=("Everything, including old_config.json.",
-              "The two edited files. The Bash deletion isn't tracked by checkpoints, so old_config.json stays deleted.",
-              "Nothing, because Bash commands disable checkpoints.",
-              "Only old_config.json."),
-        ans=1,
-        explain=("Per the checkpointing docs, checkpoints track Claude's file edits, not changes made by Bash commands. "
-                 "Use git for those."),
-        scenarios=(2,), basis="docs", in_bank=False,
-    ),
-    Question(
-        q=("Claude's last three edits broke the build, but the conversation itself (the analysis and the agreed approach) "
-           "is valuable. Which /rewind choice fits?"),
-        opts=("Restore conversation only.",
-              "Summarize from here.",
-              "Start a new session with /clear.",
-              "Restore code only, which reverts the file changes and keeps the conversation."),
+        q=("In one session, Claude ran rm old_config.json through Bash, then edited two source files with its edit tools. "
+           "The developer opens /rewind to go back to before both changes, expecting all three files to come back. What "
+           "will be restored?"),
+        opts=("All three files, because checkpoints capture every change that is made during the session.",
+              "Only old_config.json, since checkpoints track file deletions but not the contents of edits.",
+              "Nothing, because /rewind restores only the conversation and never the files that were changed.",
+              "The two edited files; checkpoints don't track Bash, so old_config.json stays deleted."),
         ans=3,
-        explain=("Per the docs, /rewind can restore code, conversation, or both. Restoring code only keeps the "
-                 "discussion while undoing the edits."),
+        explain=("Checkpoints track changes made by Claude's file-editing tools. Changes made through Bash commands aren't "
+                 "tracked, so they can't be rewound. A, B and C each misstate what checkpoints cover."),
         scenarios=(2,), basis="docs", in_bank=False,
     ),
     Question(
-        q=("A team decides that since Claude Code has checkpoints, they no longer need to commit work in progress. What "
-           "does the documentation say?"),
-        opts=("That's fine; checkpoints are a full version-control system.",
-              "Checkpoints are shared with the whole team automatically.",
-              "Checkpoints are local session undo, not a replacement for version control; keep using git.",
-              "Checkpoints last forever, so commits are only needed at release."),
+        q=("Claude's last three edits broke the build, but the conversation itself (a 30-minute analysis and an agreed "
+           "approach) is valuable. The developer wants the files back without losing the discussion. Which /rewind choice "
+           "fits?"),
+        opts=("Restore conversation only, which rewinds the discussion and keeps the broken edits on disk.",
+              "Restore code and conversation, which rewinds both and starts the discussion over again.",
+              "Restore code only, which reverts the file changes and keeps the conversation as it is.",
+              "Summarize from here, which condenses the later messages and leaves every file unchanged."),
         ans=2,
-        explain=("The checkpointing docs describe checkpoints as local, session-level recovery that complements rather "
-                 "than replaces version control."),
+        explain=("Restoring code only reverts the files and keeps the conversation. A does the opposite. B loses the analysis. "
+                 "D compresses messages but doesn't fix the build."),
+        scenarios=(2,), basis="docs", in_bank=False,
+    ),
+    Question(
+        q=("A team decides that since Claude Code has checkpoints, they no longer need to commit work in progress. A week "
+           "later, a teammate's laptop is replaced and three days of uncommitted work are gone. What do the docs say about "
+           "checkpoints?"),
+        opts=("They sync to the cloud, so the work can be restored on the new laptop from the account.",
+              "They are local session undo, not a replacement for version control; keep committing to git.",
+              "They replace commits for work in progress, but must be exported before a machine is replaced.",
+              "They keep 30 days of history, so the work can be restored by resuming the old session."),
+        ans=1,
+        explain=("The docs describe checkpoints as local undo for a session, alongside version control, not instead of it. A, C "
+                 "and D invent sync, export and retention features."),
         scenarios=(2,), basis="docs", in_bank=False,
     ),
 )

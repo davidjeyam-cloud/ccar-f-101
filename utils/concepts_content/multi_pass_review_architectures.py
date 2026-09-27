@@ -366,66 +366,73 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("Claude Code generates a pagination feature. In the same session, the developer asks it to “review your code "
-           "critically”. It reports no issues, but QA finds that page 0 returns an empty page. What's the most effective "
-           "change to the review step?"),
-        opts=("Enable extended thinking for the review in the same session.",
-              "Ask it to review the code twice in the same session.",
-              "Tell it the code definitely contains a bug.",
-              "Review the code with a second, independent Claude instance that sees only the code, not the generator's reasoning."),
-        ans=3,
-        explain=("A model reviewing its own work in the same session keeps its generation reasoning and is less likely to "
-                 "question it. Independent instances catch subtle issues better than self-review instructions or "
-                 "extended thinking."),
+        q=("Claude Code generates a pagination feature, and in the same session the developer asks it to “review your code "
+           "critically”. It reports no issues, yet QA finds that page 0 returns an empty page, the third such miss this "
+           "month. The team proposes enabling extended thinking for the self-review. What is the most effective change?"),
+        opts=("Enable extended thinking as proposed, so the self-review reasons far more deeply about its own code.",
+              "Review with a second, independent instance that sees only the code, not the generator's reasoning.",
+              "Ask the same session to review the code three times, and treat any issue found even once as real.",
+              "Add “be extremely critical of your own work” to the review request made in the same session."),
+        ans=1,
+        explain=("A model reviewing its own output in the same session keeps the reasoning that produced the bug, so it is "
+                 "unlikely to question it. An independent instance without that context catches more. A and C deepen or "
+                 "repeat the same biased review. D is an instruction that doesn't remove the bias."),
         scenarios=(2, 5), points=("4.6:K1", "4.6:K2", "4.6:S1"),
     ),
     Question(
-        q=("A single review pass over a 30-file pull request misses issues in the middle files and says one file is both "
-           "“fine” and “missing validation”. What's the best architecture?"),
-        opts=("Per-file review passes for local issues, plus a separate integration pass for cross-file data flow.",
-              "The same single pass with a larger context window.",
-              "Reviewing only the files with the most changed lines.",
-              "Asking the reviewer to be more consistent."),
-        ans=0,
-        explain=("Multi-pass review (focused per-file passes plus a separate integration pass) avoids attention dilution "
-                 "and contradictory findings."),
+        q=("A single review pass over a 30-file pull request misses issues in the middle files, and in one review it called "
+           "the same file both “fine” and “missing validation”. A teammate proposes switching to a model with a larger context "
+           "window. How should you evaluate this?"),
+        opts=("Adopt it, since a larger window gives each of the 30 files more room and therefore more attention.",
+              "Adopt it, and sort the files by size so the largest ones come first in the review prompt.",
+              "Reject it: use per-file passes for local issues plus a separate integration pass for data flow.",
+              "Reject it, and instead ask the single pass to give equal attention to every one of the files."),
+        ans=2,
+        explain=("The cause is attention dilution across many files, not space. Per-file passes give each file consistent depth, "
+                 "and an integration pass covers what crosses files. A and B misread the cause as a lack of space. D "
+                 "instructs the model to do something one pass can't reliably do."),
         scenarios=(5,), points=("4.6:K3", "4.6:S2"),
     ),
     Question(
-        q=("Per-file review passes find every local bug in a PR. But file_04 renames total to amount, while file_12 still "
-           "reads total, and nothing flags it. What's missing?"),
-        opts=("More per-file passes with stricter prompts.",
-              "Extended thinking for each per-file pass.",
-              "A separate integration pass that checks data flow across files, given the per-file results.",
-              "Reviewing file_04 and file_12 twice."),
-        ans=2,
-        explain=("Cross-file data flow is invisible to a pass that sees one file at a time. It needs a separate "
-                 "integration pass."),
+        q=("Per-file review passes now find every local bug in a PR. But file_04 renames total to amount while file_12 still "
+           "reads total, and nothing flags it. This kind of break reached production twice last quarter. What is missing?"),
+        opts=("A rule telling each per-file pass to look up every renamed field across the rest of the repository.",
+              "A larger per-file context that also includes the files each file imports and is imported by.",
+              "A linter step that bans renaming fields in any PR that touches more than one file at a time.",
+              "A separate integration pass that checks data flow across files, given the per-file results."),
+        ans=3,
+        explain=("Per-file passes see one file at a time, so cross-file breaks need a dedicated integration pass. A asks each "
+                 "per-file pass to do the integration pass's job. B blurs the focus that makes per-file passes work. D bans "
+                 "a legitimate change."),
         scenarios=(5,), points=("4.6:S2",),
     ),
     Question(
-        q=("A CI reviewer posts every finding as a PR comment, and developers are drowning in low-value remarks. The team "
-           "wants confident findings posted automatically and uncertain ones reviewed by a person. What enables this?"),
-        opts=("Post only the first five findings.",
-              "A verification pass in which the model reports a confidence for each finding, with a threshold calibrated on labelled data.",
-              "Remove the severity field.",
-              "Post all findings as a single combined comment."),
-        ans=1,
-        explain=("Verification passes that report confidence per finding enable calibrated routing: auto-post above a "
-                 "validated threshold, and human review below it."),
+        q=("A CI reviewer posts every finding as a PR comment, about 25 per PR, and developers now ignore most of them. The "
+           "team wants confident findings posted automatically and uncertain ones sent to a person. It already has 500 "
+           "findings labelled valid or invalid. What enables this?"),
+        opts=("A verification pass giving a confidence per finding, with a threshold calibrated on the labelled set.",
+              "Posting only the first ten findings on each PR, since those tend to be the most important ones overall.",
+              "Adding “only report findings you are confident about” to the reviewer's main review prompt.",
+              "Sending every finding to a person first, so that nothing uncertain is ever posted automatically."),
+        ans=0,
+        explain=("A verification pass that attaches a confidence to each finding enables routing. Calibrating the threshold on "
+                 "labelled data is what makes the score trustworthy, because raw self-reported confidence is poorly "
+                 "calibrated. B cuts findings by position. C is a vague instruction. D gives up the automation."),
         scenarios=(5,), points=("4.6:S3",),
     ),
     Question(
-        q=("A team builds a documentation pipeline as three API calls: draft, then review against a checklist, then "
-           "refine. A colleague says one call with “write it and then fix it” would be simpler. What does the prompting "
-           "guidance say about the chained version?"),
-        opts=("It's always worse, because one call has more context.",
-              "It only helps with image inputs.",
-              "It's the self-correction pattern; separate calls let you log, inspect and evaluate each step.",
-              "It's only needed when the context window is small."),
+        q=("A team builds a documentation pipeline as three API calls: draft, then review against a checklist, then refine. "
+           "A colleague says one call with “write it and then fix it” would be simpler and save about 4 seconds per document. "
+           "Auditors must be shown how each document was checked. What does the prompting guidance say about the chained "
+           "version?"),
+        opts=("It is obsolete on current models, since a single call now corrects all of its own work just as well.",
+              "It is only worth keeping when each of the three calls uses a different model.",
+              "It is the self-correction pattern; separate calls let you log, inspect and evaluate each step.",
+              "It should be replaced by extended thinking, which records every check the model makes."),
         ans=2,
-        explain=("Per the prompting docs, self-correction chains (generate, review against criteria, refine) are a common "
-                 "chaining pattern. Each step is a separate call you can inspect."),
+        explain=("The docs describe draft, review and refine as separate calls, a self-correction chain, because each step can "
+                 "be logged, inspected and evaluated. That is exactly what the auditors need. A and D lose the inspectable "
+                 "steps. B invents a condition."),
         scenarios=(5,), basis="docs", in_bank=False,
     ),
 )

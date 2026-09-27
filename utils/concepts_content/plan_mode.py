@@ -369,76 +369,86 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A developer asks Claude Code to move a service from one ORM to another. About 60 files are affected, and "
-           "there are two reasonable approaches: an incremental adapter layer or a one-shot rewrite. How should they start?"),
-        opts=("Direct execution, file by file, fixing breakages as they appear.",
-              "Direct execution with a CLAUDE.md note saying “be careful”.",
-              "Plan mode: explore the codebase, compare the approaches and agree a plan before any file changes.",
-              "Ask for the complete diff of all 60 files in one response."),
-        ans=2,
-        explain=("Plan mode fits large-scale, multi-file changes with several valid approaches. It allows safe "
-                 "exploration and design before committing to changes, which prevents costly rework."),
+        q=("A developer asks Claude Code to move a service from one ORM to another. About 60 files are affected, and there "
+           "are two reasonable approaches: an incremental adapter layer or a one-shot rewrite. The developer has one sprint "
+           "and cannot afford to redo the work. How should they start?"),
+        opts=("Ask Claude to implement both approaches on separate branches, then keep whichever passes more tests.",
+              "Plan mode: explore the codebase, compare both approaches and agree a plan before any file changes.",
+              "Direct execution, but ask Claude to explain each change in detail before it makes that change.",
+              "Direct execution with a git commit after every file, so any wrong turn can be undone cheaply."),
+        ans=1,
+        explain=("A large change with several valid approaches and architectural consequences is what plan mode is for: explore, "
+                 "compare, decide, then edit. A builds the migration twice. C and D make edits before the approach has been "
+                 "chosen. Explaining or committing each step doesn't make the choice any better."),
         scenarios=(2,), points=("3.4:K1", "3.4:S1", "3.4:K3"),
     ),
     Question(
-        q=("A stack trace points to a missing null check on one line of one function, and the fix is obvious. Which "
-           "approach fits best?"),
-        opts=("Direct execution: make the change and run the tests.",
-              "Plan mode, so the change is reviewed before editing.",
-              "An Explore subagent to map the codebase first.",
-              "A fork of the session to try two fixes."),
-        ans=0,
-        explain=("Direct execution fits simple, well-scoped changes such as a single-file bug with a clear stack trace. "
-                 "Planning here only adds delay."),
+        q=("A stack trace points to a missing null check on one line of one function, and the fix is obvious. The team's new "
+           "guideline says “use plan mode for all production changes”, and the developer is about to spend 10 minutes "
+           "producing a plan for it. Which approach fits best?"),
+        opts=("Plan mode, as the guideline says, since every production change needs an explored and approved plan.",
+              "Plan mode, but only to search the codebase for other null checks that might be missing elsewhere.",
+              "Delegate the fix to an Explore subagent, so that the main session stays clear for other work.",
+              "Direct execution: make the one-line change and run the tests."),
+        ans=3,
+        explain=("A well-understood, single-location change with a clear scope suits direct execution. A spends planning effort "
+                 "on a decision that has already been made. B widens the task. C: Explore is a read-only discovery helper, "
+                 "not a way to make edits."),
         scenarios=(2,), points=("3.4:K2", "3.4:S2"),
     ),
     Question(
-        q=("During a multi-phase task, the main session's context keeps filling with search output from hundreds of files "
-           "before any design work starts, and later reasoning gets vague. What should change?"),
-        opts=("Switch to direct execution to skip the search phase.",
-              "Increase max_tokens for the main session.",
-              "Paste only the file names into the conversation by hand.",
-              "Run the discovery phase in the Explore subagent, which returns a summary and keeps the verbose output out of the main context."),
-        ans=3,
-        explain=("The Explore subagent isolates verbose discovery output and returns summaries, preserving the main "
-                 "context. max_tokens limits output length, not how much context fills up."),
+        q=("During a multi-phase task, the main session's context fills with search output from about 400 files before any "
+           "design work starts. By the design phase, Claude's reasoning refers to “the relevant modules” instead of naming "
+           "them. What should change?"),
+        opts=("Run /clear after discovery, then ask Claude to design from what it remembers about the modules.",
+              "Ask Claude to read fewer files during discovery, so that the context has room for the design work.",
+              "Run discovery in the Explore subagent, which returns a summary and keeps verbose output out.",
+              "Switch to a model with a larger context window, so the discovery output and the design both fit."),
+        ans=2,
+        explain=("The Explore subagent isolates verbose discovery output and returns a summary, so the main context keeps room "
+                 "for design. A leaves nothing to design from. B trades completeness for space. D makes room for the noise "
+                 "instead of removing it."),
         scenarios=(2, 4), points=("3.4:K4", "3.4:S3"),
     ),
     Question(
         q=("A team must add payments using either a hosted checkout page or an embedded card form. Each option needs "
-           "different infrastructure, compliance work and front-end changes. What's the best way to use Claude Code?"),
-        opts=("Implement the hosted page directly, since it's usually simpler.",
-              "Use plan mode to investigate both options against the codebase and decide before implementing.",
-              "Implement both directly on separate branches and compare.",
-              "Ask Claude which option is more popular and implement that."),
-        ans=1,
-        explain=("Choosing between integrations with different infrastructure is an architectural decision, which is "
-                 "exactly what plan mode is for. Building both wastes effort that planning avoids."),
+           "different infrastructure, compliance work and front-end changes, and the team has three days to choose. A "
+           "developer proposes letting Claude implement the embedded form directly, since “we can always switch later”. How "
+           "should you evaluate this?"),
+        opts=("Use plan mode instead, to investigate both options against the codebase and decide before implementing.",
+              "Reasonable, because direct execution will expose the real constraints faster than any analysis could.",
+              "Reasonable, as long as the developer gives Claude very detailed instructions describing the embedded form.",
+              "Ask Claude for a generic pros-and-cons list of both options without looking at the codebase at all."),
+        ans=0,
+        explain=("Two approaches with different infrastructure and compliance consequences call for plan mode's investigation "
+                 "before any commitment. B commits first and learns late. C assumes the answer is already known. D compares "
+                 "the options without the codebase that decides between them."),
         scenarios=(2,), points=("3.4:S1",),
     ),
     Question(
-        q=("A team used plan mode to design a 45-file library migration and approved the plan. They're now stepping "
-           "through every small, mechanical edit in plan mode too, and progress has slowed right down. What's the better "
+        q=("A team used plan mode to design a 45-file library migration and approved the plan. They are now reviewing every "
+           "small, mechanical edit in plan mode as well, and after two days only 9 files are done. What is the better "
            "workflow?"),
-        opts=("Throw away the plan and redo everything with direct execution.",
-              "Stay in plan mode for everything; it's always safer.",
-              "Use the approved plan, then switch to direct execution to implement the well-defined steps.",
-              "Split the migration across 45 separate sessions."),
+        opts=("Re-plan the migration in smaller chunks, so that each plan-mode review covers fewer files at a time.",
+              "Hand each remaining file to a separate subagent in plan mode, so that the reviews happen in parallel.",
+              "Keep the approved plan, and switch to direct execution to implement its well-defined steps.",
+              "Abandon the plan and let Claude convert all of the remaining files in one pass without it."),
         ans=2,
-        explain=("Combine plan mode for the investigation and design with direct execution for the implementation. "
-                 "Once the plan is agreed, the edits are well defined."),
+        explain=("Plan for the uncertain part, then execute directly once the steps are clear. A and B keep paying for planning "
+                 "that was already done. D throws away the agreed design."),
         scenarios=(2,), points=("3.4:S4", "3.4:K3"),
     ),
     Question(
-        q=("A developer puts Claude Code into plan mode and asks it to rename a function across the codebase. Claude "
-           "describes the change but no file is modified. What happened?"),
-        opts=("The rename failed silently; retry it.",
-              "Plan mode is read-only: Claude researches and proposes, and edits only happen after you approve the plan.",
-              "Plan mode only changes files in the current directory.",
-              "The files were locked by another session."),
-        ans=1,
-        explain=("Per the permission-modes docs, plan mode lets Claude read and plan but not change files until the plan "
-                 "is approved."),
+        q=("A developer puts Claude Code into plan mode and asks it to rename a function across 30 files. Claude describes "
+           "the change in detail, but no file is modified. The developer files a bug report saying “Edit is broken in plan "
+           "mode”. What actually happened?"),
+        opts=("The rename touched too many files, so Claude Code refused it until the edit limit is raised.",
+              "Edits made in plan mode go to a staging area and need a separate command to apply them to disk.",
+              "Plan mode supports renames only through the IDE, so the edit has to be made from the editor instead.",
+              "Plan mode is read-only: Claude researches and proposes, and edits happen only after approval."),
+        ans=3,
+        explain=("Plan mode is for research and proposals. Files change only after you approve the plan and leave plan mode. "
+                 "A, B and C describe limits and mechanisms that don't exist."),
         scenarios=(2,), basis="docs", in_bank=False,
     ),
 )

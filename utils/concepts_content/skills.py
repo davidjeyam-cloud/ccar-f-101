@@ -432,77 +432,86 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A team lead created a /release-notes command in ~/.claude/commands/ and told the team to use it. Teammates "
-           "say the command doesn't exist in their sessions. What's the fix?"),
-        opts=("Each teammate should restart Claude Code.",
+        q=("A team lead created a /release-notes command in ~/.claude/commands/ and told the 12-person team to use it. Two "
+           "days later, eleven teammates say the command doesn't exist in their sessions. What is the fix?"),
+        opts=("Ask each teammate to copy the file from a shared drive into their own ~/.claude/commands/ directory.",
               "Move it to the project's .claude/commands/ and commit it, so everyone gets it through version control.",
-              "Add “use /release-notes” to CLAUDE.md.",
-              "Rename it without the slash."),
+              "Paste the command's instructions into CLAUDE.md, so that every teammate's session loads them at start-up.",
+              "Have every teammate restart Claude Code, since new commands appear only after a restart."),
         ans=1,
-        explain=("Commands in ~/.claude/commands/ are personal. Project commands in .claude/commands/ are shared "
-                 "through version control, which makes them available team-wide."),
+        explain=("~/.claude/commands/ is personal. The project's .claude/commands/ is version-controlled and reaches everyone who "
+                 "clones or pulls. A works but drifts, because every copy is maintained by hand. C turns an on-demand "
+                 "workflow into always-loaded context. D: the file was never on their machines, so a restart changes nothing."),
         scenarios=(2,), points=("3.2:K1", "3.2:S1"),
     ),
     Question(
-        q=("A /map-dependencies skill prints thousands of lines of analysis into the conversation, crowding out the "
-           "developer's actual task. The developer only needs the summary. What's the best change?"),
-        opts=("Add context: fork to the skill's frontmatter, so it runs in an isolated sub-agent and returns only its result.",
-              "Tell the skill to be brief.",
-              "Run /clear after using the skill.",
-              "Move the skill into CLAUDE.md."),
-        ans=0,
-        explain=("context: fork runs a skill in an isolated sub-agent so verbose output doesn't pollute the main "
-                 "conversation. /clear would throw away the developer's own context too."),
+        q=("A /map-dependencies skill prints about 4,000 lines of analysis into the conversation, crowding out the "
+           "developer's actual task. The developer only needs the final summary. A teammate proposes adding “be concise” to "
+           "the skill's instructions. What is the best change?"),
+        opts=("Add “be concise” as proposed, and cap the skill's output with a maximum line count in its own instructions.",
+              "Run /compact after each use of the skill, so that the 4,000 lines are summarised before work continues.",
+              "Add context: fork to the skill's frontmatter, so it runs in an isolated sub-agent and returns its result.",
+              "Split the skill into four smaller skills, each of which prints one quarter of the dependency analysis."),
+        ans=2,
+        explain=("context: fork runs the skill in an isolated sub-agent. The verbose work stays there, and only the result "
+                 "returns to the main conversation. A may cut the analysis the summary depends on. B pays for the output "
+                 "first and then summarises it lossily. D produces the same 4,000 lines in four pieces."),
         scenarios=(2,), points=("3.2:K3", "3.2:S2", "3.2:K2"),
     ),
     Question(
-        q=("A /generate-docs skill should only ever write documentation files, never run shell commands. According to "
-           "the exam guide, which frontmatter setting restricts its tool access?"),
-        opts=("argument-hint",
-              "context: fork",
-              "disable-model-invocation",
-              "allowed-tools"),
+        q=("A /generate-docs skill should only write documentation files, but in 3 of its last 20 runs it also ran shell "
+           "commands that reformatted source code. The team wants to limit which tools the skill uses while it runs. Which "
+           "frontmatter field does the exam guide use for this?"),
+        opts=("context: fork, so that the skill runs in a sub-agent that cannot reach the main session's tools.",
+              "argument-hint, so the developer states which files the skill may write each time they invoke it.",
+              "model, set to a smaller model that is less likely to decide on its own to run shell commands.",
+              "allowed-tools, listing only the tools the skill needs, such as Read and Write."),
         ans=3,
-        explain=("The guide names allowed-tools in skill frontmatter as the way to restrict tool access during a skill. "
-                 "Note: the current docs describe allowed-tools as pre-approving tools and disallowed-tools as removing "
-                 "them. The concept page shows both; for the exam, follow the guide."),
+        explain=("The guide uses allowed-tools in skill frontmatter to restrict tool access during the skill. Current docs add "
+                 "a detail: allowed-tools pre-approves the tools it lists, and disallowed-tools is what removes a tool "
+                 "entirely (see the docs item below). A isolates context, not tools. B only documents the arguments. D "
+                 "hopes a smaller model behaves better."),
         scenarios=(2,), points=("3.2:S3",),
     ),
     Question(
-        q=("Developers keep invoking /fix-issue without the issue number, and Claude ends up fixing whatever issue it "
-           "guesses. Which frontmatter addition helps most?"),
-        opts=("context: fork",
-              "allowed-tools: Read",
-              "argument-hint: [issue-number]",
-              "A longer description"),
-        ans=2,
-        explain=("argument-hint prompts developers for required parameters when they invoke the skill."),
+        q=("Developers keep invoking /fix-issue without the issue number. In 30% of runs Claude fixes whichever open issue "
+           "it guesses was meant, and twice it fixed the wrong one before anyone noticed. Which frontmatter addition helps "
+           "most?"),
+        opts=("argument-hint: [issue-number]",
+              "context: fork",
+              "allowed-tools: Read, Edit",
+              "description: Fixes GitHub issues"),
+        ans=0,
+        explain=("argument-hint shows developers the expected parameter when they invoke the command, so the issue number gets "
+                 "supplied. B isolates the context, C limits tools, and D describes the skill. None of them prompts for the "
+                 "missing argument."),
         scenarios=(2,), points=("3.2:S4",),
     ),
     Question(
-        q=("A developer wants a terser version of the team's shared /review-pr skill for their own use, without "
-           "changing what teammates get. What should they do?"),
-        opts=("Edit the project's skill and ask teammates not to pull.",
-              "Add a note to CLAUDE.md telling Claude to be terse when they run it.",
-              "Put a copy with the same name in ~/.claude/skills/ so it overrides the team version for everyone.",
-              "Create a personal variant under a different name in ~/.claude/skills/."),
-        ans=3,
-        explain=("Personal variants go in ~/.claude/skills/ under different names, so teammates aren't affected and "
-                 "there's no confusion about which version runs."),
+        q=("A developer wants a terser version of the team's shared /review-pr skill for their own use. The shared skill is "
+           "used by 15 teammates, who are happy with it as it is. What should the developer do?"),
+        opts=("Create a personal variant under a different name in ~/.claude/skills/.",
+              "Edit the shared skill in .claude/skills/, adding a flag that switches on the terser output.",
+              "Ask Claude to be terser each time they run /review-pr, and leave both skill files as they are.",
+              "Copy the skill into ~/.claude/skills/ under the same name, so their copy stands in for the team's."),
+        ans=0,
+        explain=("A personal skill in ~/.claude/skills/ with its own name gives the developer their variant and leaves the team's "
+                 "skill untouched. B changes a shared file for one person. C repeats the same instruction every time. D reuses "
+                 "the name, which makes it unclear which version runs. The guide's pattern is a differently named variant."),
         scenarios=(2, 4), points=("3.2:K4",),
     ),
     Question(
-        q=("A skill's frontmatter lists allowed-tools: Read, Write, yet during the skill Claude still runs a Bash "
-           "command (after asking permission). A developer expected Bash to be impossible. According to the current "
-           "docs, why, and what would block it?"),
-        opts=("allowed-tools pre-approves the listed tools but doesn't remove others; use disallowed-tools to take Bash away.",
-              "allowed-tools only applies with context: fork.",
-              "The frontmatter was cached; restart the session.",
-              "Bash can never be restricted inside a skill."),
-        ans=0,
-        explain=("Per the skills docs, allowed-tools grants listed tools without prompting but doesn't restrict the "
-                 "others; disallowed-tools removes them. The exam guide describes allowed-tools as restricting, which "
-                 "is a guide-vs-docs difference recorded in SOURCES."),
+        q=("A skill's frontmatter lists allowed-tools: Read, Write, yet during the skill Claude still runs a Bash command "
+           "after asking the developer's permission. The developer expected Bash to be impossible and files a bug report. "
+           "Under the current docs, what explains this, and what would block Bash?"),
+        opts=("It's a bug: allowed-tools should hide every other tool, so reinstalling Claude Code restores the behaviour.",
+              "Bash is always available to skills for safety reasons, and no skill frontmatter field can block it.",
+              "allowed-tools pre-approves listed tools but doesn't remove others; disallowed-tools would remove Bash.",
+              "The skill must also set context: fork, because tool limits apply only to skills that run in a sub-agent."),
+        ans=2,
+        explain=("In current docs, allowed-tools pre-approves the listed tools, and other tools still ask for permission. "
+                 "disallowed-tools removes a tool. The guide simplifies this as “restrict”. A, B and D describe behaviour "
+                 "the docs don't."),
         scenarios=(2,), basis="docs", in_bank=False,
     ),
 )

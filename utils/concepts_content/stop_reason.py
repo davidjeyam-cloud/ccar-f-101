@@ -534,107 +534,119 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("Mid-conversation, your support agent returns a response with stop_reason “tool_use”. Its content is a text "
-           "block (“Everything checks out, your refund is on its way!”) followed by a process_refund tool_use block. "
-           "What should your loop do with this response?"),
-        opts=("Show the text to the customer and end the conversation, since the model says the refund is done.",
-              "Show the text, skip the tool call, and ask the customer to confirm the refund first.",
-              "Treat it as an error, because a tool_use response shouldn't contain text.",
-              "Run process_refund, send its result back as a tool_result, and keep looping."),
-        ans=3,
-        explain=("stop_reason is the control signal: “tool_use” means run the requested tool, return the result, and "
-                 "continue. The text is just what the model said out loud. The refund hasn't happened until your code "
-                 "runs the tool."),
+        q=("Your support agent returns a response with stop_reason tool_use. Its content is a text block (“Everything "
+           "checks out, your refund is on its way!”) followed by a process_refund tool_use block. A teammate's handler shows "
+           "the text to the customer and ends the turn. Finance now reports that 11 of 400 promised refunds were never "
+           "issued. What should the handler do with a response like this?"),
+        opts=("Show the text and end the turn, then run any tool_use blocks as a batch at the end of the conversation.",
+              "Discard the text, since it contradicts the pending tool call, and ask the model to answer again without it.",
+              "Run process_refund, return its result as a tool_result block, and keep looping until stop_reason changes.",
+              "Treat the response as final because it contains a text block, but log the tool_use block for manual review."),
+        ans=2,
+        explain=("stop_reason decides what happens next, and here it is tool_use: execute the tool, send the result back, "
+                 "continue. Text before a tool call is normal narration. A delays the tool past the point where the model "
+                 "needs its result. B throws away a valid response. D ends the loop on text, which is the bug that lost the "
+                 "refunds."),
         scenarios=(1,), points=("1.1:K1", "1.1:S1"),
     ),
     Question(
-        q=("A team's loop decides the agent is finished whenever a response contains a text block. Order lookups often "
-           "end early with “Let me check that order for you…”, and nothing more happens. Why?"),
-        opts=("Text is often sent together with a tool_use block, so the loop stops before running the tool it just asked for.",
-              "The model is producing text because the tools are described poorly.",
-              "The loop needs a higher max_tokens so the model can finish its sentence.",
-              "The customer's message is too vague for the model to call a tool."),
-        ans=0,
-        explain=("Treating assistant text as the completion signal is a named anti-pattern. A response can carry text "
-                 "and a tool_use block together, with stop_reason “tool_use”. Branch on stop_reason, not on whether "
-                 "text is present."),
+        q=("A team's loop treats any response that contains a text block as the agent's final answer. Logs show that 18% of "
+           "order-status conversations end with “Let me check that order for you…” and nothing else. In every one of those "
+           "cases, the same response also held a lookup_order tool_use block. What is the root cause?"),
+        opts=("The model sends text too early, and the system prompt should tell it never to speak before a tool call.",
+              "The loop exits whenever text is present, but text often comes with a tool_use block, so no tool ever runs.",
+              "lookup_order is slow to respond, so the loop times out and falls back to the last text the model produced.",
+              "The response hit max_tokens after the text block, so the tool_use block was incomplete and had to be dropped."),
+        ans=1,
+        explain=("The termination check reads content instead of stop_reason. A text block alongside a tool_use block is normal, "
+                 "so this loop quits before running the tool the model asked for. A tries to change normal model behaviour "
+                 "to suit a broken loop. C: nothing timed out, because the tool never ran. D contradicts the logs, which "
+                 "show a complete tool_use block."),
         scenarios=(1,), points=("1.1:S3",),
     ),
     Question(
-        q=("To make the support agent “predictable”, a team hard-codes every request to run get_customer → lookup_order "
-           "→ process_refund in that order. Billing disputes and account questions, which need different tools or no "
-           "refund at all, now fail or trigger wrong refunds. What's the better design?"),
-        opts=("Add more fixed sequences, one for each request type, chosen by keyword.",
-              "Remove process_refund from the tool list and handle refunds manually.",
-              "Let the model choose the next tool from context; enforce only true prerequisites (like verification before refunds) in code.",
-              "Ask the model to say in text which sequence it wants, then run that sequence."),
-        ans=2,
-        explain=("The guide contrasts model-driven decisions, where Claude picks the next tool from context, with "
-                 "pre-set decision trees. Hard prerequisites belong in programmatic gates (TS 1.4). Keyword-chosen "
-                 "sequences and parsed text keep the brittleness."),
+        q=("To make the support agent “predictable”, a team hard-codes every request to run get_customer, then lookup_order, "
+           "then process_refund. Since the change, billing-dispute and account questions (about 35% of traffic) fail or "
+           "trigger refunds nobody asked for. What is the better design?"),
+        opts=("Let the model choose the next tool from context, and enforce only real prerequisites, such as verification, in code.",
+              "Keep the fixed sequence, but add a classifier in front of it that routes each request type to its own fixed pipeline.",
+              "Remove the sequence, and state in the system prompt that refunds may only be issued when the customer asks.",
+              "Keep the fixed sequence, and add a step in which the customer confirms every refund before it is processed."),
+        ans=0,
+        explain=("In an agentic loop the model decides the next tool from context, and code enforces only the orderings that must "
+                 "be guaranteed, such as verifying the customer before a refund. B multiplies rigid pipelines and adds a "
+                 "classifier to maintain. C replaces a guarantee with a probabilistic instruction. D pushes a bad refund "
+                 "decision onto the customer."),
         scenarios=(1,), points=("1.1:K3", "1.4:K1"),
     ),
     Question(
-        q=("A codebase-exploration agent requests Grep, your code runs it, and then you send the next request "
-           "containing only the developer's follow-up question. The agent keeps asking for the same Grep again and "
-           "again. What's the root cause?"),
-        opts=("Grep is the wrong tool; the agent should be using Glob.",
-              "The tool result never went back into the conversation, so the model can't see it and asks again.",
-              "The loop should end after the first tool call to stop the repetition.",
-              "The model needs a system prompt instruction not to repeat tool calls."),
-        ans=1,
-        explain=("Each iteration returns the tool results to the conversation so the model can reason about its next "
-                 "action. Without them, from the model's point of view the tool never ran. Capping calls or adding "
-                 "prompt rules hides the bug."),
+        q=("A codebase-exploration agent requests Grep for “refund_policy”. Your code runs it, stores the matches in a local "
+           "variable, and sends the next request with only the developer's follow-up question appended. The agent then "
+           "requests the same Grep on each of the next 6 turns. What is the root cause?"),
+        opts=("The Grep pattern is too broad, so the agent keeps refining it and asking again for a narrower set of results.",
+              "The developer's follow-up question is ambiguous, so the model restarts its search to be sure of the context.",
+              "The agent's max_turns is set too low, so it restarts its plan each time a new turn begins after the tool call.",
+              "The Grep result never went back as a tool_result, so the model cannot see it and keeps asking for it again."),
+        ans=3,
+        explain=("The model sees only the conversation. A tool result must be returned as a tool_result block matched to the "
+                 "tool_use id, or the model acts as if the call never happened. A would show different patterns, not "
+                 "identical ones. B and C invent reasons for a repeat that has a mechanical cause."),
         scenarios=(4,), points=("1.1:K1", "1.1:K2"),
     ),
     Question(
-        q=("An extraction call returns stop_reason “max_tokens”. Its last content block is a tool_use for save_invoice "
-           "whose input JSON is cut off halfway. What should the handler do?"),
-        opts=("Run save_invoice with whatever fields arrived.",
-              "Treat it as the final answer and move to the next document.",
-              "Retry the request with a higher max_tokens instead of running the incomplete tool call.",
-              "Ask the model in a new user message to finish the JSON."),
-        ans=2,
-        explain=("Per the docs, max_tokens means the response was truncated. An incomplete tool_use block should be "
-                 "retried with a higher limit rather than executed with partial input."),
+        q=("An invoice-extraction call returns stop_reason max_tokens. Its last content block is a save_invoice tool_use "
+           "whose input JSON stops halfway through the line_items array. The handler parses whatever arguments it can and "
+           "saves them, and finance found 9 invoices with missing lines this month. What should the handler do?"),
+        opts=("Retry the request with a higher max_tokens instead of running the incomplete tool call's partial input.",
+              "Save the partial arguments, but flag the invoice for human review whenever the line_items array looks short.",
+              "Ask the model to continue in a new turn, then join the two halves of the JSON arguments back together.",
+              "Switch the call to tool_choice any, so the model is required to complete the tool call within its limit."),
+        ans=0,
+        explain=("An incomplete tool_use block after max_tokens should be retried with a higher limit, not executed. B still "
+                 "saves bad data, and \"looks short\" is a guess. C splices JSON across turns, which is fragile. D "
+                 "misunderstands tool_choice: it forces a tool call but doesn't change the token budget."),
         scenarios=(6,), basis="docs", in_bank=False,
     ),
     Question(
-        q=("During a traffic spike your support agent's API call raises an overloaded error. The handler, which only "
-           "branches on stop_reason, crashes, and the customer sees a blank page. What's missing?"),
-        opts=("Error handling around the API call itself; an API error isn't a stop_reason and never returns a response to branch on.",
-              "A branch for stop_reason “error”.",
-              "A higher max_tokens, so responses finish before the spike.",
-              "Streaming, so the partial response is shown."),
-        ans=0,
-        explain=("stop_reason only exists on a successful response. API errors surface as exceptions or HTTP errors and "
-                 "need their own handling, such as retrying with backoff for transient errors. There is no “error” stop reason."),
+        q=("During a traffic spike, 3% of your support agent's API calls raise an overloaded error. The handler branches only "
+           "on stop_reason, so it crashes, and customers see a blank page. The team proposes adding an “overloaded” branch "
+           "to the stop_reason switch. How should you evaluate the proposal?"),
+        opts=("Adopt it, since overloaded is one of the documented stop_reason values that the handler should cover.",
+              "Adopt it, and also map any unknown stop_reason to the overloaded branch, so that future values are covered.",
+              "Reject it: an API error returns no response to branch on, so wrap the call in error handling and retries.",
+              "Reject it, and lower max_tokens during spikes so each request is cheaper and less likely to be rejected."),
+        ans=2,
+        explain=("An API error is not a stop_reason. No response comes back, so there is nothing to branch on. The call itself "
+                 "needs error handling and retries. A and B rest on a value that doesn't exist. D misreads overload as a "
+                 "request-size problem."),
         scenarios=(1,), basis="docs", in_bank=False,
     ),
     Question(
-        q=("After each tool round, a developer appends “Please continue.” after the tool_result blocks. The model now "
-           "sometimes returns end_turn with empty content, and retrying the same request gives the same result. What's "
-           "the best fix?"),
-        opts=("Retry up to five times, since the empty reply is transient.",
-              "Treat the empty reply as a successful final answer.",
-              "Move “Please continue.” before the tool results instead.",
-              "Send tool results on their own, with no added text after them, in the user message."),
+        q=("After each tool round, a developer appends “Please continue.” after the tool_result blocks in the same user "
+           "message. About 7% of turns now end with stop_reason end_turn and empty content. Retrying the identical request "
+           "gives the same empty result. What is the best fix?"),
+        opts=("Replace “Please continue.” with a more specific instruction telling the model to always write a reply.",
+              "Retry any empty end_turn response up to three times with a higher temperature, to vary the model's output.",
+              "Put “Please continue.” before the tool_result blocks instead, so that the model reads the instruction first.",
+              "Send the tool results on their own, with no text added after the tool_result blocks in that user message."),
         ans=3,
-        explain=("The docs name text added after tool results as a cause of empty end_turn responses. Blind retries "
-                 "repeat it, and putting text before the tool_result blocks is an error. Send the results on their own."),
+        explain=("Text added after tool results can lead to empty end_turn responses, so send the results on their own. A "
+                 "keeps the text that causes it. B retries a request that fails the same way each time. C breaks a hard "
+                 "rule: tool_result blocks must come first in the user message, and text before them returns a 400 error."),
         scenarios=(1,), basis="docs", in_bank=False,
     ),
     Question(
-        q=("A synthesis step over many long sources returns stop_reason “model_context_window_exceeded”. The pipeline "
-           "currently publishes whatever text came back. What should it do instead?"),
-        opts=("Publish it, since any non-tool_use stop means the model finished.",
-              "Treat it as truncated: reduce or trim the context, then continue.",
-              "Retry the identical request on the same model.",
-              "Switch to the Batch API, which has no context limit."),
+        q=("A synthesis step over 30 long sources returns stop_reason model_context_window_exceeded on about 1 in 20 runs. "
+           "The pipeline publishes whatever text came back, and in the last month readers have flagged 14 reports that end mid-section. What "
+           "should the pipeline do instead?"),
+        opts=("Publish the text as usual, but add a footnote noting that the report may be incomplete for some topics.",
+              "Treat the response as truncated: reduce or trim the context, then continue producing the report.",
+              "Retry the identical request, since the error is transient and usually succeeds on a second attempt.",
+              "Raise max_tokens for the synthesis call, so the model has room to finish the report in one response."),
         ans=1,
-        explain=("Every stop reason other than tool_use exits the loop but must be handled. This one means the response was truncated because the context "
-                 "window filled. Batch requests have the same context limits."),
+        explain=("model_context_window_exceeded means the context is full and the output is incomplete, so the context must "
+                 "shrink before continuing. A publishes a known-incomplete report. C sends the same over-full context again. "
+                 "D raises the output limit, but the window is already full."),
         scenarios=(3,), basis="docs", in_bank=False,
     ),
 )

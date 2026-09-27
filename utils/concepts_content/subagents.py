@@ -825,152 +825,166 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("Your research system has a coordinator and four subagents. To save a round trip, a developer lets the "
-           "synthesis subagent call the web-search subagent directly whenever it spots a gap. Soon a search timeout "
-           "leaves a report with a silent hole: the coordinator's logs show nothing went wrong. What's the best change?"),
-        opts=("Give the synthesis subagent its own retry logic for web-search timeouts.",
-              "Add a shared message queue that all subagents can read and write.",
-              "Route every subagent request through the coordinator, so it sees, handles and logs each exchange.",
-              "Tell the synthesis subagent in its prompt to report timeouts in the final text."),
-        ans=2,
-        explain=("In hub-and-spoke, the coordinator handles all communication, error handling and routing between "
-                 "subagents. That's what gives observability and consistent error handling. A direct subagent-to-"
-                 "subagent call bypasses it, so failures disappear. Local retries and prompt reminders don't restore that visibility."),
+        q=("To save a round trip, a developer lets the synthesis subagent call the web-search subagent directly whenever it "
+           "spots a gap. Within a week, 6% of reports contain unexplained holes. In each case a direct search timed out, "
+           "and the coordinator's logs have no record of the exchange, so nothing retried it. What is the most effective "
+           "change?"),
+        opts=("Add retries with exponential backoff to the synthesis subagent's direct calls to the web-search subagent.",
+              "Route every exchange between subagents through the coordinator, so it sees, handles and logs each result.",
+              "Have the synthesis subagent write each direct call to a shared log file that the coordinator reads afterwards.",
+              "Merge synthesis and web search into one subagent, so that no handoff between them can fail without being seen."),
+        ans=1,
+        explain=("In the hub-and-spoke pattern the coordinator manages all communication, so it can observe each exchange, handle "
+                 "errors and decide on recovery. A makes a timeout less likely but still leaves failures hidden from the "
+                 "coordinator. C gives visibility after the fact, with no chance to act on it. D gives up specialisation and "
+                 "context isolation to solve a routing problem."),
         scenarios=(3,), points=("1.2:K1", "1.2:S4"),
     ),
     Question(
-        q=("Asked to research “renewable energy adoption in Europe”, the system returns a well-cited report that covers "
-           "only solar power in Germany. Each subagent did its job well, and the synthesis faithfully combined what it "
-           "received. Where is the root cause?"),
-        opts=("The coordinator's decomposition split the topic too narrowly, so whole areas were never assigned.",
-              "The web-search subagent's tool returned too few results per query.",
-              "The synthesis subagent's context window was too small for all the findings.",
-              "The report subagent summarised away the other countries and technologies."),
-        ans=0,
-        explain=("Decomposing a broad topic too narrowly is a named risk: every subagent succeeds, yet coverage is "
-                 "incomplete. Downstream agents can only work with what the coordinator assigned. The fix belongs in "
-                 "the coordinator's decomposition, not in the search or synthesis agents."),
+        q=("Asked to research “renewable energy adoption in Europe”, the system returns a well-cited report that covers only "
+           "solar power in Germany and Spain. Every subagent finished without errors, and synthesis used all the findings it "
+           "received. The coordinator's log lists its assignments: “German solar subsidies”, “Spanish solar capacity” and "
+           "“EU solar panel imports”. What should you change first?"),
+        opts=("Add a coverage check to the synthesis subagent so it flags energy sources that are missing from its findings.",
+              "Broaden the web-search subagent's queries so that each search also returns wind, hydro and other countries.",
+              "Make the coordinator's decomposition cover the request's full scope before it assigns any subtasks at all.",
+              "Add two more search subagents so that the system collects a larger volume of sources for every run it does."),
+        ans=2,
+        explain=("The log shows the gap was created at decomposition: no subagent was ever asked about wind, hydro or most "
+                 "countries. Every downstream agent did what it was assigned. A would notice the gap after the work was done "
+                 "instead of preventing it. B makes subagents stray outside their assignments. D adds more volume inside the "
+                 "same narrow scope."),
         scenarios=(3,), points=("1.2:K4",),
     ),
     Question(
-        q=("Users ask everything from “What year was the EU ETS launched?” to “Compare carbon-pricing schemes across "
-           "five regions”. Every query currently runs all four subagents in sequence, so simple answers take minutes "
-           "and cost as much as complex ones. What design fixes this without hurting complex queries?"),
-        opts=("Cache complete reports so repeated questions are served instantly.",
-              "Drop the synthesis subagent and let the report subagent read the raw search results.",
-              "Add a keyword list that sends short questions straight to the report subagent.",
-              "Have the coordinator assess each query's complexity and invoke only the subagents it needs."),
-        ans=3,
-        explain=("The coordinator should analyse the query and select subagents dynamically rather than always "
-                 "running the full pipeline. Keyword routing is brittle, and removing synthesis breaks complex "
-                 "queries. Caching only helps repeated questions."),
+        q=("Users ask everything from “What year was the EU ETS launched?” to “Compare carbon-pricing schemes across five "
+           "regions”. Every query runs all four subagents in sequence. Logs show simple factual questions take a median of "
+           "3.5 minutes and cost the same as complex comparisons. Which design change best fixes this?"),
+        opts=("Have the coordinator assess each query's needs and invoke only the subagents that query actually requires.",
+              "Put a keyword-based router in front of the coordinator that sends short queries to a single-agent pipeline.",
+              "Run the four subagents in parallel instead of in sequence, so every query takes less wall-clock time overall.",
+              "Cache the four subagents' outputs by query text, so that repeated factual questions can skip the pipeline."),
+        ans=0,
+        explain=("The coordinator should choose which subagents to invoke based on what each query needs, instead of always "
+                 "running the full pipeline. B is an over-engineered routing layer that duplicates the coordinator's job, "
+                 "using keywords. C cuts latency but still pays for four agents on a one-line fact. D helps only exact "
+                 "repeats."),
         scenarios=(3,), points=("1.2:K3", "1.2:S1"),
     ),
     Question(
-        q=("Two search subagents are given the same topic brief. Their results overlap by about 70%, and the synthesis "
-           "subagent spends much of its context de-duplicating them. What's the most effective change?"),
-        opts=("Tell the synthesis subagent to ignore duplicate sources.",
-              "Give each search subagent a distinct slice of the scope, such as separate subtopics or source types.",
-              "Run the two search subagents one after the other so the second can skip what the first found.",
-              "Reduce the number of results each search subagent returns."),
-        ans=1,
-        explain=("Partitioning the research scope across subagents (distinct subtopics or source types) minimises "
-                 "duplication at the source. Running them in sequence gives up parallelism, and trimming results or "
-                 "filtering in synthesis only treats the symptom."),
+        q=("Two search subagents receive the same brief: “find recent evidence on battery recycling”. Their results overlap "
+           "by about 70%, and the synthesis subagent spends roughly a third of its context de-duplicating them. Coverage of "
+           "recycling policy, one of the areas the user requested, is thin. What is the most effective change?"),
+        opts=("Add a de-duplication step between search and synthesis that removes findings with near-identical content.",
+              "Tell both search subagents in their prompts to avoid returning results that the other subagent might find.",
+              "Replace both search subagents with one that runs twice as many queries, so overlap between them is impossible.",
+              "Give each search subagent a distinct slice of the scope, such as separate subtopics or different source types."),
+        ans=3,
+        explain=("Partitioning the research scope between subagents removes duplicate work and makes each part of the request "
+                 "someone's job. A treats the symptom and leaves the policy gap. B asks each subagent to avoid results it "
+                 "cannot see, because subagents share no context. C removes the overlap by also removing the parallelism."),
         scenarios=(3,), points=("1.2:S2",),
     ),
     Question(
-        q=("A first draft of a report covers regulation and market size well but has almost nothing on supply chains, "
-           "which the user explicitly asked about. What should the coordinator do next?"),
-        opts=("Return the draft with a note that supply-chain data was limited.",
-              "Rerun the whole pipeline with a longer prompt that stresses supply chains.",
-              "Check the synthesis against the request, send targeted supply-chain queries to search, then rerun synthesis.",
-              "Ask the report subagent to expand the supply-chain section from its own knowledge."),
-        ans=2,
-        explain=("Iterative refinement means the coordinator evaluates the synthesis for gaps, re-delegates targeted "
-                 "queries, and re-invokes synthesis until coverage is sufficient. Rerunning everything wastes work, and "
-                 "writing from the model's own knowledge loses the cited sources."),
+        q=("A user asked for a report on “the EV market: regulation, market size and supply chains”. The first synthesis "
+           "covers regulation and market size in depth but gives supply chains two sentences. The search logs show only 1 of "
+           "14 findings concerned supply chains. The coordinator currently returns the first synthesis to the user. What "
+           "should the coordinator do?"),
+        opts=("Return the report with a note telling the user that supply-chain coverage was limited by available sources.",
+              "Check the draft against the request, send targeted supply-chain queries to search, then rerun synthesis.",
+              "Ask the synthesis subagent to expand the supply-chain section using its general knowledge of the industry.",
+              "Rerun the whole pipeline from scratch with the same assignments, in the hope that a new run finds more sources."),
+        ans=1,
+        explain=("An iterative refinement loop has the coordinator evaluate the output for gaps, re-delegate targeted queries, "
+                 "and synthesise again until coverage is enough. A ships a known gap. C fills the gap with unsourced content. "
+                 "D repeats the same assignments, so it will probably find the same one supply-chain source."),
         scenarios=(3,), points=("1.2:S3",),
     ),
     Question(
-        q=("A coordinator built with the Agent SDK has three well-described subagents configured, yet it answers every "
-           "question itself and never delegates. The subagent definitions load without errors. What's the most likely cause?"),
-        opts=("The coordinator's allowedTools doesn't include the tool that spawns subagents (“Task” in the guide).",
-              "The subagent descriptions are too long for the coordinator to read.",
-              "Subagents only run when the coordinator's prompt lists them step by step.",
-              "The coordinator needs a larger max_tokens before it can delegate."),
-        ans=0,
-        explain=("Subagents are spawned through a tool (the guide calls it Task; the current docs name it Agent, with "
-                 "Task as a legacy alias), so the coordinator's allowedTools must include it. Without the tool, the "
-                 "coordinator can't delegate, however good the definitions are."),
+        q=("A coordinator built with the Agent SDK has three well-described subagent definitions, and they load without "
+           "errors. In 50 test runs it never delegates: it answers every research question itself, and the transcripts "
+           "contain no spawn-tool calls. Its allowedTools list is [\"WebSearch\", \"Read\"]. What is the most likely cause?"),
+        opts=("The subagent descriptions are too short for the coordinator to recognise when it should delegate work to them.",
+              "allowedTools lacks the subagent-spawning tool (“Task” in the guide; current docs call it “Agent”).",
+              "The coordinator's model is too small to plan multi-agent work, so it should be upgraded to a larger model tier.",
+              "The coordinator's system prompt must name each subagent before the SDK can make that subagent available."),
+        ans=1,
+        explain=("A coordinator can invoke subagents only if its allowedTools includes the spawning tool. The allowedTools list "
+                 "in the stem is the clue. A could reduce delegation, but not to zero calls in 50 runs. C blames the model "
+                 "for a configuration gap. D describes a requirement that doesn't exist: definitions are passed as SDK "
+                 "configuration."),
         scenarios=(3,), points=("1.3:K1",),
     ),
     Question(
-        q=("The coordinator keeps sending document-analysis work to the web-search subagent. The team is defining "
-           "subagent types for the first time. What should each definition include so delegation is reliable and "
-           "each subagent stays in its lane?"),
-        opts=("Just a name, since the coordinator infers each subagent's role from it.",
-              "A clear description, its own system prompt, and a restricted tool set for its role.",
-              "The coordinator's full system prompt, so every subagent knows the overall goal.",
-              "A list of example queries the coordinator should never delegate."),
-        ans=1,
-        explain=("An agent definition gives each subagent type a description (used to decide when to delegate), a "
-                 "system prompt and tool restrictions. Copying the coordinator's prompt doesn't define the role, and "
-                 "names alone are too thin a signal."),
+        q=("The coordinator sends document-analysis work to the web-search subagent in about 25% of runs, and that subagent "
+           "then tries to “analyse” PDFs with web search, which it cannot open. Both subagent definitions currently contain "
+           "only a name and the coordinator's own system prompt. What should each subagent definition include?"),
+        opts=("A longer name that states its role, plus a priority number the coordinator can use to break ties between agents.",
+              "Access to every tool in the system, so that whichever subagent is chosen can finish any task it is handed.",
+              "A clear description of when to use it, its own role-specific system prompt, and tools restricted to its role.",
+              "A few-shot block in the coordinator's prompt showing which requests go to which subagent, and no other change."),
+        ans=2,
+        explain=("An agent definition carries a description (which the coordinator uses to choose), a system prompt for the "
+                 "role, and a tool restriction that keeps it in its lane. A invents a priority field. B over-provisions every "
+                 "agent and removes specialisation. D may improve routing a little, but it leaves each subagent generic and "
+                 "unrestricted."),
         scenarios=(3,), points=("1.3:K3",),
     ),
     Question(
-        q=("To research three independent regions, the coordinator requests one search subagent, waits for its result, "
-           "then requests the next. Total latency is about three times one search. The searches don't depend on each "
-           "other. What's the best fix?"),
-        opts=("Give one search subagent all three regions in a single prompt.",
-              "Lower each subagent's max_turns so each search finishes sooner.",
-              "Move the three searches into a Message Batches request.",
-              "Have the coordinator emit all three spawn-tool calls in a single response, so they run in parallel."),
+        q=("To research three independent regions, the coordinator spawns one search subagent, waits for its result, then "
+           "spawns the next. Each search takes about 50 seconds, so the research phase takes 2.5 minutes. The three "
+           "searches do not depend on each other. What is the most effective fix?"),
+        opts=("Give one search subagent all three regions in a single prompt, so the coordinator needs only one spawn call.",
+              "Reduce each subagent's max_turns so every individual search finishes faster before the next one starts.",
+              "Spawn the three subagents across three consecutive coordinator turns, each with a shorter, simpler brief.",
+              "Have the coordinator emit all three spawn-tool calls in a single response, so the subagents run in parallel."),
         ans=3,
-        explain=("Parallel subagents are spawned by emitting several spawn calls in ONE coordinator response, not across "
-                 "separate turns. One subagent for all regions loses the parallelism and focus. Batch has no latency "
-                 "guarantee and can't run the multi-turn tool loop inside a request."),
+        explain=("Several spawn-tool calls in one coordinator response run the subagents in parallel, so the phase takes about "
+                 "as long as the slowest search. A serialises the work inside one agent. B trades quality for speed and "
+                 "leaves the work serial. C is the separate-turns pattern that causes the delay."),
         scenarios=(3,), points=("1.3:S3",),
     ),
     Question(
-        q=("The coordinator's prompt to each search subagent is a numbered procedure: search site A, then site B, then "
-           "summarise the top five results. When site A is paywalled, subagents return thin, low-quality findings "
-           "instead of trying elsewhere. What's the best change to the coordinator's prompts?"),
-        opts=("Add fallback steps for every site that might fail.",
-              "Let subagents read the coordinator's full conversation history.",
-              "State the research goal and the quality bar the findings must meet, and let the subagent choose how.",
-              "Raise the number of results each subagent summarises."),
-        ans=2,
-        explain=("Coordinator prompts should specify goals and quality criteria rather than step-by-step procedures, "
-                 "so subagents can adapt. Enumerating fallbacks is brittle. Subagents don't inherit the coordinator's "
-                 "history anyway; context must go in the prompt."),
+        q=("The coordinator prompts each search subagent with a numbered procedure: search site A, then site B, then summarise "
+           "the top five results. Since site A added a paywall, 60% of subagent runs return thin findings built from site B "
+           "alone, and none of them try other sources. What is the most effective change to the coordinator's prompts?"),
+        opts=("State the research goal and the quality bar the findings must meet, and let each subagent decide how to get there.",
+              "Add a step 2b telling every subagent to search site C whenever site A returns a paywall or an empty results page.",
+              "Replace site A with site C in the procedure, and keep exactly the same numbered steps for every subagent that runs.",
+              "Give the subagents a larger max_turns budget, so they have time to complete every step of the procedure."),
+        ans=0,
+        explain=("Coordinator prompts should specify goals and quality criteria rather than step-by-step procedures, so "
+                 "subagents can adapt when a path fails. B and C patch this one failure and break again at the next change. "
+                 "D gives more time to follow a procedure that is itself the problem."),
         scenarios=(3,), points=("1.3:S4", "1.2:K2"),
     ),
     Question(
-        q=("Your monitoring counts subagent spawns by matching tool_use blocks named “Task”. After an Agent SDK upgrade "
-           "the count drops to zero, although reports still show subagents are running. What's the most robust fix?"),
-        opts=("Pin the old SDK version so the name stays “Task”.",
-              "Count spawns by searching the assistant's text for “delegating”.",
-              "Match both “Agent” and “Task”, because current docs name the spawn tool Agent and keep Task as an alias.",
-              "Remove spawn monitoring and rely on the final report."),
+        q=("Your monitoring counts subagent spawns by matching tool_use blocks named “Task”. After an Agent SDK upgrade, the "
+           "dashboard has shown zero spawns for three days, yet the reports clearly still come from several subagents, and cost per report is unchanged. "
+           "What is the most robust fix?"),
+        opts=("Pin the Agent SDK to the previous version, so that the spawn tool keeps its old name in every transcript.",
+              "Count spawns by searching the coordinator's text for phrases like “delegating to” or “spawning a subagent”.",
+              "Match tool_use blocks named “Agent” or “Task”: current docs name the spawn tool Agent, with Task an alias.",
+              "Stop counting spawns and infer the number of subagents from the total token usage recorded for each run."),
         ans=2,
-        explain=("Per the current docs, the spawn tool is Agent, and Task remains a legacy alias, so match both. Text "
-                 "matching is unreliable, and pinning an old version just postpones the problem."),
+        explain=("Current docs name the spawn tool Agent and keep Task as a legacy alias (the exam guide uses Task), so match "
+                 "both. A freezes you on an old SDK. B parses prose, which is unreliable. D guesses from a proxy."),
         scenarios=(3,), basis="docs", in_bank=False,
     ),
     Question(
-        q=("A developer-productivity agent sends a subagent to map a legacy module. The subagent reads 40 files and runs "
-           "a dozen searches. Afterwards, the main agent can't answer follow-up questions about specific files the "
-           "subagent looked at. What explains this, and what's the fix?"),
-        opts=("The parent only receives the subagent's final message, so ask the subagent to return a structured summary of what matters.",
-              "The subagent's tool results were lost to a timeout, so retry the subagent.",
-              "The parent inherits the subagent's transcript, but it's truncated, so raise the context limit.",
-              "The subagent should write its findings into the parent's system prompt."),
+        q=("A main agent sends a subagent to map a legacy billing module. The subagent reads 40 files, runs a dozen "
+           "searches, and then replies “Mapping complete.” Afterwards, the main agent cannot answer follow-up questions "
+           "about any specific file, and the developer asks why the findings were “lost”. What explains it, and what is "
+           "the fix?"),
+        opts=("Only the subagent's final message returns to the parent, so ask it to return a structured summary of findings.",
+              "The subagent's context was cleared when it finished, so it must be resumed to recover the files it read.",
+              "The main agent's context window was too small to hold 40 files, so a larger model should coordinate instead.",
+              "Subagents share memory with the parent only in the foreground, so this subagent must not run in the background."),
         ans=0,
-        explain=("Per the docs, only the subagent's final message returns to the parent; its intermediate tool calls "
-                 "stay in its own context. Ask for a structured summary (files, key findings, references) in that "
-                 "final message."),
+        explain=("By design, only a subagent's final message returns to the parent. Its exploration stays in its own context, "
+                 "which is the point of isolation. So the subagent must be asked to return what matters, in a structured "
+                 "form. B misreads the problem: the parent never received the findings in the first place. C blames the "
+                 "window. D invents a memory-sharing rule."),
         scenarios=(4,), basis="docs", in_bank=False,
     ),
 )

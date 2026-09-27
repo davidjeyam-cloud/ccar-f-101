@@ -404,66 +404,75 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A new developer says Claude Code ignores the team's conventions: always run the linter, always use pnpm. "
-           "Everyone else's sessions follow them. The team lead wrote these conventions in a CLAUDE.md months ago. "
-           "What's the most likely cause?"),
-        opts=("The new developer's Claude Code version doesn't read CLAUDE.md.",
-              "The conventions are too long for Claude to follow.",
-              "The conventions live in the lead's user-level ~/.claude/CLAUDE.md, which never reaches teammates.",
-              "The new developer needs to run /init to load the team's settings."),
-        ans=2,
-        explain=("User-level instructions apply only to that user and aren't shared through version control. Moving "
-                 "team conventions into the project-level CLAUDE.md fixes it for everyone."),
+        q=("A new developer says Claude Code ignores the team's conventions (always run the linter, always use pnpm), while "
+           "the other six developers' sessions follow them. The team lead wrote these conventions into a CLAUDE.md eight "
+           "months ago. The repository contains no CLAUDE.md at the root or in .claude/. What is the most likely cause?"),
+        opts=("The conventions are too vaguely worded, so the model applies them inconsistently from one developer to another.",
+              "The conventions live in a user-level ~/.claude/CLAUDE.md, which is not version-controlled or shared via the repo.",
+              "The new developer's session filled its context window, so CLAUDE.md was dropped before any of the rules were read.",
+              "CLAUDE.md is read only in the first session in a repository, so the new developer must run /init to load it."),
+        ans=1,
+        explain=("User-level memory (~/.claude/CLAUDE.md) applies only on the machine where it lives. It isn't in the repository, "
+                 "so a new teammate never receives it. The missing project file is the clue. A would give inconsistent "
+                 "results for everyone, not a clean split between old and new developers. C and D describe loading behaviour "
+                 "that doesn't exist."),
         scenarios=(2,), points=("3.1:K2", "3.1:S1"),
     ),
     Question(
-        q=("In a repository, only the services/payments directory needs extra instructions: money is stored in integer "
-           "pence, and every change needs an audit-log entry. Nothing else in the codebase should see these rules. "
-           "Which configuration fits?"),
-        opts=("A CLAUDE.md inside services/payments/, which applies when Claude works in that directory.",
-              "The user-level ~/.claude/CLAUDE.md of every payments developer.",
-              "The root CLAUDE.md, with a note saying “payments only”.",
-              "A comment at the top of each payments file."),
-        ans=0,
-        explain=("The hierarchy has user, project and directory levels. A directory-level CLAUDE.md scopes instructions "
-                 "to that part of the tree. The root file would apply the rules everywhere, and user-level files aren't shared."),
+        q=("In a 40-service repository, only services/payments needs extra instructions: amounts are stored in integer pence, "
+           "and every change needs an audit-log entry. When these rules sat in the root CLAUDE.md, sessions working in "
+           "unrelated services started converting prices to pence. Which configuration fits best?"),
+        opts=("Keep the rules in the root CLAUDE.md, under a heading saying they apply only to the payments service.",
+              "Put the rules in each payments developer's ~/.claude/CLAUDE.md, so that only they ever see the instructions.",
+              "Put the rules in a CLAUDE.md inside services/payments/, which Claude loads when working in that directory.",
+              "Create a /payments-rules slash command that developers must remember to run before any payments task."),
+        ans=2,
+        explain=("A CLAUDE.md in a subdirectory applies when Claude works there, so the rules reach payments work and nothing "
+                 "else. A still loads them everywhere and relies on the model to respect a heading. B makes team rules "
+                 "personal and unshared. D depends on people remembering to run a command."),
         scenarios=(2,), points=("3.1:K1",),
     ),
     Question(
         q=("A monorepo holds a payments package and a frontend package, maintained by different teams with their own "
-           "standards documents. One shared CLAUDE.md now contains both sets of standards, and each package's sessions "
-           "wade through irrelevant rules. What's the most maintainable setup?"),
-        opts=("Copy the relevant standards into every file header.",
-              "Keep one CLAUDE.md but put the payments rules first.",
-              "Ask each developer to paste their package's standards at the start of every session.",
-              "Give each package a CLAUDE.md that @imports only the standards files its maintainers say apply."),
+           "standards documents. A single shared CLAUDE.md now holds both sets of standards, runs to 900 lines, and causes "
+           "merge conflicts about twice a week. What is the most maintainable setup?"),
+        opts=("Split the shared CLAUDE.md into two halves, and ask each team to edit only the half that belongs to it.",
+              "Move both teams' standards into user-level CLAUDE.md files, so each developer loads only their own team's.",
+              "Replace the standards in CLAUDE.md with a short summary of each, and link to the full documents on the wiki.",
+              "Give each package its own CLAUDE.md that @imports only the standards files its maintainers say apply."),
         ans=3,
-        explain=("@import keeps CLAUDE.md modular by pulling in external files. Each package includes just the "
-                 "standards relevant to it, while the standards documents stay single-sourced."),
+        explain=("Package-level CLAUDE.md files that @import the relevant standards keep each team's rules modular, owned by "
+                 "that team, and loaded only where they apply. A keeps one file, so both the conflicts and the loading of "
+                 "irrelevant rules remain. B takes team standards out of version control. C: Claude doesn't follow a wiki "
+                 "link, so the detail is lost."),
         scenarios=(2, 4), points=("3.1:K3", "3.1:S2"),
     ),
     Question(
-        q=("Two developers on the same repository get different behaviour on the same task: one's session follows the "
-           "API conventions, the other's doesn't. Before changing any files, what should they do first?"),
-        opts=("Delete and recreate the project CLAUDE.md.",
-              "Run /memory in both sessions to see which memory files each one actually loaded.",
-              "Ask Claude in each session whether it's following the conventions.",
-              "Reinstall Claude Code on the second machine."),
+        q=("Two developers on the same repository get different behaviour on the same task: one session follows the API "
+           "conventions and the other doesn't. They have spent 40 minutes comparing their prompts without finding a "
+           "difference. What should they do first?"),
+        opts=("Copy the working developer's prompt word for word, then compare the output from both sessions again.",
+              "Run /memory in both sessions to see which memory files each one has actually loaded.",
+              "Reinstall Claude Code on the second machine, so both developers run with the same default configuration.",
+              "Move the API conventions to the top of the root CLAUDE.md, so that they are harder for the model to miss."),
         ans=1,
-        explain=("/memory shows which memory files are loaded, which is the direct way to diagnose inconsistent "
-                 "behaviour across sessions. Asking the model isn't a reliable diagnostic."),
+        explain=("/memory shows which memory files a session has loaded, which is the quickest way to find a missing or extra "
+                 "file. A repeats the comparison that has already failed. C is a heavy change made without a diagnosis. D "
+                 "edits files before knowing whether the file is loaded at all."),
         scenarios=(2,), points=("3.1:S4",),
     ),
     Question(
-        q=("A repository has an AGENTS.md that other coding tools use. The team adds a CLAUDE.md with Claude-specific "
-           "notes, and from then on Claude Code stops following AGENTS.md. What's the cleanest fix?"),
-        opts=("Rename AGENTS.md to CLAUDE.md and delete the Claude-specific file.",
-              "Copy AGENTS.md's content into CLAUDE.md and keep both in sync by hand.",
-              "Import it from CLAUDE.md with @AGENTS.md, keeping one source for both tools.",
-              "Move AGENTS.md into .claude/ so Claude Code finds it."),
+        q=("A repository has an AGENTS.md that three other coding tools read. The team adds a CLAUDE.md with Claude-specific "
+           "notes, and from then on Claude Code follows none of the AGENTS.md conventions. Someone proposes copying "
+           "AGENTS.md's contents into CLAUDE.md. What is the cleanest fix?"),
+        opts=("Copy AGENTS.md into CLAUDE.md as proposed, and add a CI check that fails whenever the two files drift apart.",
+              "Delete the new CLAUDE.md, since Claude Code falls back to reading AGENTS.md when no CLAUDE.md exists.",
+              "Import it from CLAUDE.md with an @AGENTS.md line, keeping one source of truth for every tool.",
+              "Rename AGENTS.md to CLAUDE.md, and ask the other tools' users to point their configuration at it."),
         ans=2,
-        explain=("Per the memory docs, AGENTS.md is read by default only when no CLAUDE.md is present. Importing it from "
-                 "CLAUDE.md keeps a single source that other tools still use."),
+        explain=("By default Claude Code reads AGENTS.md only when there's no CLAUDE.md. With a CLAUDE.md present, the docs say "
+                 "to import it with @AGENTS.md. A keeps two copies that have to be kept in sync. B works, but throws away the "
+                 "Claude-specific notes. D breaks the other tools."),
         scenarios=(2,), basis="docs", in_bank=False,
     ),
 )

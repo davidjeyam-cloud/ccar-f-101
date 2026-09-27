@@ -497,3 +497,33 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 **Gap flagged to the user:** the concept list has no concept for TS 5.3 (error propagation) or 5.6 (provenance). TS 5.5 (human review) and 3.6 (CI/CD) exist only as unnumbered cross-cutting concepts.
 
 **Uncommitted.**
+
+## 2026-09-27 (late) — Every practice question rewritten to exam style
+
+**Why:** the user found the questions "pretty straightforward" and asked for items "as close as the exam style questions".
+
+**Research — for style only, nothing copied:**
+- The official benchmark is the guide's own §9 Sample Questions (12 items, PDF pp.27–33).
+- Four community banks were also read (OlivierAlter, hamzafarooq, claudecertifiedarchitects.com, certsafari). They are unverified and were used for style only.
+- The sources are recorded in CLAUDE.md (QUESTION RULE → exam-style bar) and in `docs/SOURCES.md` (community rows 2–3).
+
+**The style bar:**
+- A 3–5 sentence production symptom with numbers or log evidence.
+- A hidden qualifier.
+- Wrong options that are real engineering moves failing for a nameable reason.
+- An explanation that covers every option.
+- The correct option is never the longest.
+
+**What was done:**
+- D1.6 was redone first. The user approved it ("the quality of questions are good"), then all 27 pages were redone: 187 items, of which 150 are in the bank.
+- Pins were kept, so coverage is unchanged: 208/215 bullets of the covered task statements.
+- The D1.6 items add TS 5.6 K1 and S4.
+- Items that closely echoed official samples were reframed with different situations and distractors: the batch pre-merge/overnight item (Q11), the per-file review item (Q12), the verify_fact item (Q9) and the test-file rules item (Q6).
+- Answer positions: A 41 / B 50 / C 53 / D 43.
+
+**Checks:**
+- `chkq.py`: no length tells.
+- `test_questions.py`: 0 problems on every page.
+- `test_all_pages.py`: 0 exceptions.
+
+**Uncommitted.**

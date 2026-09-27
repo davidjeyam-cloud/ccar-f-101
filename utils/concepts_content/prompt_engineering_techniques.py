@@ -391,136 +391,156 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A CI review prompt lists the fields every finding needs (location, issue, severity, suggested fix), but "
-           "findings still come back in varying shapes that the comment bot can't post. What's the most effective fix?"),
+        q=("A CI review prompt lists the four fields every finding needs (location, issue, severity, suggested fix), but "
+           "about 20% of findings come back in varying shapes that the comment bot can't post. Adding “follow the format "
+           "exactly” in capitals changed nothing. What is the most effective fix?"),
         opts=("Add a few examples that show findings in exactly the required format.",
-              "Repeat the field list in capital letters.",
-              "Post-process the output with a formatter.",
-              "Lower the temperature."),
+              "Reshape the findings afterwards with a regex that fills the four fields.",
+              "Repeat the field list at the end of the prompt as well as at the start.",
+              "Ask the reviewer to double-check each finding's format before replying."),
         ans=0,
-        explain=("When instructions alone give inconsistent results, few-shot examples are the most effective way to get "
-                 "consistently formatted, actionable output."),
+        explain=("Few-shot examples are the most effective way to get consistent output formatting when instructions alone "
+                 "aren't enough. B patches the output after the fact. C and D repeat the instruction that already failed."),
         scenarios=(5,), points=("4.2:K1", "4.2:S2"),
     ),
     Question(
-        q=("A support agent hesitates between get_customer and lookup_order on requests like “it's about my last "
-           "purchase”, and picks inconsistently. What's the best prompt addition?"),
-        opts=("A rule: “when in doubt, call both tools”.",
-              "A longer description of each tool's parameters.",
-              "Two to four targeted examples of ambiguous requests, each showing the chosen tool and why it beat the alternative.",
-              "An instruction to ask the customer which tool to use."),
-        ans=2,
-        explain=("Targeted examples for ambiguous cases show why one action beats plausible alternatives, which teaches "
-                 "the model how to handle the ambiguity."),
+        q=("A support agent hesitates between get_customer and lookup_order on requests like “it's about my last purchase”, "
+           "choosing inconsistently in about 30% of such cases. Both tool descriptions were recently rewritten and work well "
+           "for unambiguous requests. What is the best prompt addition?"),
+        opts=("A rule at the top of the prompt saying “when unsure, always call lookup_order first”.",
+              "Twenty examples of clear-cut requests, so the model sees many correct tool choices together.",
+              "A confidence threshold below which the agent asks the customer which tool it should use.",
+              "Two to four targeted examples of ambiguous requests, each showing the chosen tool and why."),
+        ans=3,
+        explain=("A few examples aimed at the ambiguous cases, each with its reasoning, teach the judgement that is missing. A "
+                 "hard-codes one answer for every ambiguous case. B spends examples on the cases that already work. C uses "
+                 "self-reported confidence and hands an internal choice to the customer."),
         scenarios=(1,), points=("4.2:K2", "4.2:S1"),
     ),
     Question(
-        q=("Every time the agent mishandles a new kind of ambiguous request, the team adds another rule to the prompt. "
-           "After 30 rules it still fails on phrasings nobody anticipated. What approach generalises better?"),
-        opts=("Keep adding rules, since coverage will eventually be complete.",
-              "Replace the rules with one instruction: “use your best judgment”.",
-              "Send unusual requests to a human by default.",
-              "A few well-chosen examples that demonstrate the reasoning, so the model can apply the same judgment to new patterns."),
-        ans=3,
-        explain=("Examples let the model generalise judgment to new patterns, not just match the listed cases. Rule lists "
-                 "only cover what was anticipated."),
+        q=("Every time the agent mishandles a new kind of ambiguous request, the team adds another rule to the prompt. After "
+           "30 rules, it still fails on about 12% of phrasings nobody anticipated, and some rules now contradict each other. "
+           "What approach generalises better?"),
+        opts=("Keep adding rules, but group them by topic so the model can find the relevant rule more easily.",
+              "A few well-chosen examples that show the reasoning, so the model can apply it to new patterns.",
+              "Replace the rules with one instruction to “use your best judgement on ambiguous requests”.",
+              "A classifier that detects ambiguous requests and routes them to a human before the agent sees them."),
+        ans=1,
+        explain=("Examples that show the reasoning let the model generalise to new patterns, where rules only cover the cases "
+                 "someone thought of. A keeps chasing individual cases. C removes the guidance altogether. D is "
+                 "over-engineered and moves the ambiguity rather than resolving it."),
         scenarios=(1, 3), points=("4.2:K3",),
     ),
     Question(
-        q=("Extracting product dimensions, the pipeline returns null for required measurements whenever documents use "
-           "informal wording like “about two metres” or “a shade under 50cm”. What's the best fix?"),
-        opts=("Make the measurement fields optional.",
-              "Add examples covering varied and informal ways measurements are written, with the correct extraction for each.",
-              "Tell the model never to return null.",
-              "Pre-process documents with a regex that finds numbers."),
-        ans=1,
-        explain=("Examples with varied formats fix empty or null extraction of required fields, and reduce hallucination "
-                 "on informal measurements. Forbidding null invites made-up values."),
+        q=("Extracting product dimensions, the pipeline returns null for required measurements in about 18% of documents. "
+           "All of these use informal wording like “about two metres” or “a shade under 50cm”, while formal measurements "
+           "such as “200 cm” are extracted correctly. What is the best fix?"),
+        opts=("Make the measurement fields optional, so informal documents stop failing schema validation.",
+              "Add a regex pre-processing step that converts informal phrases into numbers before extraction.",
+              "Add examples covering varied and informal ways of writing measurements, with correct extraction.",
+              "Tell the model in the prompt to “extract any measurements even when they are written informally”."),
+        ans=2,
+        explain=("Examples covering the varied ways a value is written reduce nulls on informal inputs. A hides the failure "
+                 "behind nulls. B needs a pattern for every phrasing. D is an instruction without the demonstration that "
+                 "makes it work."),
         scenarios=(6,), points=("4.2:K4", "4.2:S5"),
     ),
     Question(
-        q=("The CI reviewer keeps flagging the team's standard retry decorator as “unsafe error handling”, while also "
-           "missing real cases of swallowed exceptions. What's the most effective prompt change?"),
-        opts=("Examples that contrast the acceptable decorator pattern with genuinely swallowed exceptions.",
-              "An instruction to skip all error-handling findings.",
-              "A rule to ignore any function with a decorator.",
-              "A higher severity threshold for error-handling findings."),
-        ans=0,
-        explain=("Examples that separate acceptable code patterns from real issues cut false positives while still "
-                 "generalising to the real problems. Blanket skips hide genuine bugs."),
+        q=("The CI reviewer flags the team's standard retry decorator as “unsafe error handling” on about 10 PRs a week, "
+           "while also missing real cases of swallowed exceptions. The prompt currently says “flag unsafe error handling”. "
+           "What is the most effective prompt change?"),
+        opts=("A rule saying “never flag decorators”, so the retry decorator stops appearing in the findings.",
+              "Examples contrasting the acceptable decorator pattern with genuinely swallowed exceptions.",
+              "A longer definition of “unsafe error handling” that lists every exception type it may involve.",
+              "Removing the error-handling checks, since the reviewer can't tell good cases from bad ones."),
+        ans=1,
+        explain=("Examples that contrast an acceptable pattern with a real issue teach the distinction, which fixes both the false "
+                 "positives and the misses. A creates a blind spot for bad decorators. C adds length but not the "
+                 "contrast. D gives up on real bugs."),
         scenarios=(5,), points=("4.2:S3",),
     ),
     Question(
-        q=("A citation extractor works on papers with a bibliography at the end, but misses or duplicates citations in "
-           "papers that cite inline (Author, 2021) with no bibliography. What's the best fix?"),
-        opts=("Tell the model that all papers have bibliographies.",
-              "Pre-convert inline citations into a bibliography with a script.",
-              "Add examples showing correct extraction from both structures: inline citations and end-of-paper bibliographies.",
-              "Only process papers that have bibliographies."),
+        q=("A citation extractor works on papers with a bibliography at the end, but misses or duplicates citations in about "
+           "40% of papers that cite inline, such as (Author, 2021), with no bibliography. All three of its few-shot examples "
+           "are bibliography-style papers. What is the best fix?"),
+        opts=("Add a rule telling the model to look for inline citations whenever a paper has no bibliography.",
+              "Pre-process inline-citation papers by generating a bibliography for them before extraction starts.",
+              "Add examples showing correct extraction from both structures: inline citations and bibliographies.",
+              "Send inline-citation papers to a separate pipeline that uses a larger model for the extraction."),
         ans=2,
-        explain=("Examples showing correct handling of varied document structures, such as inline citations vs "
-                 "bibliographies, teach the model both shapes."),
+        explain=("The examples cover only one document structure. Adding examples of the other structure is the fix. A states "
+                 "the goal without demonstrating it. B adds a fragile pre-processing step. D throws a bigger model at a "
+                 "gap in the examples."),
         scenarios=(6, 3), points=("4.2:S4",),
     ),
     Question(
-        q=("A developer describes in prose how Claude Code should convert API field names (snake_case to camelCase, but "
-           "keep “ID” uppercase and leave “_links” alone). Each run interprets the rules slightly differently. What "
-           "communicates the transformation best?"),
-        opts=("A longer, more precise paragraph.",
-              "Asking Claude to restate the rules before starting.",
-              "Running the conversion several times and keeping the most common result.",
-              "Two or three concrete input → output examples, including the exceptions."),
-        ans=3,
-        explain=("Concrete input/output examples are the most effective way to communicate a transformation when prose "
-                 "is interpreted inconsistently."),
+        q=("A developer describes in prose how Claude Code should convert API field names: snake_case to camelCase, but keep "
+           "“ID” uppercase and leave “_links” alone. Across 5 runs the interpretation differs each time, and user_id has "
+           "become userId, userID and userIdentifier. What communicates the transformation best?"),
+        opts=("Two or three concrete input-to-output examples, including the exceptions.",
+              "A longer prose description that spells out every rule in more detail.",
+              "A regular expression that describes the whole pattern, pasted into the prompt.",
+              "A reminder at the end of the prompt to follow the rules exactly as written."),
+        ans=0,
+        explain=("Concrete input/output examples are the most effective way to communicate a transformation when prose is read "
+                 "inconsistently. B adds more of what failed. C can't easily express the exceptions. D repeats the "
+                 "instruction."),
         scenarios=(2,), points=("3.5:K1", "3.5:S1"),
     ),
     Question(
-        q=("A developer asks Claude Code to fix a data migration script and replies “still broken” after each attempt. "
-           "It takes many rounds. What's the more effective way to iterate?"),
-        opts=("Describe the bug in more detail each time.",
-              "Write tests covering the expected behaviour and edge cases first, then share the specific test failures after each attempt.",
-              "Ask Claude to try a completely different approach each round.",
-              "Switch to plan mode for every attempt."),
-        ans=1,
-        explain=("Test-driven iteration means writing tests first, then iterating by sharing test failures. That gives "
-                 "each round a precise target instead of “still broken”."),
+        q=("A developer asks Claude Code to fix a data migration script and replies “still broken” after each attempt. After 7 "
+           "rounds, the script handles two of the four known edge cases, and a different one breaks each time. What is the "
+           "more effective way to iterate?"),
+        opts=("Keep replying “still broken”, but ask Claude to try a completely different approach each round.",
+              "Paste the whole database schema into the conversation, so Claude has the full context to work with.",
+              "Ask Claude to list every edge case it can think of before it attempts another fix to the script.",
+              "Write tests for the expected behaviour and edge cases first, then share the specific failures."),
+        ans=3,
+        explain=("Test-driven iteration defines “done”, and each specific failure tells Claude exactly what to fix. A gives no "
+                 "information. B adds context but not the definition of success. C guesses at edge cases the developer "
+                 "already knows."),
         scenarios=(2,), points=("3.5:K2", "3.5:S2"),
     ),
     Question(
-        q=("A developer who has never built a caching layer asks Claude Code to add one to a busy API. They're not sure "
-           "what they haven't thought of. What's the best way to start?"),
-        opts=("Have Claude interview them first, asking about invalidation, failure modes and consistency needs, before implementing.",
-              "Ask Claude to implement the most common caching approach straight away.",
-              "Enable extended thinking and let Claude decide everything.",
-              "Copy a caching layer from another project."),
-        ans=0,
-        explain=("The interview pattern has Claude ask questions that surface considerations the developer may not have "
-                 "anticipated, such as cache invalidation and failure modes, before implementing in an unfamiliar domain."),
+        q=("A developer who has never built a caching layer asks Claude Code to add one to an API serving about 2,000 requests "
+           "a second. They aren't sure what they haven't thought of, and a previous attempt served stale prices for an hour. "
+           "What is the best way to start?"),
+        opts=("Ask Claude to implement a standard cache with a 60-second TTL, and adjust it after deployment.",
+              "Have Claude interview them first about invalidation, failure modes and consistency needs.",
+              "Copy a caching layer from another service, and ask Claude to adapt it to this API's code.",
+              "Start in plan mode and ask Claude for a design, without discussing any requirements first."),
+        ans=1,
+        explain=("In an unfamiliar domain, having Claude ask questions first brings out considerations the developer hasn't "
+                 "anticipated, such as invalidation. A repeats the stale-data risk. C imports someone else's assumptions. D "
+                 "plans without the requirements."),
         scenarios=(2,), points=("3.5:K3", "3.5:S3"),
     ),
     Question(
-        q=("A migration script generated by Claude Code crashes on rows where middle_name is null, and a vague bug report "
-           "didn't fix it. What's the most effective next message?"),
-        opts=("“Please handle all edge cases.”",
-              "“The script fails sometimes; be more careful.”",
-              "Specific test cases with example input rows (including null middle_name) and the exact expected output.",
-              "The full production database dump."),
+        q=("A migration script generated by Claude Code crashes on rows where middle_name is null, about 3% of 2 million rows. "
+           "The developer's bug report, “it fails on some names”, produced a fix that didn't help. What is the most effective "
+           "next message?"),
+        opts=("A request to wrap the whole migration in try/except so that any failing rows are simply skipped.",
+              "The full stack trace, with no sample data, and a request to fix the error it shows.",
+              "Test cases with sample input rows, including a null middle_name, and the exact expected output.",
+              "A note that the problem is urgent, asking Claude to look more carefully at the name handling."),
         ans=2,
-        explain=("Specific test cases with example input and expected output fix edge-case handling, such as nulls in "
-                 "migration scripts, far better than general appeals."),
+        explain=("Specific test cases, with example inputs and the expected outputs, pin down the behaviour to fix. A hides the "
+                 "problem by skipping rows. B shows where it crashed but not what should happen. D adds urgency, not "
+                 "information."),
         scenarios=(2,), points=("3.5:S4",),
     ),
     Question(
-        q=("Two bugs interact: the tax calculation depends on how the order total is rounded, and both are wrong. A third "
-           "bug, a typo in an email template, is unrelated. How should the developer raise them with Claude Code?"),
-        opts=("All three in one message.",
-              "One at a time, starting with the typo.",
-              "The tax bug first, then rounding, then the typo, each in turn.",
-              "The rounding and tax bugs together in one detailed message; the typo separately."),
-        ans=3,
-        explain=("Interacting problems go in a single detailed message so the fixes fit together. Independent problems "
-                 "are best fixed one at a time."),
+        q=("Three bugs are open: the tax calculation depends on how the order total is rounded, and both are wrong; a third "
+           "bug, a typo in an email template, is unrelated. Fixing the rounding alone last week broke the tax totals. How "
+           "should the developer raise them with Claude Code?"),
+        opts=("The rounding and tax bugs together in one detailed message, and the typo separately.",
+              "All three in one single message, so that Claude sees every open problem at the same time.",
+              "Each bug in its own message, one after another, starting with the rounding bug.",
+              "The tax bug first, then the rounding bug once the tax fix has been verified."),
+        ans=0,
+        explain=("Interacting problems belong in one message so the fixes are designed together. Independent ones are raised "
+                 "separately. B mixes an unrelated fix in with them. C and D split the interacting pair, which is what broke "
+                 "the tax totals last week."),
         scenarios=(2,), points=("3.5:K4", "3.5:S5"),
     ),
 )

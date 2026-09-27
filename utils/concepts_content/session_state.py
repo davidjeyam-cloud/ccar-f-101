@@ -535,106 +535,117 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("On Monday a developer ran a long Claude Code investigation of the payments service, in a session named "
-           "payments-audit. Since then they've opened several unrelated sessions. On Wednesday they want to pick up "
-           "exactly that investigation. What should they run?"),
-        opts=("claude --continue, which reopens the payments investigation.",
-              "A new session, pasting Monday's findings from memory.",
-              "claude --resume payments-audit, which reopens that named session.",
-              "claude -p with the question, since print mode keeps history."),
-        ans=2,
-        explain=("--resume with a session name continues that specific earlier conversation. --continue picks the "
-                 "most recent conversation, which here is one of the unrelated ones."),
+        q=("On Monday a developer ran a 3-hour Claude Code investigation of the payments service, in a session named "
+           "payments-audit. Since then they have opened five unrelated sessions in the same repository. On Wednesday they "
+           "want to pick up exactly that investigation, with its earlier findings intact. What should they run?"),
+        opts=("claude --continue, which reopens the most recent conversation in the current directory with its history.",
+              "claude --resume payments-audit, which reopens that named session with its full conversation history.",
+              "A new session, pasting in Monday's final message so that the key conclusions carry into the new context.",
+              "claude -p \"resume payments-audit\", which runs the named session non-interactively and prints its findings."),
+        ans=1,
+        explain=("--resume with the session name reopens that exact conversation. A would open the most recent of the five "
+                 "unrelated sessions. C throws away the history the developer wants to keep. D misuses -p, which sends a "
+                 "new prompt in print mode; it doesn't select an old session."),
         scenarios=(2, 4), points=("1.7:K1", "1.7:S1"),
     ),
     Question(
-        q=("A developer resumes yesterday's analysis session of an order service. Overnight a teammate merged changes to "
-           "two of the eleven files that session had analysed. What's the most efficient way to keep the analysis "
-           "accurate?"),
-        opts=("Tell the resumed session which two files changed and have it re-analyse just those.",
-              "Ask the resumed session to re-read all eleven files to be safe.",
-              "Carry on as is; the session automatically notices file changes.",
-              "Discard the session and redo the whole investigation from scratch."),
-        ans=0,
-        explain=("When resuming after code changes, tell the agent which analysed files changed, so it re-analyses "
-                 "them in a targeted way rather than re-exploring everything. The session's earlier tool results don't "
-                 "update by themselves."),
+        q=("A developer resumes yesterday's analysis session of an order service. Overnight a teammate merged changes to 2 of "
+           "the 11 files the session had analysed. The resumed session now recommends a fix to a function that the merge "
+           "renamed. What is the most efficient way to keep the analysis accurate?"),
+        opts=("Start a fresh session and have it re-analyse all 11 files, so that nothing stale can remain in its context.",
+              "Keep going in the resumed session and trust it to notice the changes the next time it reads any of the files.",
+              "Tell the resumed session which 2 files changed and have it re-analyse just those before it continues.",
+              "Run /compact so the stale tool results are summarised away before the session continues with its work."),
+        ans=2,
+        explain=("When you resume, tell the session exactly what changed so it can re-analyse just those parts. Most of its "
+                 "earlier work is still valid. A throws away nine files of valid analysis. B is how the stale "
+                 "recommendation happened. D summarises the stale results but doesn't correct them."),
         scenarios=(4,), points=("1.7:K3", "1.7:S4"),
     ),
     Question(
-        q=("Three weeks after an architecture investigation, a large refactor has rewritten most of the modules that "
-           "session read. The developer wants to continue the investigation. What's the most reliable approach?"),
-        opts=("Resume the session and ask it to double-check everything it said before.",
-              "Resume the session, since its conclusions are still in context.",
-              "Fork the old session so the original stays untouched.",
-              "Start a new session seeded with a structured summary of the conclusions that still hold, and re-explore the changed code."),
+        q=("Three weeks after an architecture investigation, a large refactor has rewritten about 70% of the modules that "
+           "session read. The developer resumes it, and within ten minutes it cites two classes that no longer exist. What "
+           "is the most reliable way to continue the investigation?"),
+        opts=("Keep the resumed session, and tell it which modules were refactored so it can re-read each one on demand.",
+              "Fork the old session, so the original stays untouched while the fork explores the refactored modules afresh.",
+              "Run /compact in the resumed session, so the outdated file contents are condensed before it continues.",
+              "Start a new session seeded with a structured summary of what still holds, and re-explore the changed code."),
         ans=3,
-        explain=("Resume when prior context is mostly still valid. When most of the earlier tool results are stale, a "
-                 "fresh session with an injected summary is more reliable than resuming and reasoning over outdated file contents."),
+        explain=("When most earlier tool results are stale, a new session seeded with a structured summary is more reliable "
+                 "than resuming. A works for a few changed files, but here most of the context is wrong and keeps "
+                 "competing with the new reads. B copies the same stale context into the fork. C condenses the outdated "
+                 "content without correcting it."),
         scenarios=(2, 4), points=("1.7:K4", "1.7:S3"),
     ),
     Question(
-        q=("After a shared analysis of a legacy billing module, the team wants to try two refactoring strategies, "
-           "strangler-fig and in-place rewrite, without either exploration influencing the other, and without "
-           "repeating the analysis. What should they use?"),
-        opts=("Two brand-new sessions, each asked to redo the analysis first.",
-              "fork_session from the analysis session, giving two independent branches from the same baseline.",
-              "One session that explores the first strategy, then the second.",
-              "--continue twice from two terminals."),
-        ans=1,
-        explain=("Forking creates independent branches from a shared analysis baseline, which is exactly for "
-                 "divergent approaches. One session mixes the two, and fresh sessions throw the baseline away."),
+        q=("After a 90-minute shared analysis of a legacy billing module, the team wants to compare two refactoring "
+           "strategies: strangler-fig and in-place rewrite. Neither exploration should influence the other, both results "
+           "must be kept for a side-by-side review, and nobody wants to repeat the analysis. What should they use?"),
+        opts=("Fork the analysis session twice, giving two independent branches from the same analysed baseline.",
+              "Continue the analysis session and explore both strategies in turn, labelling each part of the conversation.",
+              "Start two fresh sessions and paste the same one-paragraph summary of the analysis into each as the opener.",
+              "Explore the first strategy, then /rewind to the end of the analysis and explore the second one from there."),
+        ans=0,
+        explain=("Forking gives divergent branches from a shared baseline: each keeps the full analysis, and neither sees the "
+                 "other. B lets the first exploration colour the second. C throws away most of the 90-minute analysis. D "
+                 "rewinds away the first strategy's conversation, so there is nothing left to compare side by side."),
         scenarios=(2, 4), points=("1.7:K2", "1.7:S2", "1.3:K4"),
     ),
     Question(
-        q=("Deep into a long codebase exploration, the agent's answers start contradicting earlier ones and mention "
-           "“typical repository patterns” instead of the specific classes it found an hour ago. What best prevents this "
-           "in the rest of the task?"),
-        opts=("Increase max_tokens so the answers can be more detailed.",
-              "Ask the agent to re-read the whole codebase whenever it's unsure.",
-              "Have the agent keep a scratchpad file of key findings and consult it for later questions.",
-              "Tell the agent in the system prompt to stay consistent."),
-        ans=2,
-        explain=("These are signs of context degradation in long sessions. Scratchpad files keep key findings across "
-                 "context boundaries so later answers can rely on them. A consistency instruction doesn't restore the "
-                 "lost specifics."),
+        q=("Two hours into a codebase exploration, the agent's answers start contradicting answers it gave earlier. It "
+           "mentions “typical repository patterns” instead of the specific classes it found an hour ago. The session has "
+           "already been compacted twice. What best prevents this for the rest of the task?"),
+        opts=("Have the agent record key findings in a scratchpad file and consult that file when answering later questions.",
+              "Switch to a model with a larger context window, so that early findings are never pushed out of its context.",
+              "Instruct the agent in its system prompt to always refer to specific class names rather than general patterns.",
+              "Run /compact more often, so the context stays small enough that earlier findings always remain in view."),
+        ans=0,
+        explain=("Context degradation in long sessions is countered by persisting key findings to a scratchpad file and "
+                 "referring back to it. A larger window (B) delays the problem without fixing it. C instructs the model to "
+                 "recall facts it has already lost. D compacts more often, and each compaction condenses details further."),
         scenarios=(4,), points=("5.4:K1", "5.4:S2"),
     ),
     Question(
-        q=("A coordinator and three exploration agents crash after two of the agents have finished. Restarting today "
-           "redoes all the work. What design lets the system resume without repeating finished work?"),
-        opts=("Each agent exports its state to a known location; on resume the coordinator loads a manifest and puts it into the prompts.",
-              "Raise max_turns so the agents finish before anything can crash.",
-              "Run all three agents inside one conversation so nothing is lost.",
-              "Resume the coordinator's session; subagent results are kept automatically."),
-        ans=0,
-        explain=("Crash recovery works through structured state exports: a manifest that the coordinator loads on resume "
-                 "and injects into its prompts. Subagent context isn't shared with or kept for the coordinator."),
+        q=("A research coordinator runs three analysis agents over a 400-document corpus. After a crash, agents 1 and 2 had "
+           "finished and agent 3 was halfway through, but the restart redid all three, which cost about 2 hours. The team "
+           "wants recovery that never repeats finished work. What is the best design?"),
+        opts=("Keep all three agents' full conversation histories in memory, so the coordinator can replay them after a crash.",
+              "Have each agent export its state to a known location; on resume, the coordinator loads a manifest and injects it.",
+              "Restart only agent 3, telling it in its prompt which documents it had processed before the crash happened.",
+              "Split the corpus into many smaller batches, so that any single crash costs less work to redo when the whole run restarts."),
+        ans=1,
+        explain=("For crash recovery, each agent exports structured state to a known location. On resume, the coordinator loads "
+                 "the manifest and injects each agent's state into its prompt. A keeps the state in memory, which the crash "
+                 "wipes. C assumes the coordinator knows agent 3's progress, which it can't without an export, and still "
+                 "needs agents 1 and 2's results. D reduces the loss but still repeats work."),
         scenarios=(3, 4), points=("5.4:K4", "5.4:S4"),
     ),
     Question(
-        q=("A migration investigation has three phases: map dependencies, identify risky call sites, then plan the "
-           "changes. By phase 3 the context is full of raw phase-1 search output and the planning is getting vague. What "
-           "should the workflow do between phases?"),
-        opts=("Keep everything in one context so nothing is lost.",
-              "Delete the phase-1 notes, since the dependencies are already mapped.",
-              "Switch to a larger model only for phase 3.",
-              "Summarise each phase's findings and inject that summary into the next phase's context."),
-        ans=3,
-        explain=("Summarise key findings before starting the next phase and inject the summary into the new context. "
-                 "The important facts carry forward without the verbose output."),
+        q=("A migration investigation has three phases: map dependencies, find risky call sites, then plan the changes. By "
+           "phase 3, about 60% of the context is raw phase 1 search output, and the plan refers to “several modules” "
+           "instead of naming them. What should the workflow do between phases?"),
+        opts=("Run /clear at the start of each phase, so that every phase begins with an empty context and full attention.",
+              "Keep everything in one session and ask the agent to re-read its earliest findings before it starts planning.",
+              "Summarise each phase's key findings and inject that summary into the next phase's initial context.",
+              "Move to a model with a larger context window for phase 3, so all the raw search output fits comfortably."),
+        ans=2,
+        explain=("Summarising each phase's key findings and injecting them into the next phase keeps the facts that matter "
+                 "without the raw exploration. A also wipes out phase 1's results. B asks the agent to dig through the same "
+                 "noise. D makes room for the noise instead of removing it."),
         scenarios=(4,), points=("5.4:S3",),
     ),
     Question(
-        q=("Last night a developer did a long refund investigation in Claude Code, then opened a quick session to fix a "
-           "typo. This morning they run claude --continue and find a conversation about the typo. What happened?"),
-        opts=("Sessions are deleted overnight.",
-              "--continue opens the most recent conversation in that directory, which was the typo fix.",
-              "The investigation was too long to save.",
-              "--continue only works within the same terminal window."),
-        ans=1,
-        explain=("Per the docs, --continue reopens the most recent conversation in the current directory. To reach a "
-                 "specific earlier one, use --resume (by name or from the picker)."),
+        q=("Last night a developer ran a long refund investigation in Claude Code, then opened a quick session in the same "
+           "directory to fix a typo. This morning they run claude --continue and land in the typo conversation, with none of "
+           "the refund work. They assume the refund session was lost. What actually happened, and how do they get it back?"),
+        opts=("--continue reopens the most recent conversation in the directory; use --resume to pick the refund session.",
+              "Sessions older than 12 hours are archived; restore the refund session from the archive using /restore.",
+              "The typo session overwrote the refund session's history, so it can be rebuilt only by redoing the work.",
+              "--continue works only for sessions started with -p, so the refund work must be rerun under a session name."),
+        ans=0,
+        explain=("--continue picks the most recent conversation in the current directory, which was the typo fix. The refund "
+                 "session still exists and can be chosen with --resume. B and D describe behaviour that doesn't exist, and C "
+                 "assumes sessions overwrite each other, which they don't."),
         scenarios=(2,), basis="docs", in_bank=False,
     ),
 )

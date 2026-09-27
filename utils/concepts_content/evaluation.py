@@ -434,53 +434,58 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A team's tool-selection eval scores 100% on 200 requests, yet in production the agent keeps routing questions "
-           "about web search results to the document-analysis tool. All 200 eval requests were clear-cut, such as “search "
-           "the web for…” or “analyse this PDF…”. What should change first?"),
-        opts=("Increase the eval to 2,000 requests of the same kind.",
-              "Lower the release threshold from 100% to 95%.",
-              "Add ambiguous requests that could plausibly fit either tool, since that's where misrouting happens.",
-              "Evaluate a different model on the same set."),
-        ans=2,
-        explain=("Misrouting comes from ambiguous or overlapping cases, so the eval must test tool selection on "
-                 "ambiguous requests. More of the same easy requests measures nothing new."),
+        q=("A team's tool-selection eval scores 100% on 200 requests, yet in production the agent routes about 1 in 5 "
+           "questions about web search results to the document-analysis tool. All 200 eval requests are clear-cut, such as "
+           "“search the web for…” or “analyse this PDF…”. What should change first?"),
+        opts=("Add ambiguous requests that could plausibly fit either tool, since that is where misrouting happens.",
+              "Double the eval set to 400 clear-cut requests, so that the headline score is statistically more reliable.",
+              "Raise the ship threshold from 95% to 99%, so that only near-perfect tool selection can be released.",
+              "Replace the eval with production sampling, since offline evals can't predict production behaviour."),
+        ans=0,
+        explain=("Misrouting happens where tool descriptions overlap, on ambiguous requests. An eval with none of those cannot "
+                 "see it. B adds more of the easy cases. C raises the bar on a test that can't fail. D abandons "
+                 "pre-release testing instead of fixing its coverage."),
         scenarios=(3,), points=("2.1:K3",),
     ),
     Question(
-        q=("A support agent's eval shows it picks get_customer instead of lookup_order on about half the requests that "
-           "mention both a name and an order. Which fix addresses the root cause?"),
-        opts=("Rewrite both descriptions to state what each accepts and when to use it rather than the other.",
-              "Add a system prompt rule: “if an order is mentioned, always call lookup_order”.",
-              "Remove get_customer from the agent.",
-              "Retry the request when the wrong tool is chosen."),
-        ans=0,
-        explain=("Descriptions that separate each tool's purpose, inputs, outputs and when to use it versus similar "
-                 "tools fix selection at the source. A keyword rule in the system prompt creates new unintended associations."),
+        q=("A support agent's eval shows it picks get_customer instead of lookup_order on 48% of requests that mention both a "
+           "customer name and an order number. The two descriptions are “Retrieves customer information” and “Retrieves "
+           "order details”. Which fix addresses the root cause?"),
+        opts=("Change the eval so either tool counts as correct, since both can eventually lead to the right order.",
+              "Add a keyword router that sends any request containing an order number straight to lookup_order.",
+              "Rewrite both descriptions to state what each accepts and when to use it rather than the other.",
+              "Add 10 few-shot examples of mixed requests to the system prompt, each one routed to lookup_order."),
+        ans=2,
+        explain=("The eval found the symptom, and the minimal descriptions are the cause. Descriptions that give inputs and "
+                 "boundaries fix it. A hides the failure by redefining success. B bypasses the model's selection with a "
+                 "brittle layer. D adds tokens but leaves the descriptions ambiguous."),
         scenarios=(1,), points=("2.1:S1", "2.1:K4"),
     ),
     Question(
-        q=("An eval reports clear requests 100%, ambiguous requests 0% and edge cases 100%, which is 81% overall. The "
-           "release rule is “ship if overall ≥ 80%”. What's the problem with this gate?"),
-        opts=("80% is too low; it should be 90%.",
-              "Edge cases should count double.",
-              "Nothing; the agent passes.",
-              "An overall average hides a segment that fails completely; gate on each segment's criterion as well."),
-        ans=3,
-        explain=("Following the testing docs, success criteria should be specific and measurable per behaviour you care "
-                 "about. A single average lets a total failure on ambiguous requests ship."),
+        q=("An eval reports: clear requests 100%, ambiguous requests 0%, edge cases 100%, which averages to 81% overall. The "
+           "release rule is “ship if overall ≥ 80%”, so the build shipped, and ambiguous production requests immediately "
+           "started failing. What is wrong with this gate?"),
+        opts=("The 80% threshold is too low; raising it to 90% would have blocked this particular release.",
+              "An overall average hides a segment that fails completely; gate on each segment's criterion too.",
+              "The ambiguous segment is too small to matter, so it should be removed from the eval instead.",
+              "The eval should weight edge cases more heavily, since they are the hardest requests to get right."),
+        ans=1,
+        explain=("A single average can pass while a whole segment fails, so each segment needs its own success criterion. A "
+                 "might block this release, but any average can hide a failing segment. C and D change the maths instead of "
+                 "looking at the failure."),
         scenarios=(3,), basis="docs", in_bank=False,
     ),
     Question(
-        q=("After a description change fixes the misrouted requests, a developer re-runs only the cases that failed "
-           "before, sees them pass, and ships. A week later previously correct requests start failing. What should the "
-           "process have been?"),
-        opts=("Re-run only the failures, but twice.",
-              "Re-run the whole eval suite after every change to catch regressions.",
-              "Skip evals for description-only changes.",
-              "Test the change directly in production with a feature flag."),
-        ans=1,
-        explain=("A description change affects every routing decision, not just the ones it was meant to fix. Re-running "
-                 "the full, automated suite catches regressions. That's the purpose of an eval."),
+        q=("After a description change fixes 14 misrouted requests, a developer re-runs only those 14 cases, sees them pass, "
+           "and ships. A week later, 9 requests that used to be routed correctly start failing. What should the process have "
+           "been?"),
+        opts=("Add the 9 new failures to the targeted set, and re-run only the failing cases after the next change.",
+              "Ship description changes behind a feature flag, and roll back whenever production errors appear.",
+              "Freeze tool descriptions after launch, since every change risks breaking requests that already work.",
+              "Re-run the whole eval suite after every change, so regressions are caught before release."),
+        ans=3,
+        explain=("A description change can shift routing anywhere, so the full suite is the regression check. A repeats the same "
+                 "blind spot. B finds regressions in production. D stops improvement altogether."),
         scenarios=(3,), basis="docs", in_bank=False,
     ),
 )

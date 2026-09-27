@@ -85,6 +85,8 @@ Anything below is labelled **"community claim, verify in current docs"** whereve
 | # | Source (name + URL) | Date read | What we took from it | Agrees with guide? |
 |---|---|---|---|---|
 | 1 | claudearchitectcertification.com — `/concepts` and `/concepts/agentic-loops` (third-party site) | 2026-09-26 | Concept list, domain grouping and page-section layout — structure only, no text copied | Partly: the 30 numbered concepts fit the guide's 5 domains; the 41 unnumbered ones mostly have no matching guide content (`docs/CONCEPTS_MAP.md`) |
+| 2 | Official guide §9 Sample Questions (12 items, pp.27–33 of the local PDF) — official, listed here because it set the question STYLE | 2026-09-27 | Style benchmark for D1.6's rewritten questions: 3–5 sentence production symptom with numbers and log evidence; hidden qualifier (most effective / most likely root cause / first step / how should you evaluate); four equal-length options; wrong options that are prompt-instead-of-code, over-engineered, solve a different problem, blame a working downstream agent, over-provision tools, or misread a parameter. No sample question reused. | Yes (official) |
+| 3 | Community question banks: github.com/OlivierAlter/Claude-Certified-Architect-Foundations-Certification-Exam, github.com/hamzafarooq/claude-certified-architect, claudecertifiedarchitects.com/cca-practice-questions, certsafari.com (CCAR-F page) | 2026-09-27 | Style only (stem length, numeric symptoms, distractor patterns) — community claim, unverified; no question, stem or option copied or adapted | Style matches the guide's §9 samples; content not verified |
 
 ## Disagreements between community sources and the guide
 

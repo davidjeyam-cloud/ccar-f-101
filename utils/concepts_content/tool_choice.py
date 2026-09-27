@@ -539,126 +539,146 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("An invoice-extraction pipeline defines one extraction tool, but on short or odd documents Claude sometimes "
-           "replies in plain text (“This appears to be a receipt…”) instead of calling it, and the parser crashes. "
-           "tool_choice is “auto”. What's the most direct fix?"),
-        opts=("Add “always call the tool” to the system prompt.",
-              "Parse the text reply with a regex when it happens.",
+        q=("An invoice-extraction pipeline defines one extraction tool, with tool_choice set to “auto”. On short or unusual "
+           "documents, about 6% of the time, Claude replies in plain text (“This appears to be a receipt…”) instead of "
+           "calling the tool, and the downstream parser crashes. What is the most direct fix?"),
+        opts=("Add a system-prompt instruction saying the model must always call the extraction tool for every document.",
               "Set tool_choice to “any”, so the model must call a tool instead of answering in text.",
-              "Lower the temperature to zero."),
-        ans=2,
-        explain=("With “auto” the model may answer in text. “any” guarantees a tool call. A prompt instruction improves "
-                 "the odds but guarantees nothing."),
+              "Catch text replies and resend the identical request until the model eventually calls the extraction tool.",
+              "Parse the plain-text replies with a regular expression to recover whatever fields the model mentioned."),
+        ans=1,
+        explain=("With “auto” the model may answer in text. “any” guarantees a tool call, so every document produces "
+                 "structured output. A is a probabilistic instruction for something a setting can guarantee. C resends a "
+                 "request that behaves the same way. D builds a fragile parser around unstructured text."),
         scenarios=(6,), points=("2.3:K4", "2.3:S5", "4.3:K2"),
     ),
     Question(
         q=("Incoming documents may be invoices, receipts or contracts, each with its own extraction tool and schema. The "
-           "type isn't known in advance, and every document must produce structured output. How should tool_choice be set?"),
-        opts=("“any” with all three tools, so the model must call one and picks which fits the document.",
-              "Force the invoice tool, then retry with the others if it fails.",
-              "“auto”, trusting the model to call the right tool.",
-              "Classify the document in a separate call and parse its text answer."),
-        ans=0,
-        explain=("“any” guarantees structured output when several extraction schemas exist and the type is unknown: "
-                 "the model must call a tool but chooses which. Forcing one tool would push contracts into the invoice schema."),
+           "type isn't known in advance, and every document must produce structured output. Today tool_choice forces "
+           "extract_invoice, and 40% of receipts and contracts come back with empty or wrong fields. How should tool_choice "
+           "be set?"),
+        opts=("“auto” with all three tools, so the model can pick a tool or explain in text when it's unsure of the type.",
+              "Forced to whichever tool matched the previous document, since batches tend to contain a single type.",
+              "“any” with all three tools, so the model must call one and chooses whichever tool fits the document.",
+              "Forced to extract_invoice as now, but with receipt and contract fields added to the invoice's schema."),
+        ans=2,
+        explain=("“any” guarantees structured output and lets the model choose the schema that fits each document. A allows "
+                 "text replies, which breaks the every-document requirement. B and D keep forcing a single tool, so they "
+                 "either guess the type or push three schemas into one."),
         scenarios=(6,), points=("4.3:S2", "4.3:K2"),
     ),
     Question(
-        q=("In an extraction workflow, extract_metadata must always run first. After that, the model should decide "
-           "freely between enrichment tools or answer. How should tool_choice be configured?"),
-        opts=("“any” on every turn.",
-              "“auto” on every turn, with “call extract_metadata first” in the prompt.",
-              "Force extract_metadata on every turn.",
-              "Force extract_metadata on the first request, then use “auto” on the follow-up turns."),
-        ans=3,
-        explain=("Forcing {\"type\": \"tool\", \"name\": \"extract_metadata\"} guarantees it runs first. Later steps are "
-                 "handled in follow-up turns with normal choice. Forcing it every turn would loop the same tool."),
+        q=("In an extraction workflow, extract_metadata must run before anything else, because later tools depend on its "
+           "output. After that, the model should choose freely between four enrichment tools or finish with a text answer. "
+           "With tool_choice “auto” throughout, 12% of test runs skip extract_metadata. How should tool_choice be configured?"),
+        opts=("Force extract_metadata on the first request, then use “auto” on the follow-up turns.",
+              "Use “any” on every turn, so the model always calls some tool and never skips a required step.",
+              "Keep “auto” throughout, and state in the system prompt that extract_metadata must be called first.",
+              "Force extract_metadata on every turn, so the metadata is always fresh before each enrichment call."),
+        ans=0,
+        explain=("Forcing a specific tool on the first request guarantees that step runs, and “auto” afterwards gives back the "
+                 "freedom the later steps need. B guarantees some tool, not this one, and it also prevents the final text "
+                 "answer. C is prompt-based ordering, which already fails 12% of the time. D loops on the same tool forever."),
         scenarios=(6,), points=("2.3:S4", "4.3:S3"),
     ),
     Question(
-        q=("An extraction schema marks tax_id as a required string. Audits find plausible-looking but invented tax ids on "
-           "invoices that don't contain one. What's the best schema change?"),
-        opts=("Add “never invent values” to the tool description.",
-              "Make tax_id optional/nullable, so the model can report it as absent.",
-              "Validate tax ids with a checksum and retry until one passes.",
-              "Change tax_id from a string to an integer."),
-        ans=1,
-        explain=("A required field pushes the model to fill it even when the source has nothing. Making it "
-                 "optional/nullable lets it report absence. A retry loop can't produce information that isn't there."),
+        q=("An extraction schema marks tax_id as a required string. An audit of 500 invoices finds plausible-looking tax IDs "
+           "on 38 invoices that contain none, and every one of those outputs passed schema validation. What is the best "
+           "schema change?"),
+        opts=("Add a regex pattern to tax_id so that only correctly formatted tax IDs can pass schema validation.",
+              "Keep tax_id required, and say in the field description that the model must never invent a value.",
+              "Make tax_id optional or nullable, so that the model can report the value as absent from the document.",
+              "Add a confidence field next to tax_id, and drop any tax ID whose confidence the model rates below 0.7."),
+        ans=2,
+        explain=("A required field forces the model to put something there. Making it nullable lets it say “not present”, "
+                 "which removes the pressure to invent a value. A: invented IDs are plausible, so a regex passes them. B "
+                 "leaves the pressure in place. D relies on self-reported confidence, which is poorly calibrated."),
         scenarios=(6,), points=("4.3:S4", "4.3:K4"),
     ),
     Question(
-        q=("A document_type enum lists invoice, receipt and contract. New kinds, such as credit notes and delivery "
-           "slips, keep being squeezed into “receipt”, and some scans are too blurry to classify. What's the best "
-           "schema design?"),
-        opts=("Add every future document type to the enum now.",
-              "Remove the enum and accept free text.",
-              "Add “other” with a detail string for new kinds, and “unclear” for documents that can't be classified.",
-              "Make document_type required so the model tries harder."),
-        ans=2,
-        explain=("An enum with “other” plus a detail string handles extensible categories, and “unclear” covers "
-                 "ambiguous cases, while keeping the field structured. Free text loses the structure."),
+        q=("A document_type enum lists invoice, receipt and contract. New document kinds, such as credit notes and delivery "
+           "slips, keep being squeezed into “receipt”, and blurry scans are forced into a type too. Downstream, 7% of "
+           "documents are routed to the wrong queue. What is the best schema design?"),
+        opts=("Add every new document kind to the enum as it appears, and redeploy the schema each time one is found.",
+              "Replace the enum with a free-text string, so the model can describe each document in its own words.",
+              "Keep the enum, and add a system-prompt rule telling the model to choose the closest matching type.",
+              "Add “other” with a detail string for new kinds, and “unclear” for documents that can't be classified."),
+        ans=3,
+        explain=("An “other” value with a detail string handles new kinds, and “unclear” gives ambiguous inputs an honest "
+                 "answer. Both keep the field structured and routable. A needs a redeploy for every new kind and still has "
+                 "no answer for blurry scans. B gives up the structure that routing depends on. C encourages the forced "
+                 "choice that causes the errors."),
         scenarios=(6,), points=("4.3:K4", "4.3:S5"),
     ),
     Question(
-        q=("In the research system, every agent gets all 18 tools. The synthesis agent keeps running web searches of its "
-           "own instead of synthesising, and reports drift off-brief. What's the best change?"),
-        opts=("Tell the synthesis agent not to search unless necessary.",
-              "Lower the synthesis agent's max_turns.",
-              "Put the web search tools last in the list.",
-              "Restrict each agent's tools to its role, so the synthesis agent has no general web search."),
-        ans=3,
-        explain=("Agents given tools outside their specialisation tend to misuse them. Scoped tool access per role "
-                 "prevents that. A prompt request is probabilistic, and tool order doesn't change what's available."),
+        q=("In the research system, every agent is given all 18 tools. The synthesis agent runs its own web searches in about "
+           "40% of runs instead of synthesising what it was given, and those reports drift off-brief. What is the best "
+           "change?"),
+        opts=("Restrict each agent's tools to its role, so that the synthesis agent has no general web search tool.",
+              "Tell the synthesis agent in its system prompt that it must not search the web under any circumstances.",
+              "Add a PostToolUse hook that discards any web search results returned to the synthesis agent.",
+              "Reduce the synthesis agent's max_turns, so that it has no spare turns left for extra web searches."),
+        ans=0,
+        explain=("Tools outside an agent's role invite misuse, so restricting tools by role removes the option altogether. B "
+                 "relies on the prompt being followed. C lets the search run and then throws the result away. D cuts the "
+                 "agent's legitimate work along with the misuse."),
         scenarios=(3,), points=("2.3:K2", "2.3:S1"),
     ),
     Question(
-        q=("After scoping, the synthesis agent often needs to check a single fact (a date, a figure) and each check takes "
-           "a slow round trip through the coordinator to the search agent. About 85% of checks are that simple. What's "
-           "the best design?"),
-        opts=("Give the synthesis agent a narrowly scoped verify_fact tool, and keep complex verification routed through the coordinator.",
-              "Give the synthesis agent every web search tool back.",
-              "Let the synthesis agent message the search agent directly.",
-              "Skip verification for simple facts."),
-        ans=0,
-        explain=("Scoped cross-role tools for high-frequency needs cut the round trips, while complex cases still go "
-                 "through the coordinator. Full tool access brings back the misuse, and direct messaging bypasses the hub."),
-        scenarios=(3,), points=("2.3:S3", "2.3:K3"),
+        q=("In an extraction pipeline, a validation agent checks each invoice's totals. For 90% of invoices it only needs "
+           "today's exchange rate for one currency pair, but every lookup goes through the coordinator to a finance-research "
+           "agent, adding about 20 seconds per invoice. The other 10% need a real investigation of disputed historical "
+           "rates. What is the best design?"),
+        opts=("Give the validation agent all of the finance-research agent's tools, so it can handle every lookup itself.",
+              "Give the validation agent a narrowly scoped get_exchange_rate tool, and route investigations as before.",
+              "Pre-fetch exchange rates for every currency pair before each batch, so the validation agent never asks.",
+              "Batch all of a run's rate lookups into one coordinator request at the end of the validation pass."),
+        ans=1,
+        explain=("A narrowly scoped cross-role tool covers the frequent simple case, while complex work keeps going through the "
+                 "coordinator. This is least privilege. A over-provisions the validation agent. C fetches rates nobody asked "
+                 "for. D creates a blocking dependency, because validation needs the rate before it can finish."),
+        scenarios=(6,), points=("2.3:S3", "2.3:K3"),
     ),
     Question(
-        q=("A document-analysis subagent has a generic fetch_url tool. It sometimes fetches unrelated web pages, and even "
-           "tracking pixels, instead of the documents it was given. What's the best fix?"),
-        opts=("Add “only fetch documents” to fetch_url's description.",
-              "Log every fetch and review them weekly.",
-              "Give the subagent a larger context window.",
+        q=("A document-analysis subagent has a generic fetch_url tool. In about 1 run in 12, it fetches unrelated web pages, "
+           "and occasionally tracking pixels, instead of the documents it was given. One run pulled 40 MB of unrelated "
+           "content. What is the best fix?"),
+        opts=("Add a line to the subagent's prompt telling it to fetch only the document URLs listed in its instructions.",
+              "Keep fetch_url, and add a size limit so that no single fetch can return more than 5 MB of content.",
+              "Log every fetch_url call, and review the log weekly to find and block domains it should not visit.",
               "Replace fetch_url with a constrained load_document tool that only accepts and validates document URLs."),
         ans=3,
-        explain=("Replacing a generic tool with a constrained one (fetch_url → load_document, which validates its "
-                 "input) removes the misuse at the source. A description change still leaves the generic capability there."),
+        explain=("A generic tool is swapped for a constrained one that validates its input, which removes the misuse at the "
+                 "tool boundary. A relies on the prompt. B limits the damage but not the misuse. C finds the problem after "
+                 "the fact, one domain at a time."),
         scenarios=(3,), points=("2.3:S2",),
     ),
     Question(
-        q=("A single support agent was given 18 tools as features were added: refunds, shipping, loyalty, marketing and "
-           "analytics. Tool-selection mistakes rose with each addition. Which design best restores reliability?"),
-        opts=("Rewrite all 18 descriptions to be twice as long.",
-              "Split the work across focused agents, each with the 4–5 tools its job needs.",
-              "Number the tools so the model can refer to them precisely.",
-              "Add examples of all 18 tools to the system prompt."),
-        ans=1,
-        explain=("Too many tools (such as 18 instead of 4–5) degrade selection reliability. Scoping tools to focused "
-                 "roles addresses that. Longer descriptions and examples add context without reducing the choice."),
+        q=("A single support agent has been given 18 tools as features were added: refunds, shipping, loyalty, marketing and "
+           "analytics. Tool-selection errors have risen with each addition, from 3% at 5 tools to 14% today. Which design "
+           "best restores reliability?"),
+        opts=("Rewrite all 18 tool descriptions to be longer, so the model can distinguish between them more easily.",
+              "Upgrade to a larger model, which can reliably handle a bigger toolset without additional selection errors.",
+              "Split the work across focused agents, each with the 4–5 tools its job actually needs.",
+              "Add a keyword classifier that enables a different subset of the 18 tools for each incoming message."),
+        ans=2,
+        explain=("Too many tools (18 instead of 4–5) degrades selection. Focused agents, each with a small role-specific tool "
+                 "set, fix the cause. A helps a little but doesn't change the number of choices. B relies on a bigger model "
+                 "to paper over a design problem. D adds a brittle keyword layer in front of the model."),
         scenarios=(1,), points=("2.3:K1", "2.3:K3"),
     ),
     Question(
-        q=("An extraction service that sets tool_choice {\"type\": \"any\"} starts getting HTTP 400 errors after being "
-           "moved to a newer model. According to the tool-use docs, what's the right adjustment?"),
-        opts=("Retry the request, since a 400 is transient.",
-              "Switch to forcing a specific tool instead of “any”.",
-              "Use tool_choice “auto” with strict tools, or structured outputs, on models that don't support forced tool use.",
-              "Remove the tools and parse JSON from the text."),
-        ans=2,
-        explain=("Per the docs, forced tool use (“any” or a named tool) isn't supported on some models or with manual "
-                 "extended thinking, and returns a 400. The documented route is “auto” with strict tools, or structured outputs."),
+        q=("An extraction service that sets tool_choice {\"type\": \"any\"} starts returning HTTP 400 errors on every request "
+           "after being moved to a newer model. The team's first idea is to retry each failed request with exponential "
+           "backoff. What is the right adjustment?"),
+        opts=("Keep the retries, since a 400 on a new model is usually temporary while capacity is provisioned.",
+              "Switch to a forced tool_choice naming the extraction tool, which every model accepts instead of “any”.",
+              "Move back to the previous model permanently, since the newer model can't produce structured output.",
+              "Use “auto” with strict tools, or structured outputs, on models that don't support forced tool use."),
+        ans=3,
+        explain=("Some models reject forced tool use: both “any” and a named tool return a 400. The docs point to “auto” with "
+                 "strict tools, or to structured outputs. A retries a request that fails deterministically. B is also forced "
+                 "tool use, so it fails in the same way. C gives up a model that supports structured output another way."),
         scenarios=(6,), basis="docs", in_bank=False,
     ),
 )

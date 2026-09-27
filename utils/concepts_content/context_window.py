@@ -388,94 +388,102 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("To save tokens, a support chat built on the Messages API keeps only the last three messages in each request. "
-           "Customers complain that the agent asks again for order numbers they gave a few minutes earlier. What's the right "
-           "design?"),
-        opts=("Keep the sliding window, but tell the model in the system prompt to remember earlier messages.",
-              "Increase max_tokens so the model can recall more.",
-              "Send the complete conversation history with every request; when it grows long, compact it rather than dropping turns.",
-              "Ask customers to repeat key details in every message."),
-        ans=2,
-        explain=("The API doesn't remember earlier calls, so each request must carry the conversation. Dropping turns loses "
-                 "facts. Compaction or a case-facts block (D5.2) keeps a long conversation within budget without losing them."),
+        q=("To save tokens, a support chat built on the Messages API sends only the last three messages with each request. "
+           "Customers complain that the agent asks again for order numbers they gave a few minutes earlier; this happens in "
+           "35% of chats longer than five turns. What is the right design?"),
+        opts=("Keep the last three messages, but add “remember earlier details” to the system prompt.",
+              "Send the full history with every request; when it grows long, compact it rather than drop turns.",
+              "Keep the last six messages instead of three, so that most of the order numbers stay inside the window.",
+              "Send only the customer's messages, without the agent's replies, so twice as many turns fit."),
+        ans=1,
+        explain=("The API is stateless, so every request needs the whole conversation. When it grows long, compact it instead "
+                 "of dropping turns. A asks the model to remember what it was never sent. C moves the cut-off. D breaks the "
+                 "conversation's structure and drops the agent's own commitments."),
         scenarios=(1,), points=("5.1:K4",),
     ),
     Question(
-        q=("An onboarding agent answering “how does billing work?” reads file after file of a large legacy repository into "
-           "its main conversation. Partway through, requests start failing with “prompt is too long”. What's the best "
-           "redesign?"),
-        opts=("Delegate the exploration to a subagent that reads in its own context and returns a summary to the main agent.",
-              "Switch to a model with a larger context window and keep reading everything.",
-              "Retry the failed request with a higher max_tokens.",
-              "Stop after the first ten files and answer from those."),
+        q=("An onboarding agent answering “how does billing work?” reads file after file of a 5,000-file legacy repository "
+           "into its main conversation. After about 40 files, requests start failing with “prompt is too long”. What is the "
+           "best redesign?"),
+        opts=("Delegate the exploration to a subagent that reads in its own context and returns a summary.",
+              "Move the main agent to a model with a larger context window, so that all the files fit at once.",
+              "Read only the first 50 lines of each file, so that each one takes less of the main context.",
+              "Clear the conversation every 30 files, and continue reading from wherever the agent stopped."),
         ans=0,
-        explain=("Subagents isolate verbose exploration output while the main agent coordinates. A bigger window only moves "
-                 "the limit, and max_tokens controls output length, not input size."),
+        explain=("Subagents isolate verbose exploration output and return summaries, while the main agent keeps the high-level "
+                 "picture. B postpones the overflow. C loses whatever sits below line 50. D throws away what was learned "
+                 "every 30 files."),
         scenarios=(4,), points=("5.4:K3", "5.4:S1"),
     ),
     Question(
         q=("Two hours into a refactor in Claude Code, the context is 95% full of search output, and answers are getting "
-           "generic. The developer wants to finish the refactor in this session. What should they do?"),
-        opts=("Run /clear and describe the refactor again.",
-              "Keep going; the answers will recover.",
-              "Open a new terminal and start the refactor again.",
-              "Run /compact with a focus on the refactor, so the history is summarised and the task and findings carry on."),
-        ans=3,
-        explain=("/compact reduces context usage when verbose discovery output fills the context, keeping what matters. "
-                 "/clear discards the task and findings."),
+           "generic: Claude now mentions “the usual service pattern” instead of the classes it found. The developer wants to "
+           "finish the refactor in this session. What should they do?"),
+        opts=("Run /clear, then restate the whole refactor task from scratch in the fresh, empty context.",
+              "Keep going and let auto-compaction kick in on its own whenever the context finally fills up.",
+              "Run /compact with a focus on the refactor, so the task and findings carry on in less context.",
+              "Start a second session for the rest of the refactor, and copy the latest diff and notes across to it."),
+        ans=2,
+        explain=("/compact, with a focus, reduces context use during long exploration while keeping the task and findings. A "
+                 "discards the findings. B lets quality keep degrading until something forces compaction. D loses the "
+                 "session's understanding and keeps only its diff."),
         scenarios=(2,), points=("5.4:S5", "5.4:K1"),
     ),
     Question(
-        q=("A report agent can only fit about 6,000 tokens of input. Four document-analysis subagents each send it 3,000 "
-           "tokens of reasoning, quotes and caveats, and reports keep leaving out the last two analyses. What's the most "
-           "effective change?"),
-        opts=("Give the report agent a larger max_tokens.",
-              "Have the analysis subagents return structured data (key facts, citations, relevance scores) instead of their reasoning.",
-              "Send the analyses in a different order each time so each gets a turn.",
-              "Ask the report agent to skim each analysis faster."),
-        ans=1,
-        explain=("When downstream agents have limited context budgets, upstream agents should return structured data rather "
-                 "than verbose content and reasoning chains. max_tokens is an output limit."),
+        q=("A report agent can fit about 6,000 tokens of input. Four document-analysis subagents each send it roughly 3,000 "
+           "tokens of reasoning, quotes and caveats, and the last two analyses are missing from 9 of 10 reports. The team's "
+           "first idea is to truncate each analysis to 1,500 tokens. What is the most effective change?"),
+        opts=("Truncate each analysis to 1,500 tokens as proposed, so that all four fit into the input budget.",
+              "Give the report agent two passes: the first on analyses 1–2, the second on analyses 3–4.",
+              "Ask the report agent to skim the analyses and focus on the parts that look most relevant.",
+              "Have the analysis subagents return structured data: key facts, citations, relevance scores."),
+        ans=3,
+        explain=("When a downstream agent has a limited budget, upstream agents should return structured data rather than "
+                 "reasoning. A cuts content blindly, and may cut the facts. B splits the synthesis in two. D asks the model "
+                 "to skim input it can't fit in the first place."),
         scenarios=(3,), points=("5.1:S6",),
     ),
     Question(
-        q=("A log-investigation agent reads entire 2,000-line log files at every step, although it only needs the lines around "
-           "each error. After a few steps it misses details it found earlier. What's the best fix?"),
-        opts=("Ask the agent to remember the important lines.",
-              "Run the investigation in a single step so nothing accumulates.",
-              "Return only the relevant lines from the tool (for example, errors plus surrounding context) before they accumulate.",
-              "Summarise every log file into one sentence."),
-        ans=2,
-        explain=("Tool results accumulate and consume tokens out of proportion to their relevance. Trim them to what the "
-                 "task needs before they pile up."),
+        q=("A log-investigation agent reads entire 2,000-line log files at every step, although it only needs the lines "
+           "around each error. After four steps it has used 80% of its context and misses a timeout it found in step one. "
+           "What is the best fix?"),
+        opts=("Tell the agent in its prompt to pay special attention to anything it found in its early steps.",
+              "Switch to a model with a larger context window, so that more full log files can fit in at once.",
+              "Summarise the whole conversation after every step, keeping only the agent's latest conclusions.",
+              "Have the tool return only the relevant lines, such as each error plus its surrounding context."),
+        ans=3,
+        explain=("Trim verbose tool output to the relevant part before it accumulates in the context. A asks for attention the "
+                 "full logs are using up. B postpones the problem. C drops the earlier findings the agent needed."),
         scenarios=(4,), points=("5.1:K3", "5.1:S3"),
     ),
     Question(
-        q=("Early in a long Claude Code session, a developer said “never touch the generated/ folder”. Hours later, after "
-           "the context was compacted, Claude edits a file in generated/. According to the Claude Code docs, what prevents "
-           "this?"),
-        opts=("Put persistent rules like this in CLAUDE.md, which isn't lost when the conversation is compacted.",
-              "Repeat the instruction every hour.",
-              "Never let the context compact.",
-              "Use /clear instead of compacting."),
-        ans=0,
-        explain=("Per the docs, detailed instructions from early in the conversation can be lost when context is compacted. "
-                 "Put persistent rules in CLAUDE.md, or guide the summary with /compact's focus or Compact Instructions."),
+        q=("Early in a long Claude Code session, a developer said “never touch the generated/ folder”. Hours later, after the "
+           "context was compacted, Claude edits a file in generated/ and the build breaks. According to the Claude Code "
+           "docs, what prevents this?"),
+        opts=("Repeating the instruction every hour, so that it is always among the most recent messages in context.",
+              "Turning auto-compaction off, so that no instruction given in the conversation can ever be lost again.",
+              "Putting persistent rules like this in CLAUDE.md, which isn't lost when the conversation is compacted.",
+              "Running /compact by hand, which keeps every user instruction and summarises only the tool output."),
+        ans=2,
+        explain=("The docs note that early instructions can be lost to compaction, and that rules which must persist belong in "
+                 "CLAUDE.md. A relies on remembering to repeat it. B trades the problem for a full context. D describes "
+                 "behaviour /compact doesn't guarantee."),
         scenarios=(2,), basis="docs", in_bank=False,
     ),
     Question(
-        q=("A support team enables prompt caching on its long system prompt and tool definitions, expecting to “free up "
-           "context window space”. Conversations still hit the limit at the same point. Why?"),
-        opts=("Caching only works after 24 hours.",
-              "Caching was applied to the wrong messages.",
-              "The cache expired too quickly.",
-              "Cached prefixes still occupy the context window; caching changes what you pay and how fast, not what counts."),
-        ans=3,
-        explain=("Per the context-windows docs, prompt caching changes what you pay for those tokens, not whether they count. "
-                 "To keep conversations within the window, use compaction or context editing."),
+        q=("A support team enables prompt caching on its 8,000-token system prompt and tool definitions, expecting to “free "
+           "up context window space”. Conversations still hit the limit at the same point, around turn 60. Why?"),
+        opts=("Caching takes effect only after 24 hours, so the space saving simply hasn't started yet.",
+              "Caching applies only to tool definitions, so the system prompt still takes up its full space.",
+              "Cached prefixes still occupy the window; caching changes cost and speed, not what counts.",
+              "Caching frees window space only in batch requests, not in real-time support conversations."),
+        ans=2,
+        explain=("Cached content still counts toward the context window. Caching reuses processing, which changes cost and "
+                 "latency, not window usage. A, B and D invent restrictions."),
         scenarios=(1,), basis="docs", in_bank=False,
     ),
 )
+
 
 FAQ = (
     ("Isn't a bigger context window the answer?",

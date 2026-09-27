@@ -347,78 +347,87 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A research coordinator concatenates nine subagents' reports and asks for the single biggest risk. A critical "
-           "finding sitting in the fifth report is repeatedly left out, while findings from the first and last reports "
-           "always make it in. What's the best fix?"),
-        opts=("Put the fifth report last.",
-              "Open the aggregated input with a key-findings summary and organise the detailed reports under explicit section headers.",
-              "Ask the coordinator to read more carefully.",
-              "Drop reports 2–8 to shorten the input."),
+        q=("A research coordinator concatenates nine subagents' reports (about 60,000 tokens) and asks for the single biggest "
+           "risk. In 7 of 10 runs, a critical finding in the fifth report is left out, while findings from the first and "
+           "last reports always make it in. What is the best fix?"),
+        opts=("Move the fifth report to the start of the input, so that this particular finding is always read first.",
+              "Open with a key-findings summary, and organise the detailed reports under explicit section headers.",
+              "Switch to a model with a larger context window, so that all nine reports receive equal attention.",
+              "Ask the model to read the reports twice before answering, paying special attention to the middle ones."),
         ans=1,
-        explain=("This is the lost-in-the-middle effect: models use the start and end of long inputs reliably but may "
-                 "omit the middle. A key-findings summary up front plus explicit headers mitigates it. Reordering just "
-                 "moves the problem to another report."),
+        explain=("Content in the middle of a long input gets less attention (the “lost in the middle” effect). Putting key "
+                 "findings at the start and structuring the rest under clear headers counters it. A only moves the problem "
+                 "to another report. C: a larger window doesn't fix positional attention. D is an instruction with no "
+                 "mechanism behind it."),
         scenarios=(3,), points=("5.1:K2", "5.1:S4"),
     ),
     Question(
-        q=("To save space, a long support conversation is summarised every ten turns. After a few rounds, the agent "
-           "tells a customer “your refund is on its way” but no longer knows it promised £84.20 by Friday on order "
-           "ORD-5512. What's the best fix?"),
-        opts=("Summarise less often.",
-              "Ask the summariser to keep important details.",
-              "Stop summarising and keep the full history forever.",
-              "Keep transactional facts (amounts, dates, order numbers, statuses) in a persistent case-facts block included in every prompt, outside the summarised history."),
+        q=("To save space, a long support conversation is summarised every ten turns. After three summaries, the agent tells "
+           "a customer “your refund is on its way” but no longer knows it promised £84.20 by Friday on order ORD-5512. The "
+           "summary now reads “customer is owed a refund”. What is the best fix?"),
+        opts=("Summarise every 20 turns instead of 10, so that fewer details are lost at each summarisation step.",
+              "Tell the summariser to “keep important details”, so that amounts and dates are more likely to survive.",
+              "Stop summarising and keep the full history, raising the context limit as the conversation grows.",
+              "Keep amounts, dates, order numbers and statuses in a persistent case-facts block outside the summary."),
         ans=3,
-        explain=("Progressive summarisation turns numbers, dates and promises into vague statements. A persistent "
-                 "case-facts block keeps them exact, whatever happens to the history."),
+        explain=("Progressive summarisation turns exact figures and dates into vague statements. Moving transactional facts into "
+                 "a persistent block that is included in every prompt keeps them exact. A and B only reduce the loss. C runs "
+                 "into the context limit and to degradation over long contexts."),
         scenarios=(1,), points=("5.1:K1", "5.1:S1"),
     ),
     Question(
-        q=("Each lookup_order call returns 40+ fields: warehouse codes, carrier events, internal flags. The returns agent "
-           "uses about five of them. After several lookups the agent loses track of earlier details. What should change?"),
-        opts=("Trim each lookup result to the return-relevant fields before it's added to the context.",
-              "Use a model with a bigger context window.",
-              "Call lookup_order less often.",
-              "Ask the agent to ignore irrelevant fields."),
+        q=("Each lookup_order call returns 40+ fields (warehouse codes, carrier events, internal flags), about 1,500 tokens, "
+           "and the returns agent uses about five of them. After six lookups in one conversation, the agent confuses the "
+           "return windows of two orders. What should change?"),
+        opts=("Trim each lookup result to the return-relevant fields before it is added to the context.",
+              "Tell the agent in its prompt to ignore warehouse codes, carrier events and internal flags.",
+              "Limit each conversation to three lookups, and ask customers to start a new chat after that.",
+              "Summarise the whole conversation after every lookup, so that older results take less space."),
         ans=0,
-        explain=("Tool results accumulate and use tokens out of proportion to their relevance. Trimming them to the "
-                 "relevant fields before they pile up keeps what matters in view."),
+        explain=("Verbose tool output fills the context with irrelevant fields. Trimming results to what the task needs before "
+                 "they accumulate keeps the relevant ones sharp. B still loads the noise. C pushes the problem onto the "
+                 "customer. D summarises away exactly the details that were being mixed up."),
         scenarios=(1,), points=("5.1:K3", "5.1:S3"),
     ),
     Question(
-        q=("In one session a customer raises problems with three orders. By the end, the agent quotes the right refund "
-           "amount against the wrong order. What design keeps multi-issue sessions straight?"),
-        opts=("Handle only one order per conversation.",
-              "Summarise the conversation after each order.",
-              "Extract structured issue data (order id, amount, status) for each issue into a separate context layer that's kept up to date.",
-              "Ask the customer to repeat the order number each time."),
+        q=("In one session a customer raises problems with three orders. In about 1 of 8 such conversations, the agent quotes "
+           "the right refund amount against the wrong order. All the agent's facts live in its running summary of the "
+           "conversation. What design keeps multi-issue sessions straight?"),
+        opts=("Handle only one order per conversation, and ask the customer to open new chats for each of the others.",
+              "Ask the agent to repeat all three orders' details at the start of every reply that it writes.",
+              "Extract structured data for each issue (order ID, amount, status) into a separate, current layer.",
+              "Lengthen the running summary, so that all three orders' details fit into it without compression."),
         ans=2,
-        explain=("For multi-issue sessions, persist structured issue data in a separate context layer, so each order's "
-                 "facts stay attached to that order."),
+        explain=("Structured data per issue (order ID, amount, status), kept in its own context layer, stops values crossing "
+                 "between issues. A pushes the work onto the customer. B adds repetition, not structure. D keeps the facts in "
+                 "prose that is still summarised."),
         scenarios=(1,), points=("5.1:S2",),
     ),
     Question(
-        q=("A developer builds a support chat on the Messages API and, to save tokens, sends only the newest customer "
-           "message with each request. The agent keeps asking for information the customer already gave. What's wrong?"),
-        opts=("The model needs a larger max_tokens.",
+        q=("A developer builds a support chat on the Messages API and, to save tokens, sends only the newest customer message "
+           "with each request. In testing, the agent asks for the order number again in 60% of conversations longer than "
+           "three turns. What is wrong?"),
+        opts=("The model's memory of earlier turns expires after a few minutes, so long chats need a session ID.",
               "Each request must carry the complete conversation history; the API doesn't remember earlier turns.",
-              "The system prompt should tell the model to remember previous messages.",
-              "The customer's messages are too short."),
+              "The system prompt should tell the model to remember order numbers for the rest of the conversation.",
+              "The requests should set a conversation_id, so the API can link them into one ongoing session."),
         ans=1,
-        explain=("Pass the complete conversation history in each request to keep the conversation coherent. Each call "
-                 "only sees what it's sent."),
+        explain=("The Messages API is stateless: the model sees only what each request contains, so the history must be sent "
+                 "every time. A and D invent server-side memory. C asks the model to remember something it was never sent."),
         scenarios=(1,), points=("5.1:K4",),
     ),
     Question(
-        q=("An extraction prompt includes three long contracts and asks which one has the shortest notice period. Where "
-           "should the question go, according to the long-context tips in the prompting docs?"),
-        opts=("At the very start, before the documents.",
-              "Between the second and third contracts.",
-              "At the end, after the documents; long documents belong at the top of the prompt.",
-              "In the system prompt only."),
-        ans=2,
-        explain=("Per the prompting docs, put long documents near the top and the query at the end. The docs report this "
-                 "can noticeably improve response quality with complex, multi-document inputs."),
+        q=("An extraction prompt contains three contracts, about 90,000 tokens in total, and asks which one has the shortest "
+           "notice period. The question currently sits at the top, before the documents, and the answer is wrong in about 1 "
+           "run in 6. According to the long-context tips in the prompting docs, what should change?"),
+        opts=("Repeat the question before each of the three contracts, so that it sits close to every document.",
+              "Split the task into three calls, one per contract, and compare the notice periods afterwards in code.",
+              "Keep the question first, but put its key words in bold so they stand out against the documents.",
+              "Put the documents at the top of the prompt and the question at the end, after all the documents."),
+        ans=3,
+        explain=("The docs recommend putting long documents at the top and the query at the end, which can noticeably improve "
+                 "response quality. A scatters the question around. B may work, but it is a redesign rather than the "
+                 "documented fix. C doesn't change the placement."),
         scenarios=(6,), basis="docs", in_bank=False,
     ),
 )

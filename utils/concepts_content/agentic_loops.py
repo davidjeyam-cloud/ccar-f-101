@@ -963,75 +963,80 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("Your support agent's loop exits as soon as the assistant's reply contains the word “resolved”. In "
-           "testing, 8% of refund requests end with the refund never issued even though the agent's last message"
-           ' says “resolved”. What is the most likely root cause?'),
-        opts=('Completion is inferred from prose instead of stop_reason, and models can narrate before requesting a tool.',
-              'The model is hallucinating tool results.',
-              'max_tokens is set too high.',
-              'The tool descriptions are too long.'),
-        ans=0,
-        explain=('Text can say “resolved” in the same response that still requests a tool. The control signal is '
-                 'stop_reason (tool_use → keep going, end_turn → finished). Nothing here suggests fabricated tool '
-                 'output, and neither max_tokens nor description length explains a loop that exits early.'),
-        scenarios=(1,), points=('1.1:S3',),
-    ),
-    Question(
-        q=('A migration agent needs anywhere from 2 to 15 tool calls depending on the repository. The team wrote'
-           ' `for _ in range(5)` and returns the last message when the loop ends. Some runs report success but '
-           'leave the migration half-done, with no error. Which change addresses the root cause?'),
-        opts=('Raise the cap to 50 and keep the same structure.',
-              'Tell the model in the system prompt to always finish within 5 tool calls.',
-              'Run the agent three times and take the majority result.',
-              'Drive the loop from stop_reason (continue on tool_use, finish on end_turn) and keep any limit only as a guard that raises.'),
-        ans=3,
-        explain=('The cap is doing the deciding, so any task longer than the guess is silently truncated. A bigger cap'
-                 ' keeps the same flaw; a prompt instruction is probabilistic and does not fix a structural problem; '
-                 'majority voting hides an intermittent failure instead of fixing the loop.'),
-        scenarios=(4,), points=('1.1:S3', '1.1:S1'),
-    ),
-    Question(
-        q=('After each tool call your loop executes the tool and prints the result, then sends the next request.'
-           ' The agent keeps asking for the same tool on every turn, and the tool always returns valid data. '
-           'What is the most likely cause?'),
-        opts=('The sampling temperature is too high.',
-              'tool_choice is left on auto.',
-              'The tool result is never added to the conversation, so the model cannot see it.',
-              'The system prompt has no persona.'),
-        ans=2,
-        explain=('The model only reasons over the conversation it is sent. If neither the assistant turn nor the '
-                 'tool_result is appended, every request looks like the first one and it asks again. tool_choice auto '
-                 'is the normal default, and persona/temperature do not explain identical repeated requests.'),
-        scenarios=(1,), points=('1.1:K2', '1.1:S2'),
-    ),
-    Question(
-        q=('Your loop treats every response whose stop_reason is not "tool_use" as the final answer and prints '
-           'its text. Users report blank answers on some requests and half-finished sentences on others, and no '
-           'errors are logged. What is the best first fix?'),
-        opts=('Wrap the request in try/except and retry on any exception.',
-              'Handle each stop_reason explicitly: end_turn is the answer, max_tokens means truncated, refusal needs a retry on a different model.',
-              'Lower the sampling temperature.',
-              'Append a text block after each tool result telling Claude to keep going.'),
+        q=("Your support agent's loop ends the conversation when the assistant's text contains “resolved” or “all set”. "
+           "Over a week, 8% of refund conversations close with “Your refund is all set!”, yet no process_refund call "
+           "appears in the tool logs. The traces show that each of these responses held a text block followed by a "
+           "process_refund tool_use block. What is the most likely root cause?"),
+        opts=("The system prompt doesn't tell the model to call process_refund before announcing that a refund is complete.",
+              "The loop infers completion from the assistant's wording, not from stop_reason, which was tool_use in these cases.",
+              "process_refund is failing silently in these cases, so the model is right but the backend never logs the call.",
+              "The model's temperature is set too high, so it announces outcomes before it has finished planning its tool calls."),
         ans=1,
-        explain=('Per the docs, the loop exits on any stop reason other than tool_use and the application must handle '
-                 'it: a refusal is an HTTP 200 with empty content (no exception to catch) and max_tokens is a '
-                 'truncated response. Adding text after tool results is a documented cause of empty end_turn '
-                 'responses.'),
-        scenarios=(1,), basis='docs', in_bank=False,
+        explain=("These responses ended with stop_reason tool_use: the model asked for the refund and narrated first, which is "
+                 "normal. The loop read the text instead of stop_reason, so it exited before running the tool. A blames the "
+                 "prompt, but the model did request the tool. C gets the order wrong: the tool never ran, so there was "
+                 "nothing to fail. D treats normal text-before-tool behaviour as randomness."),
+        scenarios=(1,), points=("1.1:S3",),
     ),
     Question(
-        q=('A request returns HTTP 200 with stop_reason "refusal" and empty content. Your retry logic re-sends '
-           'the identical request to the same model up to three times. What does the official guidance recommend'
-           ' instead?'),
-        opts=('Keep retrying the same model, with exponential backoff.',
-              'Parse stop_details.explanation and retry only when it mentions a transient problem.',
-              "Treat the empty content as the model's final answer.",
-              'Retry on a different model and stay on it for later turns; escalate if that refuses too.'),
+        q=("A code-migration agent needs between 2 and 15 tool calls, depending on the repository. Its loop is "
+           "`for _ in range(5)`, and it returns the last assistant message when the loop ends. Across 200 runs, 23% "
+           "report success but leave the migration half-done, and none of them raise an error. Which change most "
+           "effectively fixes this?"),
+        opts=("Raise the range to 20, so that even the largest repositories fit within the fixed number of iterations.",
+              "Tell the model to print “MIGRATION COMPLETE” when it is done, and end the loop as soon as that phrase appears.",
+              "Continue while stop_reason is tool_use and finish on end_turn, keeping any cap only as a guard that raises.",
+              "Ask the model to estimate its tool-call count up front, then set the loop's iteration limit from that estimate."),
+        ans=2,
+        explain=("The loop should be driven by stop_reason: keep going on tool_use, finish on end_turn. A cap can stay as a "
+                 "safety guard, but hitting it must surface as an error, never as success. A only moves the silent cut-off. "
+                 "B parses prose to decide termination, which is the same anti-pattern. D trusts a self-estimate the model "
+                 "has no way to make accurately."),
+        scenarios=(4,), points=("1.1:S3", "1.1:S1"),
+    ),
+    Question(
+        q=("After each tool call, your loop runs the tool, writes the result to your monitoring system and sends the next "
+           "request with the original messages. In production, 40% of conversations hit the 25-turn guard, and traces "
+           "show the agent requesting get_customer with identical arguments on every turn. The tool returns valid data "
+           "each time. What is the most likely cause?"),
+        opts=("The tool result is never appended to the conversation as a tool_result block, so the model never sees it.",
+              "The tool's description is ambiguous, so the model can't tell that get_customer has already answered its query.",
+              "The 25-turn guard is too low for these conversations, so the agent runs out of turns before it can progress.",
+              "get_customer returns more data than the model can use, so it retries in the hope of getting a shorter answer."),
+        ans=0,
+        explain=("The model knows only what is in the conversation. A result that is logged but never sent back as a tool_result "
+                 "block (matched to the tool_use id) is invisible to it, so it asks again. B would cause wrong tool choices, "
+                 "not identical repeats. C: the guard is doing its job here, and raising it just repeats the call more times. "
+                 "D invents a retry behaviour."),
+        scenarios=(1,), points=("1.1:K2", "1.1:S2"),
+    ),
+    Question(
+        q=("Your loop treats every response whose stop_reason is not tool_use as the final answer and shows its text to "
+           "the customer. Support tickets report two problems: about 3% of answers are blank, and about 2% stop "
+           "mid-sentence. Nothing is logged as an error. What is the best first fix?"),
+        opts=("Increase max_tokens on every request so that no response can ever be cut off before the model finishes.",
+              "Add a system-prompt instruction asking the model to always write a complete, non-empty closing message.",
+              "Retry any response whose text is shorter than 20 characters, up to three times, before showing it to anyone.",
+              "Branch on each stop_reason: end_turn is an answer, max_tokens means truncated, refusal needs another model."),
         ans=3,
-        explain=('The docs say re-sending a refused request to the same model usually earns another refusal, that '
-                 'later turns should stay on the fallback model, and that the explanation text is not stable — display'
-                 " it, don't parse it. A refusal is a normal response, so backoff does not apply."),
-        scenarios=(1,), basis='docs', in_bank=False,
+        explain=("The docs list seven stop reasons, and each one that exits the loop needs its own handling. The mid-sentence "
+                 "answers are max_tokens truncations; the blank ones fit refusals (or empty end_turn). A fixes only the "
+                 "truncation. B cannot change how refusals behave. C re-sends identical requests, and a refusal repeats."),
+        scenarios=(1,), basis="docs", in_bank=False,
+    ),
+    Question(
+        q=("A support request returns HTTP 200 with stop_reason refusal and no content. Your retry logic re-sends the "
+           "identical request to the same model up to three times, and every attempt refuses. The dashboard counts these "
+           "as API errors, and 0.4% of conversations end with no reply at all. What should the handler do instead?"),
+        opts=("Treat it as a transient error and add exponential backoff between the three retries on the same model.",
+              "Retry on a different model and stay on it for the rest of the conversation; escalate if it refuses too.",
+              "Rephrase the customer's message automatically and keep resending it to the same model until it gets a response.",
+              "Show the customer a generic error and log the request so engineers can review it on the following day."),
+        ans=1,
+        explain=("A refusal is a normal HTTP 200 response, not an API error. The documented fallback is to retry on a different "
+                 "model and stay on it. A treats it as transient, but the same model refuses again. C tries to get around the "
+                 "refusal by rewording the customer's request. D gives up without trying the documented fallback."),
+        scenarios=(1,), basis="docs", in_bank=False,
     ),
 )
 

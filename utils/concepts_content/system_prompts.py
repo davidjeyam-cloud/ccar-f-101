@@ -332,64 +332,72 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("Your CI reviewer flags many code comments as “inaccurate” when they're merely old-fashioned but still true, "
-           "and developers have started ignoring it. The prompt says “check that comments are accurate”. What's the "
-           "best change?"),
-        opts=("Add “be careful not to over-report comment issues”.",
-              "Remove comment checking permanently.",
-              "Ask the reviewer to rate its confidence and keep only high-confidence comment findings.",
-              "Replace it with an explicit criterion: flag a comment only when its claim contradicts what the code does."),
-        ans=3,
-        explain=("Explicit criteria beat vague instructions. “Flag only when the comment contradicts the code” tells "
-                 "the model exactly what counts. Confidence filtering doesn't fix a vague definition."),
+        q=("Your CI reviewer flags about 40 code comments a week as “inaccurate” when they are merely old-fashioned but still "
+           "true, and developers now dismiss most of its comment findings. The prompt says “check that comments are "
+           "accurate”. What is the best change?"),
+        opts=("Add “be careful and only flag comments you are sure about” to the existing comment instruction.",
+              "Replace it with an explicit criterion: flag a comment only when its claim contradicts what the code does.",
+              "Remove comment checking from the reviewer entirely, since comments are too subjective for an automated review.",
+              "Cap the reviewer at five comment findings per pull request, so that the false positives are fewer."),
+        ans=1,
+        explain=("An explicit criterion says exactly what counts as a problem, which removes the ambiguity behind the false "
+                 "positives. A is a vague confidence instruction, which doesn't improve precision. C throws away a useful "
+                 "check. D cuts real and false findings alike."),
         scenarios=(5,), points=("4.1:K1", "4.1:S1"),
     ),
     Question(
-        q=("A reviewer's prompt says “be conservative and only report issues you're highly confident about”, but it "
-           "still reports lots of style nits and speculative concerns. What will improve precision most?"),
-        opts=("Say “be very conservative” instead.",
-              "Replace the general instruction with specific categories to report (bugs, security) and to skip (minor style, accepted local patterns).",
-              "Lower the temperature.",
-              "Cap the reviewer at three findings per pull request."),
-        ans=1,
-        explain=("General instructions like “be conservative” or “high confidence only” don't improve precision the way "
-                 "specific categorical criteria do. A cap drops real findings arbitrarily."),
+        q=("A reviewer's prompt says “be conservative and only report issues you're highly confident about”, yet 55% of its "
+           "findings are style nits or speculative concerns that developers dismiss. Adding “be even more conservative” last "
+           "month changed nothing measurable. What will improve precision most?"),
+        opts=("Ask the reviewer to attach a confidence score to each finding, and report only those scored 9 or 10.",
+              "Run the reviewer twice on each PR, and keep only the findings that appear in both independent runs.",
+              "Name the categories to report (bugs, security) and those to skip (minor style, accepted local patterns).",
+              "Switch to a larger model, which will interpret “conservative” more consistently across all of its reviews."),
+        ans=2,
+        explain=("General instructions such as “be conservative” don't improve precision; specific report and skip categories "
+                 "do. A relies on self-reported confidence, which is poorly calibrated. B suppresses real findings that only "
+                 "show up intermittently. D hopes a bigger model will resolve an ambiguity the prompt created."),
         scenarios=(5,), points=("4.1:K2", "4.1:S1"),
     ),
     Question(
-        q=("Developers dismiss about 80% of the reviewer's “performance” findings, and have begun ignoring its security "
-           "findings too, which are usually right. What's the best immediate step?"),
-        opts=("Temporarily disable the performance category while its criteria are improved, so trust in the other categories recovers.",
-              "Keep everything and tell developers to read findings more carefully.",
-              "Mark performance findings with a lower severity.",
-              "Add more performance examples to the prompt and keep it running."),
+        q=("Developers dismiss about 80% of the reviewer's “performance” findings. A survey shows they now also skim past its "
+           "security findings, although those are right 90% of the time. Rewriting the performance criteria properly will "
+           "take about three weeks. What is the best immediate step?"),
+        opts=("Temporarily disable the performance category while its criteria are rewritten, so trust recovers.",
+              "Keep every category, but add a note to each performance finding saying these are often false positives.",
+              "Mark security findings in bold red, so developers notice them among the noisy performance findings.",
+              "Keep performance findings, but move them to the end of each review, after all the security findings."),
         ans=0,
-        explain=("High false-positive categories undermine trust in the accurate ones. Temporarily disabling them "
-                 "restores trust while their prompts are fixed."),
+        explain=("A high false-positive category erodes trust in the accurate ones. Disabling it while its criteria are fixed "
+                 "restores trust straight away. B and D keep the noise in front of developers. C treats the symptom, and "
+                 "developers who distrust the tool will skim past red text as well."),
         scenarios=(5,), points=("4.1:K3", "4.1:S2"),
     ),
     Question(
-        q=("Two identical unchecked-null bugs in different files come back as “critical” in one and “minor” in the "
-           "other. Which change gives consistent classification?"),
-        opts=("Ask the reviewer to “be consistent with severities”.",
-              "Merge severities into a single “issue” level.",
-              "Define each severity level in the prompt with concrete code examples of what belongs there.",
-              "Review the files in alphabetical order."),
-        ans=2,
-        explain=("Severity definitions with concrete code examples give the model a shared yardstick, so the same kind "
-                 "of issue gets the same level. A consistency instruction without definitions leaves the scale undefined."),
+        q=("Two identical unchecked-null bugs in different files come back as “critical” in one review and “minor” in "
+           "another. Over a month, 30% of findings changed severity when the same PR was re-reviewed. The prompt lists the "
+           "four severity names with no further detail. Which change gives consistent classification?"),
+        opts=("Lower the temperature to zero, so the reviewer gives the same severity each time it sees similar code.",
+              "Remove the severity field and report every finding at one level, so there is nothing to disagree about.",
+              "Run a second reviewer that re-grades each finding's severity, and keep the higher of the two grades.",
+              "Define each severity level in the prompt, with concrete code examples of what belongs at that level."),
+        ans=3,
+        explain=("Severity names without definitions leave the boundary to chance. Explicit criteria with code examples for each "
+                 "level make classification consistent. A may make repeat runs more alike, but it doesn't fix an undefined "
+                 "boundary between different code. B removes useful information. C adds a second undefined judgement."),
         scenarios=(5,), points=("4.1:S3",),
     ),
     Question(
-        q=("The team deliberately catches broad exceptions in its plugin loader, a documented local pattern. The CI "
-           "reviewer flags it on every pull request that touches the loader. What's the best prompt change?"),
-        opts=("Tell the reviewer to report fewer exception-handling issues overall.",
-              "Remove exception handling from the review scope.",
-              "State that this local pattern is accepted and should be skipped, while real exception bugs elsewhere are still reported.",
-              "Only run the reviewer on files that don't contain try/except."),
-        ans=2,
-        explain=("Criteria should say what to report and what to skip, such as accepted local patterns, instead of "
-                 "vague reductions that also suppress real issues."),
+        q=("The team deliberately catches broad exceptions in its plugin loader, a documented local pattern. The CI reviewer "
+           "flags it on every pull request that touches the loader, about 12 a week, and developers now reflexively dismiss "
+           "all exception-handling findings, including real ones. What is the best prompt change?"),
+        opts=("Tell the reviewer to skip every exception-handling finding, since developers dismiss them all anyway.",
+              "State that this local pattern is accepted and should be skipped, while real exception bugs are reported.",
+              "Add “use good judgement about exception handling” to the reviewer's instructions for the plugin loader.",
+              "Exclude the plugin loader's directory from review entirely, so that none of its code is checked any more."),
+        ans=1,
+        explain=("Explicit criteria include what not to report: here, an accepted local pattern. Real issues stay in scope. A "
+                 "throws away real findings. C is a vague instruction. D stops reviewing the loader altogether."),
         scenarios=(5,), points=("4.1:S1",),
     ),
 )

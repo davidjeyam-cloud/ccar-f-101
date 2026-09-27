@@ -412,67 +412,75 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("Your CI review step sends one prompt with all 20 changed files of a pull request. It catches obvious issues "
-           "in a few files, misses most others, and never notices that a changed function signature breaks a caller in "
-           "another file. What's the best restructuring?"),
-        opts=("Use a model with a larger context window for the same single prompt.",
-              "Review only the five largest files.",
-              "Ask the reviewer to be more thorough and check every file carefully.",
-              "Review each file in its own pass, then run a separate cross-file integration pass."),
-        ans=3,
-        explain=("Chaining per-file local passes with a separate cross-file integration pass avoids attention "
-                 "dilution. A bigger window doesn't fix dilution, and “be thorough” changes nothing structural."),
+        q=("Your CI review already reviews each of a pull request's changed files in its own pass, which fixed the uneven "
+           "depth you saw with one big prompt. But in the last month, 3 merged PRs broke callers in other files: a function's "
+           "signature changed in one file, and each file's pass looked correct on its own. What is the most effective change?"),
+        opts=("Add a separate integration pass that examines cross-file data flow and interfaces across the changed files.",
+              "Tell each per-file pass to also consider how the file's changes might affect code elsewhere in the repository.",
+              "Go back to a single pass over all changed files, so the reviewer sees every file together in one context.",
+              "Include the entire repository in every per-file pass, so that each one has full context for its analysis."),
+        ans=0,
+        explain=("Per-file passes catch local issues, and a separate integration pass catches what only shows up across files. "
+                 "B asks each pass to reason about code it cannot see. C brings back the attention dilution the per-file "
+                 "passes fixed. D floods every pass with context and still has no step that looks at the interfaces."),
         scenarios=(5,), points=("1.6:K2", "1.6:S2"),
     ),
     Question(
-        q=("An engineer asks the agent to “add comprehensive tests to our legacy billing codebase”. Nobody knows which "
-           "modules are risky, and dependencies are tangled. Which approach fits best?"),
-        opts=("Map the structure, find the high-impact areas, then follow a prioritised plan that adapts as dependencies emerge.",
-              "Generate tests file by file in alphabetical order.",
-              "Write a fixed ten-step pipeline up front and run it unchanged.",
-              "Ask the agent to write all the tests in one response."),
-        ans=0,
-        explain=("Open-ended work calls for dynamic decomposition: the plan generates subtasks from what each step "
-                 "discovers. A fixed pipeline can't respond to what the exploration finds."),
+        q=("An engineer asks the agent to “add comprehensive tests to our legacy billing codebase”: 180 modules, no existing "
+           "tests, and dependencies nobody fully understands. A first attempt generated tests module by module in "
+           "alphabetical order and spent 2 hours on low-risk utility code. Which approach fits best?"),
+        opts=("Generate tests for every module in parallel with subagents, so that full test coverage arrives as quickly as possible.",
+              "Map the structure, find the high-impact areas, then follow a prioritised plan that adapts as dependencies emerge.",
+              "Ask the engineer to list the modules that need tests, and then work through that list in the order given.",
+              "Keep the alphabetical plan, but skip modules under 50 lines so the time goes to the larger modules first."),
+        ans=1,
+        explain=("An open-ended task with unknown structure calls for dynamic decomposition: explore, prioritise by impact, "
+                 "and adapt the plan as dependencies are found. A spends effort evenly and ignores risk. C pushes the analysis "
+                 "back onto the engineer. D replaces one arbitrary order with another."),
         scenarios=(4,), points=("1.6:K3", "1.6:S3"),
     ),
     Question(
-        q=("A team has two workflows. Workflow 1: every pull request gets the same security, style and test-coverage "
-           "checks. Workflow 2: finding why checkout latency spikes under load in a system nobody fully understands. "
-           "Which pattern suits each?"),
-        opts=("Dynamic decomposition for both, since agents should always adapt.",
-              "Prompt chaining for both, since fixed steps are easier to audit.",
-              "Prompt chaining for workflow 1, dynamic decomposition for workflow 2.",
-              "Dynamic decomposition for workflow 1, prompt chaining for workflow 2."),
+        q=("A team has two workflows. Workflow 1 runs the same security, style and test-coverage checks on every pull request, "
+           "about 300 a week. Workflow 2 investigates why checkout latency spikes under load, in a system nobody fully "
+           "understands. To simplify maintenance, the team wants one decomposition pattern for both. How should you evaluate "
+           "this?"),
+        opts=("Use prompt chaining for both, since fixed steps are easier to test, log and maintain than any adaptive plan is.",
+              "Use dynamic decomposition for both, since an adaptive plan can also handle the predictable review steps.",
+              "Reject it: use prompt chaining for workflow 1 and dynamic decomposition for workflow 2, matched to the task.",
+              "Use a single agent with no decomposition for both, and let it decide its steps freely in every run."),
         ans=2,
-        explain=("Prompt chaining suits predictable, multi-aspect work that repeats. Dynamic decomposition suits "
-                 "open-ended investigations whose next steps depend on intermediate findings."),
+        explain=("Prompt chaining suits predictable, fixed-step work, and dynamic decomposition suits open-ended "
+                 "investigations whose next steps depend on what is found. A forces a fixed plan onto an investigation. B "
+                 "makes a repeatable review unpredictable. D gives up the structure both workflows benefit from."),
         scenarios=(5, 4), points=("1.6:K1", "1.6:S1"),
     ),
     Question(
-        q=("An agent investigating a production memory leak was given a fixed plan: profile service A, then B, then C. "
-           "The profile of A shows the leak comes from a shared caching library used by D and E, which aren't in the "
-           "plan. What would have handled this better?"),
-        opts=("A longer fixed plan that covers every service.",
-              "An adaptive plan that creates the next subtasks from what each step finds.",
-              "Running A, B and C in parallel to finish sooner.",
-              "Stopping the investigation and escalating after step 1."),
-        ans=1,
-        explain=("Adaptive investigation plans generate subtasks from what each step discovers. A fixed sequence can't "
-                 "follow a lead it didn't anticipate."),
+        q=("An agent investigating a production memory leak was given a fixed plan: profile service A, then B, then C. The "
+           "profile of A shows the leak comes from a shared caching library that services D and E also use, and neither is "
+           "in the plan. The agent completes B and C and reports “no leak found in B or C”. What would have handled this "
+           "better?"),
+        opts=("A longer fixed plan that profiles every service in the system, so nothing can be left out of the investigation.",
+              "A prompt instruction telling the agent to report any unexpected findings to the engineer as soon as it sees them.",
+              "Running the fixed plan's three steps in parallel, so the findings from A would reach B and C sooner.",
+              "An adaptive plan that generates its next subtasks from what each step discovers, such as the shared library."),
+        ans=3,
+        explain=("In an investigation, what one step finds should shape the next subtasks, so the plan must adapt. A wastes "
+                 "effort and would still not target the library. B surfaces the finding but leaves the plan unchanged. C "
+                 "runs the same wrong steps faster."),
         scenarios=(4,), points=("1.6:K3",),
     ),
     Question(
-        q=("A CI review runs as three separate calls: extract changes, review them, then format comments. A newer model "
-           "could do it in one call. The team must log and evaluate each stage's output for audits. Should they keep "
-           "the chain?"),
-        opts=("No, a single call is always better with current models.",
-              "Only if the context window is too small for one call.",
-              "No, chaining is only for image tasks.",
-              "Yes, chaining is still worth it when you need to inspect intermediate outputs or enforce a pipeline structure."),
-        ans=3,
-        explain=("Per the prompting docs, explicit chaining is still useful when you need to inspect intermediate "
-                 "outputs or enforce a specific pipeline. Each step can be logged, evaluated or branched."),
+        q=("A CI review runs as three separate calls: extract the changes, review them, then format the comments. A newer "
+           "model could do all three in one call, cutting latency by about 30%. The compliance team must log and evaluate "
+           "each stage's output for audits. Should the team keep the chain?"),
+        opts=("No: one call is always better on newer models, and each stage's output can be reconstructed afterwards.",
+              "Yes: chaining is still worth it when you need to inspect intermediate outputs or enforce a pipeline.",
+              "No: switch to one call and ask the model to print each stage's reasoning inside its final answer.",
+              "Yes, but only because separate calls are cheaper per token than one long call over the same content."),
+        ans=1,
+        explain=("The docs say chaining is still worthwhile when you need to inspect intermediate outputs or enforce a pipeline "
+                 "structure, and the audit requirement is exactly that. A and C lose the separate, inspectable stage outputs. "
+                 "D gives the wrong reason."),
         scenarios=(5,), basis="docs", in_bank=False,
     ),
 )

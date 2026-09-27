@@ -119,35 +119,47 @@ SIDE_BY_SIDE_ROWS = (
 
 QUESTIONS = (
     Question(
-        q=("An extraction pipeline sends 400-page contracts and often misses clauses in the middle of the document. A "
-           "teammate proposes enabling prompt caching. What's the best response?"),
-        opts=("Agree: caching keeps the whole document in view.",
-              "Disagree: caching reuses processing of an identical prefix and doesn't change the output. Restructure the context instead.",
-              "Agree, but only with a long cache lifetime.",
-              "Disagree: caching only works for images."),
-        ans=1,
-        explain=("Per the docs, the response with caching is identical to the one without it. Missed middle content is "
-                 "an attention/context problem (D4.7)."),
-        scenarios=(6,), basis="docs", in_bank=False),
-    Question(
-        q=("A support agent must answer customers immediately. Every call resends the same long system prompt and the "
-           "same tool definitions, and the team wants to cut the processing time and cost of that repeated part. Which "
-           "feature is designed for this?"),
-        opts=("The Message Batches API.", "Prompt caching.", "Forcing tool_choice to a specific tool.", "A larger max_tokens."),
-        ans=1,
-        explain=("Caching targets a repeated identical prefix and keeps the call synchronous. Batch would trade away the "
-                 "immediate response."),
-        scenarios=(1,), basis="docs", in_bank=False),
-    Question(
-        q="Which statement about prompt caching is accurate?",
-        opts=("It lets later requests use information from earlier conversations.",
-              "It improves answer quality on long prompts.",
-              "It returns the same response you'd get without caching; it only reuses processing of an identical prompt prefix.",
-              "It replaces the Message Batches API."),
+        q=("An extraction pipeline sends 400-page contracts, and an audit finds it misses about 15% of clauses from the "
+           "middle of each document. A teammate proposes enabling prompt caching, “since the model will have seen the "
+           "document before”. What is the best response?"),
+        opts=("Agree: caching lets the model re-read the cached document more carefully on each later request.",
+              "Agree, but cache only the middle section, where the missed clauses tend to appear most often.",
+              "Disagree: caching reuses processing of an identical prefix and doesn't change the output.",
+              "Disagree: caching works only for system prompts, so a document can't be cached in the first place."),
         ans=2,
-        explain="The docs state caching has no effect on the generated output. It isn't memory and doesn't replace batch.",
-        scenarios=(6,), basis="docs", in_bank=False),
+        explain=("Caching reuses the processing of an identical prompt prefix to save time and cost. The response is the same "
+                 "as without caching. Missed mid-document clauses are an attention problem, so restructure the context "
+                 "(D4.7) instead. A and B credit caching with an accuracy effect it doesn't have. D is false."),
+        scenarios=(6,), basis="docs", in_bank=False,
+    ),
+    Question(
+        q=("A support agent must answer customers immediately. Every call resends the same 6,000-token system prompt and the "
+           "same 14 tool definitions, and only the last few customer messages change. The team wants to cut the processing "
+           "time and cost of the repeated part without delaying any reply. Which feature is designed for this?"),
+        opts=("The Message Batches API",
+              "Prompt caching",
+              "A larger max_tokens value",
+              "Context compaction"),
+        ans=1,
+        explain=("Prompt caching reuses the processing of a repeated identical prefix (tools, then system, then messages) and "
+                 "doesn't delay responses. A is asynchronous, with no latency guarantee, so it doesn't fit a live chat. C "
+                 "changes the output limit. D shrinks history but does nothing for the repeated prefix."),
+        scenarios=(1,), basis="docs", in_bank=False,
+    ),
+    Question(
+        q=("A manager reads that prompt caching “makes responses faster and cheaper” and asks whether turning it on will "
+           "also change the extracted values on the team's 20,000 nightly invoices. Which statement is accurate?"),
+        opts=("It returns the same response as without caching; it only reuses processing of an identical prefix.",
+              "It may return an earlier cached answer when two different invoices are similar enough to share a prefix.",
+              "It improves accuracy, because the cached prefix gets more attention on every later request.",
+              "It changes values only for batch requests, where cached and uncached processing can differ."),
+        ans=0,
+        explain=("Caching doesn't change what the model outputs. It reuses the work of processing an identical prefix. B confuses "
+                 "prompt caching with response caching. C and D invent effects on output."),
+        scenarios=(6,), basis="docs", in_bank=False,
+    ),
 )
+
 
 FAQ = (
     ("Will the exam ask me how to configure prompt caching?",

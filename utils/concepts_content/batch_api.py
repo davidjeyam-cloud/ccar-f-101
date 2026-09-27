@@ -407,88 +407,100 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("To cut costs, a team wants to move two workloads to the Message Batches API: the automated review that "
-           "developers wait on before they can merge, and a nightly job that generates missing unit tests. What's the "
-           "right call?"),
-        opts=("Move both, since the 50% saving is worth it.",
-              "Move only the nightly test generation; keep the pre-merge review synchronous.",
-              "Move only the pre-merge review, since it runs more often.",
-              "Move neither, because batches can't process code."),
+        q=("A support team runs two Claude workloads: a live refund-eligibility check that the agent calls while the customer "
+           "waits in chat, and a weekly quality report scoring the week's 8,000 transcripts. Finance asks to move both to "
+           "the Message Batches API for the 50% saving. What is the right call?"),
+        opts=("Move both, and tell chat customers that the answer will arrive by email within a day.",
+              "Move only the weekly quality report to batches; keep the live eligibility check synchronous.",
+              "Move only the live eligibility check, since it has the most requests and so saves the most money.",
+              "Keep both synchronous, and cut costs instead by moving both workloads to a smaller model."),
         ans=1,
-        explain=("Batch processing can take up to 24 hours with no latency guarantee, so it suits non-blocking work like "
-                 "nightly jobs, not blocking workflows like pre-merge checks."),
-        scenarios=(5,), points=("4.5:K2", "4.5:S1"),
+        explain=("Batches suit latency-tolerant work: they are 50% cheaper but can take up to 24 hours, with no latency "
+                 "guarantee. A customer waiting in chat can't wait that long, and a weekly report can. A breaks the live "
+                 "experience. C picks exactly the wrong workload. D ignores an easy saving on the weekly report."),
+        scenarios=(1,), points=("4.5:K2", "4.5:S1"),
     ),
     Question(
-        q=("A batch of 500 document extractions comes back, and the team pairs each result with its input by position in "
-           "the list. Some records end up with another document's data. What's the fix?"),
-        opts=("Sort the results alphabetically before pairing.",
-              "Submit smaller batches so the order is kept.",
-              "Wait for the batch to fully finish before reading results.",
-              "Give every request a custom_id and match results by custom_id."),
-        ans=3,
-        explain=("Batch results aren't guaranteed to come back in input order. custom_id correlates each request with its "
-                 "response."),
+        q=("A batch of 500 document extractions comes back, and the team pairs each result with its input by its position in "
+           "the results list. An audit finds 23 records holding another document's data, all from batches that included "
+           "failed requests. What is the fix?"),
+        opts=("Sort the results by completion time before pairing, so their order matches the submission order.",
+              "Submit batches of one request each, so there is only ever one result to pair with its input.",
+              "Give every request a custom_id, and match each result to its input by that custom_id.",
+              "Ask the model to repeat the document's filename in its output, and pair results by that text."),
+        ans=2,
+        explain=("custom_id is the documented way to correlate batch requests with their results. Position isn't a reliable "
+                 "key. A still depends on order. B throws away the point of batching. D trusts generated text as an ID."),
         scenarios=(6,), points=("4.5:K4",),
     ),
     Question(
-        q=("In a nightly batch of 2,000 extractions, 40 requests failed. Twelve failed because their documents exceeded "
-           "the context limit. What's the most efficient recovery?"),
-        opts=("Resubmit only the 40 failed requests by custom_id, splitting the 12 over-long documents into chunks first.",
-              "Resubmit the whole batch of 2,000.",
-              "Resubmit the 40 unchanged, since failures are transient.",
-              "Process the 40 synchronously with the same prompts and sizes."),
+        q=("In a nightly batch of 2,000 extractions, 40 requests failed, 12 of them because their documents exceeded the "
+           "context limit. The current recovery script resubmits the entire batch of 2,000, which doubles the night's cost. "
+           "What is the most efficient recovery?"),
+        opts=("Resubmit only the 40 failures by custom_id, splitting the 12 over-long documents into chunks first.",
+              "Resubmit only the 40 failures by custom_id, unchanged, and repeat until every one of them succeeds.",
+              "Resubmit the entire batch as now, but with a larger max_tokens so the over-long documents will fit.",
+              "Process the 40 failures synchronously in a loop, retrying each one up to five times until it succeeds."),
         ans=0,
-        explain=("Resubmit only the failed documents, identified by custom_id, and fix the cause (chunk over-long "
-                 "documents). Resubmitting unchanged repeats the context-limit failures."),
+        explain=("Resubmit only the failed requests, identified by custom_id, and fix what made them fail: the over-long "
+                 "documents need chunking. B resubmits 12 requests that will fail again. C re-runs 1,960 successful requests, "
+                 "and max_tokens limits output, not input. D retries the over-long documents unchanged."),
         scenarios=(6,), points=("4.5:S3",),
     ),
     Question(
-        q=("Documents arrive all day, and each must be extracted within 30 hours of arriving. Batches can take up to 24 "
-           "hours to process. How often should the team submit batches?"),
-        opts=("Once a day, at midnight.",
-              "Every 12 hours.",
-              "Every 4 hours, so waiting time plus processing stays inside 30 hours.",
-              "Every 30 hours."),
-        ans=2,
-        explain=("Work backwards from the SLA: with up to 24 hours of processing, a document can wait at most about 6 "
-                 "hours before submission. 4-hour windows keep a 30-hour SLA; daily or 12-hour windows break it."),
+        q=("Documents arrive throughout the day, and each must be extracted within 30 hours of arriving. Batches can take up "
+           "to 24 hours to process. The team submits one batch a day at midnight, and last month 9% of documents missed the "
+           "deadline. How often should the team submit batches?"),
+        opts=("Every 12 hours, since that halves the wait compared with the current daily schedule.",
+              "Once a day as now, but with an urgent flag on documents that arrived early in the day.",
+              "Every 24 hours, but moved to noon, when most of each day's documents have usually already arrived.",
+              "Every 4 hours, so the longest wait before submission plus processing stays within 30 hours."),
+        ans=3,
+        explain=("Worst case = time waiting for the next submission + up to 24 hours of processing. Every 4 hours gives "
+                 "4 + 24 = 28 hours, inside 30. A gives 12 + 24 = 36 hours. B invents a priority flag. C still leaves a wait "
+                 "of up to 24 hours."),
         scenarios=(6,), points=("4.5:S2",),
     ),
     Question(
-        q=("A refund-review job needs the model to call lookup_order, see the result, then decide on the refund. Someone "
-           "suggests running thousands of these as a Message Batch. What's the problem?"),
-        opts=("Batches don't support the tools parameter at all.",
-              "Within one batch request there's no mid-request round trip: the tool can't run and return its result for the model to continue.",
-              "Batch requests can't include system prompts.",
-              "Batch results expire before the refund decision is made."),
-        ans=1,
-        explain=("There's no multi-turn tool calling within a single batch request. Each request is one call, so a "
-                 "tool-then-decide loop needs synchronous calls, or a batch per step driven by your code."),
+        q=("A nightly refund-review job needs the model to call lookup_order, see the result, then decide on each of 3,000 "
+           "refunds. An engineer proposes running these as a Message Batch, one request per refund, to halve the cost. What "
+           "is the problem?"),
+        opts=("Batch requests can't include any tool definitions, so the model couldn't even ask for lookup_order.",
+              "3,000 requests is too many for one batch, so the job would need splitting into several batches.",
+              "There's no mid-request round trip, so the tool result can't come back for the model to continue.",
+              "Batch results arrive in random order, so refund decisions couldn't be matched to their orders."),
+        ans=2,
+        explain=("A batch request is a single request with no chance to run a tool and return its result mid-request. A "
+                 "multi-turn tool loop doesn't fit inside one. A is not the point the guide makes: what's missing is the round "
+                 "trip. B isn't the issue here. D is solved by custom_id."),
         scenarios=(1,), points=("4.5:K3",),
     ),
     Question(
-        q=("A team is about to batch-process 100,000 archived contracts with a brand-new extraction prompt. What should "
-           "they do first?"),
-        opts=("Refine the prompt on a representative sample until first-pass results are good, then submit the full batch.",
-              "Submit all 100,000 at once to benefit from the 50% saving.",
-              "Split into 100 batches of 1,000 with the same prompt.",
-              "Run everything synchronously the first time."),
-        ans=0,
-        explain=("Refining the prompt on a sample before batch-processing large volumes raises the first-pass success "
-                 "rate and avoids paying to reprocess thousands of documents."),
+        q=("A team is about to batch-process 100,000 archived contracts with a brand-new extraction prompt. Last year a "
+           "similar run had to be redone entirely after the team found a date-format error on day two. What should they do "
+           "first?"),
+        opts=("Submit the full batch now, since the 50% saving makes a full rerun affordable if one turns out to be needed.",
+              "Refine the prompt on a representative sample until first-pass results are good, then submit the full batch.",
+              "Submit the full batch with a validation step, and resubmit only the contracts that fail that validation.",
+              "Split the 100,000 contracts into 100 batches and submit them all at once, so that each error affects less."),
+        ans=1,
+        explain=("Refine the prompt on a sample before batch-processing a large volume, so problems are found cheaply. A bets "
+                 "on a costly rerun. C catches only errors that validation can see, such as a missing field, and misses "
+                 "semantic ones like a misread date format. D submits the same flawed prompt 100 times."),
         scenarios=(6,), points=("4.5:S4",),
     ),
     Question(
-        q=("Finance asks to move a weekly compliance audit of support transcripts to the Message Batches API. An engineer "
-           "objects that results might arrive many hours later. What's the right assessment?"),
-        opts=("Reject it: batches have a guaranteed one-hour turnaround, which is too short for audits.",
-              "Reject it: batches can't process transcripts.",
-              "Accept it only if the audit is split into real-time calls.",
-              "Accept it: 50% cheaper, up to 24 hours to process, no latency guarantee — fine for a weekly audit."),
+        q=("Finance asks to move a weekly compliance audit of about 20,000 support transcripts to the Message Batches API. "
+           "An engineer objects that results might arrive many hours later and that there is no latency guarantee. The "
+           "audit report is due every Monday. What is the right assessment?"),
+        opts=("Reject it, because a job with no latency guarantee should never be used for compliance reporting.",
+              "Accept it only if each request is resubmitted synchronously whenever it takes longer than an hour.",
+              "Reject it, because batch processing is designed for code tasks, not for reading support transcripts.",
+              "Accept it: 50% cheaper and up to 24 hours to process, with no guarantee, which suits a weekly audit."),
         ans=3,
-        explain=("The Message Batches API gives 50% cost savings with up to 24-hour processing and no guaranteed latency, "
-                 "which matches latency-tolerant work such as weekly audits."),
+        explain=("The facts are a 50% saving, processing that can take up to 24 hours, and no latency SLA. A weekly deadline "
+                 "absorbs that easily. A rules batching out on a principle the facts don't support. B adds complexity for no "
+                 "need. C invents a restriction."),
         scenarios=(1,), points=("4.5:K1", "4.5:K2"),
     ),
 )

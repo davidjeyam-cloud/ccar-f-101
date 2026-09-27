@@ -429,88 +429,100 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A developer asks the agent to find every place the deprecated function legacy_price() is called across a "
-           "large repository, before removing it. Which built-in tool fits this first step?"),
-        opts=("Glob with the pattern **/*legacy_price*.",
-              "Read every source file in turn.",
-              "Bash with ls -R.",
-              "Grep for legacy_price( across the codebase."),
-        ans=3,
-        explain=("Grep searches file contents for patterns such as function names. Glob matches file paths, and callers "
-                 "live inside files whose names don't contain the function."),
+        q=("Before removing the deprecated function legacy_price(), a developer asks the agent to find every place it is "
+           "called across a 4,000-file repository. A first attempt opened files one by one with Read and, after 25 minutes, "
+           "had covered about 10% of the code. Which built-in tool fits this step?"),
+        opts=("Glob for **/*price*, then Read each matching file to look for the calls.",
+              "Grep for legacy_price( across the codebase.",
+              "Read the files that import pricing modules, one directory at a time.",
+              "Bash with a find command listing every file changed in the last year."),
+        ans=1,
+        explain=("Grep searches file contents, which is exactly what finding callers needs. A matches file names, not calls, "
+                 "and misses callers in files named differently. C is the slow file-by-file approach again. D lists files "
+                 "by date, which says nothing about calls."),
         scenarios=(4,), points=("2.5:K1", "2.5:S1"),
     ),
     Question(
-        q=("Before a testing-framework migration, the agent must list every React test file (they follow the "
-           "Component.test.tsx naming, scattered across 60 folders). Which tool is right?"),
-        opts=("Glob with **/*.test.tsx.",
-              "Grep for “describe(” across the repository.",
-              "Read the folder structure file by file.",
-              "Bash with cat on each folder."),
-        ans=0,
-        explain=("Glob matches file paths by pattern (names, extensions), which is exactly this job. Grep on content "
-                 "would miss files and pick up non-test files."),
+        q=("Before a testing-framework migration, the agent must list every React test file. They follow the "
+           "Component.test.tsx naming and are scattered across 60 folders. The agent's first attempt, a Grep for “describe(”, "
+           "returned 1,400 matches, including 300 from files that are not tests. Which tool is right?"),
+        opts=("Grep for “test.tsx” in file contents across the whole repository.",
+              "Read the package.json test configuration to find where the test files are.",
+              "Glob with **/*.test.tsx.",
+              "Grep for “import { render }” to find files that render React components."),
+        ans=2,
+        explain=("Glob matches file paths by pattern, which is what a naming convention needs. A and D search contents for a "
+                 "proxy, which is imprecise. B describes the configuration, not the files."),
         scenarios=(4,), points=("2.5:K2", "2.5:S2"),
     ),
     Question(
-        q=("The agent tries to change timeout = 30 to timeout = 60 in one section of a config file, but Edit fails "
-           "because that exact line appears in four sections. What's the right fallback?"),
-        opts=("Retry the same Edit until it succeeds.",
-              "Use Glob to find a different config file.",
-              "Read the whole file, then Write it back with only the intended section changed.",
-              "Ask the developer to edit the file by hand."),
-        ans=2,
-        explain=("Edit needs a unique text match. When it can't find one, fall back to Read plus Write. Retrying the same "
-                 "Edit fails the same way."),
+        q=("The agent must change timeout = 30 to timeout = 60 only in the [payments] section of a config file. Edit fails "
+           "because that exact line appears in four sections. On its next attempt the agent edits the first match instead, "
+           "changing the wrong section. What is the right fallback?"),
+        opts=("Retry Edit with replace-all enabled, so that every occurrence is changed at once in a single step.",
+              "Ask the developer to make the change by hand, since Edit can never target a line that repeats.",
+              "Use Grep to count the matches, then Edit whichever one appears closest to the start of the file.",
+              "Read the whole file, then Write it back with only the intended section changed."),
+        ans=3,
+        explain=("When Edit can't find unique anchor text, the fallback is Read plus Write, changing only the intended "
+                 "section. A changes all four sections. B gives up on a task the tools can do. C is the “first match” "
+                 "guess that already went wrong."),
         scenarios=(2, 4), points=("2.5:K3", "2.5:K4", "2.5:S3"),
     ),
     Question(
-        q=("A new engineer asks how an order moves from checkout to fulfilment in an unfamiliar codebase of 3,000 files. "
-           "What's the most effective exploration strategy?"),
-        opts=("Read all 3,000 files first so nothing is missed.",
-              "Grep for the checkout entry point, then Read along the imports it leads to, building the picture step by step.",
-              "Glob every *.py file and summarise the list.",
-              "Ask the engineer which files matter before starting."),
-        ans=1,
-        explain=("Build understanding incrementally: Grep for entry points, then Read along imports, instead of reading "
-                 "everything up front and exhausting the context."),
+        q=("A new engineer asks how an order moves from checkout to fulfilment in an unfamiliar 3,000-file codebase. The "
+           "agent's first plan is to Read every file under src/ before answering, which would use up most of its context. "
+           "What is the most effective exploration strategy?"),
+        opts=("Glob for every file under src/, then Read them in alphabetical order until the flow becomes clear.",
+              "Answer from general knowledge of e-commerce systems, then check a few files to confirm the answer.",
+              "Grep for the checkout entry point, then Read along the imports it leads to, step by step.",
+              "Read the README and the top-level folder names, then describe the whole flow from those alone."),
+        ans=2,
+        explain=("Build understanding incrementally: find the entry point with Grep, then follow imports with Read. A reads "
+                 "everything and fills the context. B starts from assumptions, not the code. D guesses the flow from "
+                 "folder names."),
         scenarios=(4,), points=("2.5:S4",),
     ),
     Question(
-        q=("A utils/index.ts file re-exports helpers from five internal modules. The agent searched for one module's "
-           "file name to find usages and found almost none, although the helpers are used everywhere. What should it do "
-           "instead?"),
-        opts=("Conclude the helpers are unused and propose deleting them.",
-              "Read every file that imports anything.",
-              "Glob for files named index.ts.",
-              "List the names that index.ts exports, then Grep for each of those names."),
-        ans=3,
-        explain=("To trace usage through wrapper modules, first identify all exported names, then search for each one. "
-                 "Callers import the re-exported names, not the underlying file."),
+        q=("A utils/index.ts file re-exports helpers from five internal modules. To find usages of one module, the agent "
+           "grepped for that module's file name and found 3 matches, although the helpers are used in over 200 files. What "
+           "should it do instead?"),
+        opts=("List the names that index.ts exports, then Grep for each of those names across the codebase.",
+              "Grep for “utils/index” to find every file that imports the barrel file, and count each as a usage.",
+              "Read every file in the repository with “utils” in its path, looking for calls to the helpers.",
+              "Conclude that the module is barely used, and report the 3 matches as the complete usage list."),
+        ans=0,
+        explain=("Callers import the re-exported names, not the module's file, so you trace usage by first finding the exported "
+                 "names and then searching for each one. B counts every importer, whether or not it uses this module's "
+                 "helpers. C is slow and too narrow. D reports a false result."),
         scenarios=(4,), points=("2.5:S5",),
     ),
     Question(
-        q=("A team wants Claude to always use their package manager's commands in every session. Separately, they have a "
-           "ten-step release-notes workflow that's needed only on release days. Where should each live?"),
-        opts=("The package-manager rule in CLAUDE.md, and the release workflow as a skill.",
-              "Both in CLAUDE.md, so nothing is forgotten.",
-              "Both as skills, to keep context small.",
-              "The package-manager rule as a skill, and the release workflow in CLAUDE.md."),
-        ans=0,
-        explain=("CLAUDE.md is always loaded, which suits universal standards. Skills load on demand, which suits "
-                 "task-specific workflows. Putting the release workflow in CLAUDE.md costs context in every session."),
+        q=("A team wants Claude to always use their package manager's commands (pnpm, never npm) in every session. "
+           "Separately, they have a ten-step release-notes workflow that is needed only on release days, about twice a "
+           "month. Both currently sit in a 600-line CLAUDE.md. Where should each live?"),
+        opts=("Both in CLAUDE.md, since everything Claude needs should be loaded at the start of every session.",
+              "Both as skills, so neither takes up context until a developer or Claude decides to invoke it.",
+              "The release workflow in CLAUDE.md, and the package-manager rule as a skill run before installs.",
+              "The package-manager rule in CLAUDE.md, and the release workflow as a skill."),
+        ans=3,
+        explain=("CLAUDE.md is for rules that apply all the time. Skills are for on-demand, task-specific workflows. A loads a "
+                 "twice-a-month workflow into every session. B makes an always-on rule depend on someone invoking it. C gets "
+                 "the two the wrong way round."),
         scenarios=(2, 4), points=("3.2:S5",),
     ),
     Question(
-        q=("A team wrote “never edit .env files” in CLAUDE.md, yet it still happens now and then. What gives a "
+        q=("A team wrote “never edit .env files” in CLAUDE.md, yet in the last month Claude edited a .env file twice while "
+           "fixing configuration bugs. The team lead now wants a guarantee rather than a better-worded rule. What gives a "
            "dependable guarantee in Claude Code?"),
-        opts=("Move the sentence to the top of CLAUDE.md.",
-              "Repeat it in every path-scoped rule.",
-              "A permission deny rule (or a PreToolUse hook) that blocks edits to .env files.",
-              "Rename .env so Claude doesn't recognise it."),
-        ans=2,
-        explain=("Per the Claude Code docs, CLAUDE.md is guidance the model follows most of the time. Guarantees come "
-                 "from permission rules or hooks, which are enforced outside the model."),
+        opts=("A permission deny rule, or a PreToolUse hook, that blocks edits to .env files.",
+              "The rule moved to the top of CLAUDE.md in capitals, so that the model gives it more weight.",
+              "A path-scoped rule in .claude/rules/ that loads the instruction whenever .env files are touched.",
+              "A /check-env slash command that developers run after each session to revert any .env changes."),
+        ans=0,
+        explain=("Permission rules and hooks are enforced by Claude Code itself, whatever the model decides. B and C are still "
+                 "instructions, although C loads them at the right moment. D repairs the damage afterwards, if someone "
+                 "remembers."),
         scenarios=(2,), basis="docs", in_bank=False,
     ),
 )

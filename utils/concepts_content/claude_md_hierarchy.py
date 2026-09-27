@@ -383,67 +383,73 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A project's CLAUDE.md has grown to 700 lines covering testing, API conventions and deployment. Claude now "
-           "follows some sections inconsistently, and editing the file causes merge conflicts. What's the recommended "
-           "restructuring?"),
-        opts=("Split it into focused files under .claude/rules/, such as testing.md, api-conventions.md and deployment.md.",
-              "Move the whole file into each developer's user-level CLAUDE.md.",
-              "Shorten it by deleting the examples.",
-              "Rewrite it as one long paragraph so it loads as a single unit."),
-        ans=0,
-        explain=("The .claude/rules/ directory organises topic-specific rule files as an alternative to one monolithic "
-                 "CLAUDE.md. Moving it to user level would stop it being shared."),
+        q=("A project's CLAUDE.md has grown to 700 lines covering testing, API conventions and deployment, and six "
+           "contributors edit it. Claude follows some sections inconsistently, and edits to the file cause merge conflicts "
+           "about once a week. What is the recommended restructuring?"),
+        opts=("Summarise the 700 lines into a 100-line CLAUDE.md that keeps only the rules the team rates most important.",
+              "Split it into focused files under .claude/rules/, such as testing.md, api-conventions.md and deployment.md.",
+              "Move each contributor's sections into their own ~/.claude/CLAUDE.md, so nobody edits a shared file any more.",
+              "Keep one file, but lock editing to a single owner who merges all of the proposed changes once every week."),
+        ans=1,
+        explain=("Topic-specific files in .claude/rules/ keep each area small, separately owned and easy to review, instead of "
+                 "one monolithic file. A discards rules to save space. C takes team rules out of version control. D keeps "
+                 "the monolith and adds a bottleneck."),
         scenarios=(2,), points=("3.1:K4", "3.1:S3"),
     ),
     Question(
-        q=("Infrastructure conventions (tagging, naming, no hard-coded regions) should apply only when Claude works on "
-           "Terraform files under terraform/, and shouldn't take up context when it works on the web app. What's the "
-           "best setup?"),
-        opts=("Add the conventions to the root CLAUDE.md under a “Terraform” heading.",
-              "Put them in each developer's user-level CLAUDE.md.",
-              "Paste them into the prompt whenever someone works on Terraform.",
-              "Create a rule file in .claude/rules/ with paths: [\"terraform/**/*\"] in its YAML frontmatter."),
-        ans=3,
-        explain=("A path-scoped rule loads only for matching files, which saves context elsewhere. A root CLAUDE.md "
-                 "section loads for every task."),
+        q=("Infrastructure conventions (tagging, naming, no hard-coded regions) apply to every Terraform file. These files "
+           "live under terraform/ and also in the deploy/ folder of each of 40 services. The conventions sit in the root "
+           "CLAUDE.md and use about 2,000 tokens in every session, including the 80% spent on the web app. What is the best "
+           "setup?"),
+        opts=("A CLAUDE.md with the conventions in terraform/ and in each of the 40 deploy/ folders beside the files.",
+              "A /terraform skill that developers invoke before they begin work on any of the infrastructure changes.",
+              "A rule file in .claude/rules/ with paths: [\"**/*.tf\"] in its YAML frontmatter.",
+              "Keep them in the root CLAUDE.md, but move them to the bottom, where they compete less for attention."),
+        ans=2,
+        explain=("A path-scoped rule loads only when Claude works on matching files, wherever they live, so the web-app sessions "
+                 "stop paying for it. A duplicates the rules 41 times. B depends on someone remembering to invoke it. D still "
+                 "loads the conventions everywhere."),
         scenarios=(2,), points=("3.3:K1", "3.3:S1", "3.3:K2"),
     ),
     Question(
-        q=("Test files live next to their components across 40 directories (Button.test.tsx beside Button.tsx). The team "
-           "wants one testing convention applied whenever Claude edits any test file. What's the most maintainable "
-           "approach?"),
-        opts=("A CLAUDE.md in each of the 40 directories.",
-              "A rule in .claude/rules/ scoped with a glob such as **/*.test.tsx.",
-              "The root CLAUDE.md, telling Claude to apply it to tests.",
-              "A skill that developers invoke before editing tests."),
-        ans=1,
-        explain=("Glob-scoped rules apply conventions by file type, whatever the directory, and are preferred over "
-                 "per-directory CLAUDE.md files when a convention spans the codebase."),
+        q=("A team created .claude/rules/testing.md with paths: [\"tests/**/*\"]. But their test files live next to the "
+           "components they test, across 40 directories (Button.test.tsx beside Button.tsx), and the rule loaded for only "
+           "about 5% of test edits last week. What should they change?"),
+        opts=("Move every test file into tests/, so that the rule's existing path pattern matches all of them.",
+              "Remove the paths field, so that the testing rule loads in every session whichever file is edited.",
+              "Add a CLAUDE.md with the testing rules to each of the 40 directories that contain test files.",
+              "Change the paths pattern to a file-name glob such as **/*.test.tsx, which matches tests anywhere."),
+        ans=3,
+        explain=("A glob on the naming convention matches test files wherever they sit. Directory-based scoping can't do "
+                 "that. A reorganises the codebase to suit a config file. B loads testing rules for all work. C scatters "
+                 "40 copies that will drift apart."),
         scenarios=(2,), points=("3.3:K3", "3.3:S2", "3.3:S3"),
     ),
     Question(
-        q=("Two engineers say Claude behaves differently in their sessions on the same monorepo. One suspects a "
-           "leftover directory-level CLAUDE.md in a package. What's the quickest way to confirm which instruction "
-           "files each session is using?"),
-        opts=("Grep the repository for every file named CLAUDE.md.",
-              "Ask Claude to list the rules it's following.",
-              "Run /memory in each session and compare the loaded files.",
-              "Restart both sessions with a fresh clone."),
-        ans=2,
-        explain=("/memory shows which memory files are loaded in a session, so it diagnoses hierarchy issues directly. "
-                 "Grep finds files but not whether a session loaded them."),
+        q=("Two engineers say Claude behaves differently on the same monorepo: in one of their sessions it insists on a "
+           "deprecated logging library. One engineer suspects a leftover CLAUDE.md in packages/legacy and proposes deleting "
+           "every directory-level CLAUDE.md to be safe. What should they do first?"),
+        opts=("Run /memory in each session and compare which instruction files each one has loaded.",
+              "Delete every directory-level CLAUDE.md, then re-add the ones the team confirms are still needed.",
+              "Add a rule to the root CLAUDE.md forbidding the old library, so it overrides any lower-level file.",
+              "Ask Claude in each session where its logging preference comes from, and compare the two answers."),
+        ans=0,
+        explain=("/memory shows exactly which memory files each session loaded, which confirms or rules out the suspicion in "
+                 "seconds. B is destructive and made without a diagnosis. C adds a conflicting instruction instead of "
+                 "finding the source. D relies on the model's account of its own context."),
         scenarios=(4,), points=("3.1:S4", "3.1:S1"),
     ),
     Question(
-        q=("A developer writes a rule whose frontmatter says path: [\"docs/**\"] (singular) and expects it to load only "
-           "for documentation. It loads for every task. What's going on?"),
-        opts=("Rules in .claude/rules/ always load, whatever their frontmatter says.",
-              "Only paths is read; the misspelt field is ignored, so the rule behaves as if unscoped.",
-              "The glob docs/** matches every file in the repository.",
-              "Claude Code reports a syntax error and falls back to loading everything."),
+        q=("A developer writes a rule whose frontmatter says path: [\"docs/**\"] (singular) and expects it to load only for "
+           "documentation work. /memory shows it loaded in every session, including 300 backend sessions last week. What is "
+           "going on?"),
+        opts=("Rules in .claude/rules/ always load in every session; path scoping only changes their load priority.",
+              "Only paths is read, so the misspelt field is ignored and the rule behaves as if it had no scope.",
+              "The glob docs/** is invalid, so it falls back to matching every file in the repository.",
+              "Path-scoped rules load everywhere until Claude Code restarts after the rule file is created."),
         ans=1,
-        explain=("Per the memory docs, paths is the field that scopes a rule. Other fields are ignored without an "
-                 "error, so a rule with no valid paths loads unconditionally."),
+        explain=("Scoping is read from the paths field. An unknown field is ignored, and a rule without paths loads "
+                 "unconditionally. A, C and D describe behaviour that doesn't exist."),
         scenarios=(2,), basis="docs", in_bank=False,
     ),
 )

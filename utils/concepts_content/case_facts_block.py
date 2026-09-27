@@ -352,80 +352,89 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A support agent summarises the conversation every ten turns. Early on, a customer explained they're moving house "
-           "and need the replacement delivered before 3 June. Later, the agent books standard delivery for 8 June. Order "
-           "numbers and amounts are handled correctly. What's the most effective fix?"),
-        opts=("Summarise less often, so the detail survives longer.",
-              "Include customer-stated expectations, such as deadlines, in the persistent case-facts block alongside amounts and IDs.",
-              "Tell the agent to always offer express delivery.",
-              "Ask the customer to restate their deadline before each booking."),
+        q=("A support agent summarises the conversation every ten turns and keeps a case-facts block of order numbers and "
+           "amounts. Early on, a customer explained they are moving house and need the replacement before 3 June. Later, the "
+           "agent books standard delivery for 8 June. Order numbers and amounts are all handled correctly. What is the most "
+           "effective fix?"),
+        opts=("Summarise every 20 turns instead, so that the customer's early statements are summarised less often.",
+              "Add customer-stated expectations, such as deadlines, to the case-facts block beside amounts and IDs.",
+              "Tell the summariser to always mention any deadline that a customer gives during the conversation.",
+              "Ask customers to repeat any deadline just before the agent books a delivery for their order."),
         ans=1,
-        explain=("Summaries blur customer-stated expectations as well as numbers and dates. The block must hold what the "
-                 "customer said they need, not only tool data. Always offering express ignores the real requirement."),
+        explain=("Summarisation loses customer-stated expectations along with numbers and dates, so they belong in the "
+                 "persistent block too. A and C only reduce the loss, because the deadline still depends on the summary. D "
+                 "pushes the burden onto the customer."),
         scenarios=(1,), points=("5.1:K1", "5.1:S1"),
     ),
     Question(
-        q=("A customer raises a billing dispute and two returns in one conversation. The agent keeps one facts record, and by "
-           "the end it quotes the second return's refund amount for the billing dispute. What design keeps the issues apart?"),
-        opts=("Handle each issue in a separate conversation.",
-              "Summarise after each issue is resolved.",
-              "Put the latest amount at the top of the prompt.",
-              "Keep structured data for each issue, keyed by its order or case id, in a separate context layer."),
+        q=("A customer raises a billing dispute and two returns in one conversation. The agent's case-facts block is one flat "
+           "record, and by the end it quotes the second return's £120.00 refund for the billing dispute. This happens in "
+           "about 1 in 10 multi-issue conversations. What design keeps the issues apart?"),
+        opts=("Keep one flat record, but list the most recent issue's values first so that they are easier to find.",
+              "Open a separate conversation for each issue automatically, as soon as a new issue is detected.",
+              "Replace the facts block with a longer summary that describes each issue in its own paragraph.",
+              "Keep structured data for each issue, keyed by its order or case ID, in a separate context layer."),
         ans=3,
-        explain=("For multi-issue sessions, persist structured issue data in a separate context layer, so each issue's "
-                 "amounts and statuses stay attached to it. A single record means the latest write wins."),
+        explain=("Per-issue records keyed by ID stop one issue's values overwriting another's. A keeps the single record that "
+                 "causes the overwrite. B fragments the customer's experience. C goes back to prose, which is summarised and "
+                 "blurred."),
         scenarios=(1,), points=("5.1:S2",),
     ),
     Question(
-        q=("A team adds a “case facts” message at the start of each support conversation. Once the conversation is long enough "
-           "to be summarised, the agent starts giving vague answers about amounts again. What's wrong with the design?"),
-        opts=("The block is part of the history being summarised; it must sit outside it and be included in every prompt.",
-              "The block should go at the end of the conversation instead.",
-              "The block needs more detail.",
-              "Summarisation should be turned off."),
-        ans=0,
-        explain=("The case-facts block works because it lives outside the summarised history and is included in each "
-                 "prompt. Put it inside the history and it gets summarised like everything else."),
+        q=("A team adds a “case facts” message at the start of each support conversation. Once a conversation is long enough "
+           "to be summarised, which happens in about 30% of chats, the agent starts giving vague answers about amounts "
+           "again. What is wrong with the design?"),
+        opts=("The block is too short, so it should also include the full text of every tool result it records.",
+              "The block should be written in prose, so that the summariser treats it as a normal part of the conversation.",
+              "The block sits inside the history being summarised; it must sit outside it and go into every prompt.",
+              "The block should be added at the end of the conversation, instead of at the start of it."),
+        ans=2,
+        explain=("A case-facts block only protects facts if it sits outside the summarised history and is included in every "
+                 "prompt. A inflates it. B invites the summariser to blur it. D gets summarised too, just later."),
         scenarios=(1,), points=("5.1:S1",),
     ),
     Question(
         q=("An agent records a refund as “pending” in its case-facts block. Twenty minutes later a lookup shows the refund "
-           "approved, but the agent keeps telling the customer it's pending. What should change?"),
-        opts=("Re-run the lookup before every reply.",
-              "Remove statuses from the block, since they change.",
-              "Update the block whenever a newer value arrives from a tool result, so it always shows the current status.",
-              "Ask the customer to check their bank instead."),
-        ans=2,
-        explain=("Statuses are among the transactional facts the block carries. It must reflect the latest value, or the agent "
-                 "repeats stale data confidently. Dropping statuses loses them to the summary."),
+           "approved, but the agent keeps telling the customer it is pending. Audits find this in 6% of conversations where "
+           "a status changes. What should change?"),
+        opts=("Remove statuses from the block, and let the agent read them from the conversation history instead.",
+              "Add a timestamp to the block, and tell the agent to distrust any value older than ten minutes.",
+              "Re-run every lookup before each reply, so that the agent never has to rely on the block for a status.",
+              "Update the block whenever a tool result brings a newer value, so it always shows the current status."),
+        ans=3,
+        explain=("The block is only useful if it is current, so each newer value from a tool replaces the old one. A moves the "
+                 "status back into history that gets summarised. B makes the agent doubt facts without refreshing them. C "
+                 "repeats every lookup on every turn."),
         scenarios=(1,), points=("5.1:S1",),
     ),
     Question(
-        q=("An agent maintains its case state as a paragraph it writes itself (“customer owed about £80, wants it soon”). "
-           "Values drift as the paragraph is rewritten. What does the docs' state-management advice suggest?"),
-        opts=("Rewrite the paragraph less often.",
-              "Keep state data in a structured format such as JSON, and use free text only for general progress notes.",
-              "Ask the model to be more precise in the paragraph.",
-              "Store the state in the system prompt as prose."),
+        q=("An agent keeps its case state as a paragraph it rewrites itself, such as “customer owed about £80, wants it soon”. "
+           "After a few rewrites, £84.20 has become “about £80” and “by Friday 14 March” has become “soon”. What does the "
+           "docs' state-management advice suggest?"),
+        opts=("Rewrite the paragraph less often, so that there are fewer chances for its values to drift.",
+              "Keep state data in a structured format such as JSON; use free text only for progress notes.",
+              "Ask the model to be precise with numbers and dates whenever it rewrites the paragraph.",
+              "Store the paragraph in a file, so that it survives even when the conversation is summarised."),
         ans=1,
-        explain=("Per the prompting docs, structured formats suit state data (status, values). Unstructured text is fine for "
-                 "progress notes, not for facts that must stay exact."),
+        explain=("The docs recommend structured formats such as JSON for state data, and free text for general progress notes. A "
+                 "and C slow the drift down. D persists the paragraph, vague values and all."),
         scenarios=(1,), basis="docs", in_bank=False,
     ),
     Question(
         q=("A support platform switches on automatic compaction for long conversations. The default summary drops the "
-           "“promised by Friday” commitments customers were given. Besides a case-facts block, what does the compaction "
-           "documentation offer?"),
-        opts=("Nothing; the summary format is fixed.",
-              "Turning off compaction permanently.",
-              "Writing your own summarisation prompt, so the summary keeps what later turns need.",
-              "Compacting more often."),
+           "“promised by Friday” commitments customers were given, and 14 customers were let down last month. Besides a "
+           "case-facts block, what does the compaction documentation offer?"),
+        opts=("A setting that disables summarisation of assistant messages while keeping all user messages.",
+              "A longer compaction threshold, which prevents summaries from ever dropping any commitments.",
+              "Writing your own summarisation prompt, so that the summary keeps what later turns need.",
+              "A flag that stores every summarised message so that the model can search it later when needed."),
         ans=2,
-        explain=("Per the compaction docs, if the default summary drops something a later turn needs, you can provide your "
-                 "own summarisation prompt. A case-facts block remains the guide's answer for exact values."),
+        explain=("Compaction supports a custom summarisation prompt, so you decide what the summary must keep. A, B and D "
+                 "describe options the compaction docs don't offer. A longer threshold only delays the loss."),
         scenarios=(1,), basis="docs", in_bank=False,
     ),
 )
+
 
 FAQ = (
     ("How is this different from D4.7's case-facts tab?",

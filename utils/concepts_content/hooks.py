@@ -468,87 +468,99 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("Company policy says refunds above $500 must go to a human. The support agent's system prompt states this "
-           "clearly, yet audits find a few larger refunds each month, usually after long, emotional conversations. What "
-           "gives a guarantee?"),
-        opts=("Repeat the rule at the end of the system prompt, where recency helps.",
-              "Add few-shot examples of refusing large refunds.",
-              "A hook that intercepts process_refund calls over $500, blocks them and redirects the case to human escalation.",
-              "Lower the model temperature for refund conversations."),
-        ans=2,
-        explain=("Hooks give deterministic guarantees, while prompt instructions give only probabilistic compliance. "
-                 "When a business rule must hold every time, enforce it with a hook that intercepts the outgoing call."),
+        q=("Company policy says refunds above $500 must go to a human. The support agent's system prompt states this clearly, "
+           "yet audits find 3–5 larger refunds each month, usually after long, emotional conversations. The team has already "
+           "moved the rule to the top of the prompt twice. What gives a guarantee?"),
+        opts=("A hook that intercepts process_refund calls over $500, blocks them and redirects the case to escalation.",
+              "A PostToolUse hook that flags refunds over $500 after they run, so finance can reverse them the next day.",
+              "Few-shot examples of emotional conversations in which the agent correctly escalates refunds over $500.",
+              "A sentiment detector that escalates emotional conversations before the agent can reach the refund step."),
+        ans=0,
+        explain=("A business rule that must always hold needs deterministic enforcement: a hook that intercepts the call, blocks "
+                 "it and redirects the case. B acts after the money has gone. C is still prompt-based. D guesses at risk from "
+                 "tone and misses calm large refunds."),
         scenarios=(1,), points=("1.5:K2", "1.5:K3", "1.5:S2", "1.5:S3"),
     ),
     Question(
-        q=("Two MCP tools return dates differently, one as Unix seconds and one as ISO 8601, and a third returns numeric "
-           "status codes. The agent sometimes misreads which order is newer. What's the most reliable fix?"),
-        opts=("A PostToolUse hook that normalises every tool result into one date format and readable statuses before the model sees it.",
-              "A system prompt table explaining how to convert Unix timestamps.",
-              "Ask the model to convert every date before comparing.",
-              "Add a convert_date tool the agent can call when needed."),
-        ans=0,
-        explain=("PostToolUse hooks intercept tool results and transform them before the model processes them. That's "
-                 "exactly the place to normalise mixed formats deterministically."),
+        q=("Two third-party MCP tools return dates differently, one as Unix seconds and one as ISO 8601, and a third returns "
+           "numeric status codes such as 3 and 7. In 6% of order-history answers, the agent misreads which order is newer or "
+           "what a status means. The team cannot change the servers. What is the most reliable fix?"),
+        opts=("Explain both date formats and every status code in the system prompt, so the model can convert them itself.",
+              "A PostToolUse hook that normalises every result to one date format and readable statuses first.",
+              "Ask the model to restate each date in ISO format in its reasoning before it compares any two orders.",
+              "Ask the three vendors to agree on one format, and pause the order-history feature until they have."),
+        ans=1,
+        explain=("A PostToolUse hook can transform tool results before the model processes them, so the model only ever sees "
+                 "consistent data. A and C leave the conversion to the model, which is where the 6% comes from. D depends on "
+                 "third parties and removes the feature in the meantime."),
         scenarios=(1,), points=("1.5:K1", "1.5:S1"),
     ),
     Question(
-        q=("A PreToolUse hook now blocks refunds over $500. But when blocked, the agent retries the same refund several "
-           "times and never tells the customer what happens next. What's missing?"),
-        opts=("A PostToolUse hook that reverses any refund that got through.",
-              "A higher refund limit so fewer calls are blocked.",
-              "A rule in the system prompt: “don't retry blocked refunds”.",
-              "The block should also redirect: its reason should tell the model to escalate to a human, and the escalation path must be available."),
-        ans=3,
-        explain=("Interception hooks should block the violating action and redirect to an alternative workflow, such as "
-                 "human escalation. A block with no way forward invites retries."),
+        q=("A PreToolUse hook now blocks refunds over $500. But when a refund is blocked, the agent retries it an average of "
+           "3 times, then tells the customer “something went wrong” and ends the conversation. Escalations for large refunds "
+           "have dropped to zero. What is missing?"),
+        opts=("The hook should allow the refund on the third attempt, since the agent's persistence shows it is valid.",
+              "A longer system prompt explaining that refunds over $500 can never be processed by the agent directly.",
+              "The block must also redirect: its reason should tell the model to escalate, with the escalation tool available.",
+              "A max_turns limit, so that the agent stops retrying after the first blocked call and then ends the conversation."),
+        ans=2,
+        explain=("Blocking is only half of it: the hook's reason should steer the model to the alternative workflow (human "
+                 "escalation), and that path must exist. A undoes the guarantee. B is prompt guidance, which the block "
+                 "already made unnecessary. D ends conversations faster without helping anyone."),
         scenarios=(1,), points=("1.5:S2",),
     ),
     Question(
-        q=("Which of these support-agent requirements is best handled by a prompt instruction rather than a hook?"),
-        opts=("Never issue a refund before the customer is verified.",
-              "Apologise and acknowledge the delay when an order arrived late.",
-              "Never send a customer's full card number back to the model.",
-              "Block refunds above the policy limit."),
-        ans=1,
-        explain=("Hooks are for rules that need guaranteed compliance: verification, data protection, limits. Tone and "
-                 "phrasing are judgment calls that suit prompt guidance."),
+        q=("A support team is converting its rule list into hooks after a hook fixed its refund-limit problem. The lead wants "
+           "every rule on the list turned into a hook “for consistency”, and the conversion will take about a week. Which rule "
+           "should stay a prompt instruction?"),
+        opts=("Refunds above $500 must never be issued without a human's approval.",
+              "Card numbers returned by tools must never reach the model's context.",
+              "No refund may be issued before get_customer has verified the customer.",
+              "Apologise and acknowledge the delay when an order has arrived late."),
+        ans=3,
+        explain=("Hooks give deterministic guarantees for rules that must always hold. Tone and judgement about how to respond "
+                 "belong in the prompt. A and C are compliance rules on tool calls. B is data that must be removed before "
+                 "the model sees it. All three need hooks. D is conversational behaviour that a hook can't express."),
         scenarios=(1,), points=("1.5:S3", "1.5:K3"),
     ),
     Question(
-        q=("get_customer returns full card numbers and dates of birth, which the model never needs and must not repeat. "
-           "Instructions to “never mention card numbers” are followed most of the time. What's the dependable fix?"),
-        opts=("Ask the model to redact sensitive data in every reply.",
-              "Shorten the conversation so the data is forgotten sooner.",
+        q=("get_customer returns full card numbers and dates of birth, which the model never needs and must not repeat. A "
+           "system-prompt rule to “never mention card numbers” holds in about 99.5% of conversations, but compliance "
+           "requires zero exposures. What is the dependable fix?"),
+        opts=("A PreToolUse hook that blocks get_customer calls whenever the conversation mentions payment details.",
+              "Repeat the rule at the end of the system prompt, and add examples of replies that leave card numbers out.",
               "A PostToolUse hook that strips or masks those fields from the tool result before the model sees it.",
-              "A PreToolUse hook that blocks get_customer."),
+              "A filter on the agent's final replies that deletes any 16-digit number before it reaches the customer."),
         ans=2,
-        explain=("PostToolUse hooks transform results before the model processes them, so data the model shouldn't see "
-                 "never reaches it. Blocking get_customer would break verification."),
+        explain=("Remove sensitive fields from the tool result before the model processes it. The model can't repeat what it "
+                 "never saw. A blocks legitimate lookups. B stays probabilistic. D catches only one format at the output, "
+                 "after the data has already been in context."),
         scenarios=(1,), points=("1.5:K1", "1.5:K3"),
     ),
     Question(
-        q=("A PreToolUse hook registered with matcher “process_refund” never fires, although the agent calls the billing "
-           "MCP server's refund tool many times a day. What's the likely fix?"),
-        opts=("Match the MCP tool's full name, mcp__billing__process_refund, or a pattern covering it.",
-              "Move the hook to PostToolUse.",
-              "Restart the MCP server so it registers hooks.",
-              "Register the hook in the system prompt."),
+        q=("A PreToolUse hook registered with matcher “process_refund” has never fired, although the agent calls the billing "
+           "MCP server's refund tool about 200 times a day. The hook script works when the team runs it by hand. What is the "
+           "likely fix?"),
+        opts=("Match the MCP tool's full name, mcp__billing__process_refund, or a pattern that covers it.",
+              "Register the hook as PostToolUse instead, since MCP tools don't trigger any PreToolUse events.",
+              "Restart the billing MCP server, since hooks attach only to servers started after the hook was added.",
+              "Move the hook into the billing server's own configuration, since MCP tools run only their own hooks."),
         ans=0,
-        explain=("Per the hooks docs, MCP tools are named mcp__<server>__<tool>, and the matcher must match that name. "
-                 "PostToolUse would run after the refund, too late to block it."),
+        explain=("MCP tools are named mcp__<server>__<tool>, so a matcher for the bare tool name never matches. B, C and D "
+                 "describe limits that don't exist, and B would also run the check after the refund had already happened."),
         scenarios=(1,), basis="docs", in_bank=False,
     ),
     Question(
-        q=("Two PreToolUse hooks fire on the same refund call. The fraud hook returns deny and a logging hook returns "
-           "allow. The team worries the allow might win. What happens?"),
-        opts=("The hook registered last wins.",
-              "The model is asked to choose.",
-              "Both decisions are ignored and the call runs.",
-              "Deny takes precedence, so the call is blocked."),
-        ans=3,
-        explain=("Per the Agent SDK docs, when hooks disagree, deny takes precedence over the other decisions, so a single "
-                 "blocking hook is enough."),
+        q=("Two PreToolUse hooks fire on the same refund call: a fraud hook returns deny and a logging hook returns allow. The "
+           "team worries the allow might win, and proposes merging both hooks into one script so they can control the "
+           "order. How should you evaluate this?"),
+        opts=("Needed, because when two hooks disagree, the last one to finish decides whether the tool call actually runs.",
+              "Unnecessary: deny takes precedence over allow, so the call is blocked whichever hook finishes first.",
+              "Needed, because an allow from any hook skips the remaining hooks and runs the call immediately.",
+              "Unnecessary, because PreToolUse hooks cannot return allow at all, only deny or no decision."),
+        ans=1,
+        explain=("When several hooks decide, deny takes precedence, so the fraud hook's deny blocks the call. A and C invent "
+                 "ordering rules. D gets the verdict right for a false reason, because hooks can return allow."),
         scenarios=(1,), basis="docs", in_bank=False,
     ),
 )
