@@ -2,20 +2,20 @@
 
 > Auto-generated from `utils/concepts_map.py` — do not hand-edit. The taxonomy mirrors a community concept list (claudearchitectcertification.com/concepts, a third-party site: unverified, structure only, no content copied). **Scope statuses are Claude's judgment from a keyword search and reading of guide v1.0 on 2026-09-26 — verify them.**
 
-**71 concepts · 1 built.** 🎯 In the guide: 22 · ◐ Partly in the guide: 15 · ℹ️ Awareness only: 1 · ⛔ Out of scope: 3 · ⚪ Not in the guide: 30
+**71 concepts · 8 built.** 🎯 In the guide: 22 · ◐ Partly in the guide: 15 · ℹ️ Awareness only: 1 · ⛔ Out of scope: 3 · ⚪ Not in the guide: 30
 
 **Kinds:** exam = in the guide (built with docs + guide) · ➕ extra = not on the exam but an official docs page covers it (built only if grounded, labelled *not on the exam*) · ungroundable = no official docs basis found, stays a stub · excluded = out of scope / awareness, never built. Candidate docs are fetched and read when the concept is built.
 
 | # | Code | Concept | Status | Kind | Guide alignment | Candidate official docs | Evidence / note | Built |
 |---|---|---|---|---|---|---|---|---|
 | 1 | D1.1 | Agentic Loops | 🎯 In the guide | exam | TS 1.1 — Agentic loops (p.5) | — | — | 🧪 |
-| 2 | D1.2 | Subagents | 🎯 In the guide | exam | TS 1.2 — Coordinator-subagent (pp.5–6) · TS 1.3 — Subagent invocation (pp.6–7) | — | — | — |
-| 3 | D1.3 | Stop Reason | 🎯 In the guide | exam | TS 1.1 — Agentic loops (p.5) | — | stop_reason inspection is part of TS 1.1; the guide's appendix lists stop_reason handling. | — |
-| 4 | D1.4 | Session State & Persistence | 🎯 In the guide | exam | TS 1.7 — Session state (pp.8–9) · TS 5.4 — Codebase exploration (pp.21–22) | — | — | — |
-| 5 | D1.5 | Human-in-the-Loop Escalation | 🎯 In the guide | exam | TS 5.2 — Escalation (pp.20–21) · TS 1.4 — Enforcement & handoff (p.7) | — | — | — |
-| 6 | D1.6 | Subagent State Handoff | 🎯 In the guide | exam | TS 1.3 — Subagent invocation (pp.6–7) · TS 1.4 — Enforcement & handoff (p.7) · TS 5.4 — Codebase exploration (pp.21–22) | — | — | — |
-| 7 | D1.7 | Agent Instruction Files (CLAUDE.md / AGENTS.md) | ◐ Partly in the guide | exam | TS 3.1 — CLAUDE.md hierarchy (pp.12–13) | — | CLAUDE.md is in the guide (TS 3.1); AGENTS.md does not appear anywhere in it. | — |
-| 8 | D1.8 | Task Decomposition Strategies | 🎯 In the guide | exam | TS 1.6 — Task decomposition (p.8) | — | — | — |
+| 2 | D1.2 | Subagents | 🎯 In the guide | exam | TS 1.2 — Coordinator-subagent (pp.5–6) · TS 1.3 — Subagent invocation (pp.6–7) | — | — | 🧪 |
+| 3 | D1.3 | Stop Reason | 🎯 In the guide | exam | TS 1.1 — Agentic loops (p.5) | — | stop_reason inspection is part of TS 1.1; the guide's appendix lists stop_reason handling. | 🧪 |
+| 4 | D1.4 | Session State & Persistence | 🎯 In the guide | exam | TS 1.7 — Session state (pp.8–9) · TS 5.4 — Codebase exploration (pp.21–22) | — | — | 🧪 |
+| 5 | D1.5 | Human-in-the-Loop Escalation | 🎯 In the guide | exam | TS 5.2 — Escalation (pp.20–21) · TS 1.4 — Enforcement & handoff (p.7) | — | — | 🧪 |
+| 6 | D1.6 | Subagent State Handoff | 🎯 In the guide | exam | TS 1.3 — Subagent invocation (pp.6–7) · TS 1.4 — Enforcement & handoff (p.7) · TS 5.4 — Codebase exploration (pp.21–22) | — | — | 🧪 |
+| 7 | D1.7 | Agent Instruction Files (CLAUDE.md / AGENTS.md) | ◐ Partly in the guide | exam | TS 3.1 — CLAUDE.md hierarchy (pp.12–13) | — | CLAUDE.md is in the guide (TS 3.1); AGENTS.md does not appear anywhere in it. | 🧪 |
+| 8 | D1.8 | Task Decomposition Strategies | 🎯 In the guide | exam | TS 1.6 — Task decomposition (p.8) | — | — | 🧪 |
 | 9 | D2.1 | Tool Calling | 🎯 In the guide | exam | TS 2.1 — Tool descriptions (p.9) · TS 1.1 — Agentic loops (p.5) | — | — | — |
 | 10 | D2.2 | Tool Choice | 🎯 In the guide | exam | TS 2.3 — Tool choice (pp.10–11) · TS 4.3 — Structured output (pp.17–18) | — | — | — |
 | 11 | D2.3 | Model Context Protocol | 🎯 In the guide | exam | TS 2.4 — MCP config (p.11) · TS 2.2 — Structured errors (pp.9–10) | — | — | — |

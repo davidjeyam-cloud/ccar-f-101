@@ -78,7 +78,8 @@ GROUNDING = (
           "guide", "TS 1.1 · Knowledge 1 and Skill 1 · p.5, vs handling-stop-reasons"),
     Claim("The specific MAX_TURNS value (10) and the for/else shape are this page's choices, modelled on the SDK's max_turns.",
           "recommendation", "the docs give the mechanism, not a value"),
-    Claim("stop_sequence: the model emitted one of your custom stop sequences; read the stop_sequence field to see which.",
+    Claim("stop_sequence: the model emitted one of your custom stop sequences; the stop sequence text is NOT included in the "
+          "content, and the stop_sequence field says which one fired (re-checked against the docs on 2026-09-26 while building D1.3).",
           "docs", "handling-stop-reasons § stop_sequence"),
     Claim("model_context_window_exceeded is a stop reason (beta per the docs): the model filled its context window; treat the "
           "response as truncated.", "docs", "handling-stop-reasons § Quick Reference Table"),
@@ -86,8 +87,7 @@ GROUNDING = (
           "documented ResultMessage subtypes; labels prefixed \"playground:\" are this workbench's own.",
           "docs", "code.claude.com/docs/en/agent-sdk/agent-loop § Handle the result"),
     Claim("The playground's model replies, token sizes, illustrative $ rates, the simulated context-window number, when the budget "
-          "is checked (after every model call) and whether the stop sequence text appears in the reply are simulation choices — "
-          "the docs page I read does not specify the last two.",
+          "is checked (after every model call) are simulation choices — the docs page I read does not specify the budget timing.",
           "simulated", "utils/agent_playground.py; utils/mock_claude.py"),
     Claim("What the simulated model says in each scenario (narrating \"done\", never converging, the primary model "
           "refusing, a long answer, a pausing server tool) is invented to make each documented behaviour reproducible.",
@@ -158,9 +158,9 @@ def flow_dot(states: dict) -> str:
     highlighted = bool(states)
     lines = [
         "digraph G {",
-        '  rankdir=LR; bgcolor="transparent"; nodesep=0.28; ranksep=0.55; newrank=true;',
-        '  node [fontname="Helvetica", fontsize=11, style="rounded,filled", penwidth=2];',
-        '  edge [fontname="Helvetica", fontsize=10, color="#6B7280"];',
+        '  rankdir=TB; bgcolor="transparent"; nodesep=0.28; ranksep=0.55; newrank=true;',
+        '  node [fontname="Helvetica", fontsize=12, style="rounded,filled", penwidth=2];',
+        '  edge [fontname="Helvetica", fontsize=11, color="#6B7280"];',
     ]
     for node, (label, shape, concept) in _NODES.items():
         fill, line, _ = _CONCEPT[concept]
@@ -743,8 +743,8 @@ PLAYGROUND = (
         "A stop sequence is a tripwire word you set: the moment the model would say it, generation halts — and `stop_reason` tells you it was the tripwire, not a natural finish.",
         "",
         "If you pass custom stop sequences and the model emits one, generation stops and `stop_reason` is `stop_sequence`; read the "
-        "`stop_sequence` field to see which one fired. In this simulation the text is cut off right before the sequence (the docs page I "
-        "read does not say whether the sequence itself appears in the reply — I did not verify that).",
+        "`stop_sequence` field to see which one fired. The stop sequence text itself is NOT "
+        "included in the content (docs); the simulation cuts the reply right before it.",
         "handling-stop-reasons § stop_sequence",
         ("stop_sequences",), {"stop_sequences": "Customer"}, (_ORDER_MSG,),
         ("The final answer is “Refund issued for ORD-1001. Customer A has been taken care of.” With the tripwire “Customer” it "

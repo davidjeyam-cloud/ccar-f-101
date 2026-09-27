@@ -18,7 +18,6 @@ import html
 import importlib
 import re
 
-import pandas as pd
 import streamlit as st
 
 from utils import concepts_map as cm
@@ -83,6 +82,7 @@ def _page_css(code_key: str) -> None:
 .cc-exam {{ background:#FFFBEB; border:2px solid #D97706; border-left:8px solid #D97706; border-radius:10px;
            padding:12px 16px; margin:6px 0 14px 0; color:{C['text_prim']}; }}
 .cc-exam h4 {{ margin:0 0 6px 0; color:#92400E; }}
+.wb-table td, .wb-table th {{ white-space: normal !important; overflow-wrap: anywhere; word-break: break-word; vertical-align: top; }}
 .cc-sim {{ background:rgba(217,119,6,0.10); border:1px solid {C['orange']}; color:{C['text_prim']};
           border-radius:10px; padding:10px 14px; font-size:0.88rem; margin-bottom:12px; }}
 .st-key-{code_key} textarea {{ font-family: Consolas, 'Courier New', monospace !important;
@@ -104,9 +104,13 @@ def _api_call_rows(trace: dict) -> list:
                 parts.append(f'text: "{b["text"]}"')
             else:
                 parts.append(f'tool_use: {b["name"]}({b["input"]})')
-        rows.append({"call #": e["call"], "stop_reason": e["stop_reason"], "messages sent": e["n_messages"],
-                     "in tokens (simulated)": e["input_tokens"], "out tokens (simulated)": e["output_tokens"],
-                     "response content": "  +  ".join(parts)})
+        row = {"call #": e["call"]}
+        if e.get("role") or any(x.get("role") for x in trace["events"] if x["kind"] == "api_call"):
+            row["agent role"] = e.get("role") or "coordinator"
+        row.update({"stop_reason": e["stop_reason"], "messages sent": e["n_messages"],
+                    "in tokens (simulated)": e["input_tokens"], "out tokens (simulated)": e["output_tokens"],
+                    "response content": "  +  ".join(parts)})
+        rows.append(row)
     return rows
 
 
@@ -156,7 +160,9 @@ def _render_result(content: ConceptContent, stored: dict) -> None:
 
     def _show(rows: list, empty_text: str) -> None:
         if rows:
-            st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+            # HTML table, not st.dataframe: dataframe cells truncate long text instead of wrapping it
+            headers = list(rows[0])
+            st.markdown(_table(headers, [[str(r.get(h, "")) for h in headers] for r in rows]), unsafe_allow_html=True)
         else:
             st.write(empty_text)
 
@@ -174,13 +180,17 @@ def _render_result(content: ConceptContent, stored: dict) -> None:
         st.markdown("**Confirmations sent**")
         _show(ledger["confirmations"], "None.")
 
-    render_trace(("Model calls", _tab_calls), ("Tool runs", _tab_tools), ("Backend ledger", _tab_ledger))
+    tabs = [("Model calls", _tab_calls), ("Tool runs", _tab_tools)]
+    if content.show_ledger:
+        tabs.append(("Backend ledger", _tab_ledger))
+    render_trace(*tabs)
 
 
 def _render_lab(slug: str, content: ConceptContent) -> None:
     p = "lab_" + slug.replace("-", "_")
     vkey, skey, ckey, rkey = f"{p}_variant", f"{p}_scenario", f"{p}_code", f"{p}_result"
     variants = {v.key: v for v in content.variants}
+    scenario_ids = list(content.scenarios) or SCENARIO_ORDER
 
     if ckey not in st.session_state:
         first = content.variants[0]
@@ -206,7 +216,7 @@ def _render_lab(slug: str, content: ConceptContent) -> None:
         st.selectbox("Start from", list(variants), key=vkey, on_change=_load_variant,
                      format_func=lambda k: variants[k].label)
     with c2:
-        st.selectbox("Scenario (simulated model + fake backend)", SCENARIO_ORDER, key=skey,
+        st.selectbox("Scenario (simulated model + fake backend)", scenario_ids, key=skey,
                      format_func=lambda k: SCENARIOS[k].title)
     st.caption(SCENARIOS[st.session_state[skey]].description)
 

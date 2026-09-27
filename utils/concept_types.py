@@ -76,6 +76,7 @@ class PlayTab:
     defaults: dict            # knob -> starting value
     examples: tuple           # suggested messages; the first pre-fills the box
     try_this: tuple = ()      # experiments
+    engine: str = "support"   # "support" (D1.1 single agent) | "research" (coordinator + subagents) | "stop" (stop_reason inspector) | "session" (D1.4 sessions) | "escalation" (D1.5) | "fork" (session fork demo)
 
 
 @dataclass(frozen=True)
@@ -88,6 +89,7 @@ class Question:
     scenarios: tuple = ()        # guide scenario numbers (1 Support … 6 Extraction) this item fits
     basis: str = "guide"         # "guide" (examinable, checked against the guide) or "docs" (beyond the guide's scope)
     in_bank: bool = True         # only guide-based items enter utils/question_bank.py
+    ts: str = ""                 # task statement this item tests, if not the concept's primary one (question bank tag)
 
 
 # node id -> (state, suffix text); state is "ok" | "bad"; missing node = not visited
@@ -122,3 +124,5 @@ class ConceptContent:
     exam_points: tuple = ()     # ExamPoint, … — what the guide demands (exam concepts only)
     playground: tuple = ()      # PlayTab, … — one message box per sub-concept (optional)
     playground_intro: str = ""
+    scenarios: tuple = ()       # scenario ids for the code lab (empty = the D1.1 single-agent scenarios)
+    show_ledger: bool = True    # the fake support backend's refund ledger tab (D1.1); off for other labs

@@ -35,13 +35,25 @@ Anything below is labelled **"community claim, verify in current docs"** whereve
 
 | # | Page (all fetched and read) | Date | Used for |
 |---|---|---|---|
-| 1 | platform.claude.com/docs/en/build-with-claude/handling-stop-reasons | 2026-09-26 | The seven stop_reason values, per-reason handling, empty end_turn pitfall, stop reasons vs errors — D1.1 Agentic Loops |
-| 2 | platform.claude.com/docs/en/build-with-claude/refusals-and-fallback | 2026-09-26 | refusal = HTTP 200, stop_details, retry on a different model, pitfalls — D1.1 |
+| 1 | platform.claude.com/docs/en/build-with-claude/handling-stop-reasons | 2026-09-26 (re-read for D1.3) | The seven stop_reason values, per-reason handling, empty end_turn pitfall, stop reasons vs errors, stop sequence text NOT in content, pause_turn default limit 10 — D1.1 Agentic Loops, D1.3 Stop Reason |
+| 2 | platform.claude.com/docs/en/build-with-claude/refusals-and-fallback | 2026-09-26 (re-read for D1.3) | refusal = HTTP 200, stop_details (type/category/explanation, nullable), categories, retry on a different model, pitfalls — D1.1, D1.3 |
 | 3 | platform.claude.com/docs/en/agents-and-tools/tool-use/how-tool-use-works | 2026-09-26 | The client-tool agentic loop, server-side loop / pause_turn — D1.1 |
 | 4 | platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls | 2026-09-26 | tool_result formatting rules, is_error, parallel results — D1.1 |
 | 5 | platform.claude.com/docs/en/agents-and-tools/tool-use/overview and …/build-a-tool-using-agent | 2026-09-26 | Tool Runner, tutorial loop — D1.1 |
 | 6 | code.claude.com/docs/en/agent-sdk/agent-loop (platform `/agent-sdk/*` redirects here) | 2026-09-26 | SDK loop, max_turns / max_budget_usd, ResultMessage subtypes, hooks — D1.1 |
-| 7 | platform.claude.com/docs/llms.txt (index, 637 English pages) | 2026-09-26 | Finding docs for concepts and candidate pages for extras (`EXTRA_DOCS`) |
+| 7 | code.claude.com/docs/en/agent-sdk/subagents | 2026-09-26 | Subagent context isolation, AgentDefinition fields, spawn tool name (Agent/Task), depth/concurrency/spend limits — D1.2 Subagents |
+| 8 | code.claude.com/docs/en/sub-agents | 2026-09-26 | Claude Code subagents: context received, forks, best practices/limitations, Task-vs-Agent note — D1.2 |
+| 9 | code.claude.com/docs/en/agent-sdk/sessions | 2026-09-26 | continue / resume / fork sessions — D1.2 (guide TS 1.3 Knowledge 4) |
+| 10 | code.claude.com/docs/en/sessions | 2026-09-27 | --continue vs --resume <name>, naming (-n, /rename), what a resumed session restores, --fork-session and /branch, /compact, /clear — D1.4 |
+| 11 | code.claude.com/docs/en/best-practices | 2026-09-27 | performance degrades as context fills; /clear, /compact <instructions>; hooks deterministic vs instructions advisory — D1.4, D1.5 |
+| 12 | code.claude.com/docs/en/agent-sdk/sessions (re-read) | 2026-09-27 | SDK resume takes a session ID; fork_session; forks don't branch files; fresh session + captured state — D1.4 |
+| 13 | platform.claude.com/docs/en/about-claude/use-case-guides/customer-support-chat | 2026-09-27 | sample good interactions in the prompt; escalation-accuracy metric — D1.5 |
+| 14 | platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices | 2026-09-27 | examples: relevant, diverse, <example> tags, 3–5 of them; explain why — D1.5 |
+| 15 | code.claude.com/docs/en/agent-sdk/hooks | 2026-09-27 | PreToolUse permissionDecision deny + reason; deny priority — D1.5 |
+| 16 | code.claude.com/docs/en/memory | 2026-09-27 | CLAUDE.md scopes and load order, subdirectory on-demand loading, @import rules (relative to the importing file, 4 hops), .claude/rules/ and `paths`, /memory, 200-line target, AGENTS.md rules — D1.7 |
+| 17 | code.claude.com/docs/en/common-workflows | 2026-09-27 | codebase exploration and test recipes — D1.8 |
+| 18 | platform.claude.com prompting best practices (re-read) | 2026-09-27 | chain complex prompts; subagent orchestration; state tracking; structured state formats — D1.6, D1.8 |
+| 19 | platform.claude.com/docs/llms.txt (index, 637 English pages) | 2026-09-26 | Finding docs for concepts and candidate pages for extras (`EXTRA_DOCS`) |
 
 ## Community sources consulted
 
@@ -61,6 +73,11 @@ Anything below is labelled **"community claim, verify in current docs"** whereve
 |---|---|---|---|---|
 | 1 | Loop stop reasons | TS 1.1 names `tool_use` (continue) and `end_turn` (stop) | Seven values; the loop exits on any non-`tool_use` reason and the app must handle each (`max_tokens`, `refusal`, `pause_turn`, …) | Docs for behaviour; the guide for what the exam expects — the page teaches both and marks which is which |
 | 2 | Iteration caps | Anti-pattern when used as the PRIMARY stop mechanism | The Agent SDK offers `max_turns` / `max_budget_usd` as optional guards that return an error result when hit | Both are compatible: a limit is a loud guard, never the way a healthy loop ends |
+| 3 | Name of the spawn tool | TS 1.3: the **Task** tool; `allowedTools` must include "Task" | The tool is **Agent** (appears as "Task" only in the init tool list; `tool_use` blocks said "Task" before Claude Code v2.1.63); docs examples put "Agent" in allowed_tools | The guide's term for exam answers; the page teaches both and advises matching both in real code |
+| 4 | Who routes communication | TS 1.2: hub-and-spoke — the coordinator manages ALL inter-subagent communication | Subagents can spawn their own subagents (default depth 3), capped by depth / concurrency / spend limits | The guide's hub-and-spoke for design and exam answers (observability, consistent error handling); the docs' nesting is noted as a real capability |
+| 5 | Resuming by name | TS 1.7: `--resume <session-name>` and `fork_session` | CLI: `claude --resume <name>` (or an ID; an ambiguous name opens the picker); Agent SDK: `resume` takes a session ID, `fork_session=True` | Consistent; the page shows which control belongs to the CLI and which to the SDK |
+| 6 | Escalation rules | TS 5.2 defines the triggers (human request, policy gap/ambiguity, no progress) and the unreliable proxies (sentiment, self-reported confidence) | The docs define no escalation rules; they supply mechanisms (examples in prompts, deterministic hooks / PreToolUse deny, an escalation-accuracy metric) | The guide for the rules, the docs for the mechanisms — tagged as such on the page |
+| 7 | AGENTS.md | Not mentioned in guide v1.0 (TS 3.1 covers CLAUDE.md only) | Claude Code reads AGENTS.md when no CLAUDE.md / .claude/CLAUDE.md / CLAUDE.local.md is present above; otherwise import it (@AGENTS.md) or change the setting (v2.1.277+) | Taught on D1.7 as 📘 docs-only, never gold; its question is `in_bank=False` |
 
 ## Out-of-scope (from the guide — never build on these)
 Fine-tuning / training models · API auth, billing, account management · language/framework specifics beyond tool and schema config · deploying or hosting MCP servers · Claude internals, training, weights · Constitutional AI / RLHF / safety training · embedding models and vector DBs · computer use · vision / image analysis · streaming / SSE · rate limits, quotas, pricing calculations · OAuth / key rotation / auth protocol details · cloud-provider configuration · benchmarking / model comparison metrics · prompt-caching implementation details (know it exists) · token counting / tokenisation.

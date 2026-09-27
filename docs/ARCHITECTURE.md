@@ -159,6 +159,10 @@ ccar-f-101/
 │   ├── progress.py             # personal progress (progress.json, gitignored)
 │   ├── concepts_map.py · concept_page.py · concept_types.py     # CONCEPTS taxonomy / renderer / types
 │   ├── lab_runner.py · lab_harness.py · lab_trace.py · mock_claude.py   # CONCEPTS code lab engine
+│   ├── agent_playground.py · research_playground.py · playground_ui.py  # CONCEPTS agent playgrounds (single agent / multi-agent / fork)
+│   ├── session_lab.py · session_play.py · support_lab.py · escalation_play.py  # D1.4 / D1.5 simulated backends + playgrounds
+│   ├── handoff_lab/play · memory_lab/play · decomp_lab/play  # D1.6 / D1.7 / D1.8 simulated backends + playgrounds
+│   ├── research_backend.py · guide_index.py                              # fake research backend · exact guide-PDF positions
 │   └── concepts_content/       # one module per built concept (agentic_loops.py = template)
 ├── sandbox_project/            # real Claude Code exercises, fake data only
 ├── docs/

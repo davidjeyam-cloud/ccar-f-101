@@ -39,16 +39,17 @@ def _register_concept_questions() -> None:
         for q in module.CONTENT.questions:
             if not q.in_bank:   # docs-based items go beyond the guide's wording - shown on the page, not banked
                 continue
-            QUESTION_BANK.setdefault(tag, []).append({
+            qtag = q.ts or tag
+            QUESTION_BANK.setdefault(qtag, []).append({
                 "q": q.q,
                 "opts": list(q.opts),
                 "ans": q.ans,
                 "type": "rootcause",
                 "explain": q.explain,
-                "task_statement": tag,
+                "task_statement": qtag,
                 "scenarios": list(q.scenarios),
                 "source": f"concept:{concept.slug}",
-                "checked_against": f"guide v1.0 §6 Task Statement {tag} (Claude, 2026-09-26)",
+                "checked_against": f"guide v1.0 §6 Task Statement {qtag} (Claude, 2026-09-26)",
                 "reviewed_by_user": False,
             })
 

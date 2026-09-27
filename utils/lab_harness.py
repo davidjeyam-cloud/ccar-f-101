@@ -21,16 +21,33 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path[:] = [p for p in sys.path if os.path.abspath(p or ".") != _HERE]
 sys.path.insert(0, os.environ["LAB_REPO_ROOT"])
 
-from utils import lab_trace, mock_claude, tools  # noqa: E402
+from utils import lab_trace, mock_claude, research_backend, session_lab, stop_lab, support_lab, tools  # noqa: E402
+import importlib  # noqa: E402
+
+# simulated lab modules that are configured by scenario id (each exposes SCENARIO_IDS and configure())
+_SCENARIO_MODULES = ("handoff_lab", "memory_lab", "decomp_lab")
 
 
 def main() -> None:
     code_path = sys.argv[1]
     scenario = mock_claude.SCENARIOS[os.environ.get("LAB_SCENARIO", "damaged_order")]
     tools.configure(scenario.backend_status)
+    research_backend.configure(**(scenario.research or {}))
+    stop_lab.configure(scenario.id)
+    if scenario.id in session_lab.SCENARIO_IDS:
+        session_lab.configure(scenario.id)
+    if scenario.id in support_lab.SCENARIO_IDS:
+        support_lab.configure(scenario.id)
+    for name in _SCENARIO_MODULES:
+        try:
+            mod = importlib.import_module(f"utils.{name}")
+        except ModuleNotFoundError:
+            continue
+        if scenario.id in mod.SCENARIO_IDS:
+            mod.configure(scenario.id)
     lab_trace.reset()
 
-    status = {"raised": None}
+    status = {"raised": None, "scenario": scenario.id}
     try:
         runpy.run_path(code_path, run_name="__main__")
     except SystemExit:

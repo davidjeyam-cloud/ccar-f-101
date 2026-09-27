@@ -265,3 +265,64 @@ A byte-identical stray copy of the copyrighted exam guide PDF was found at `docs
 
 **Next step:** user reviews http://localhost:8501/concepts; then `/next-concept` (D1.2 Subagents — needs code.claude.com sub-agents docs fetched first).
 
+
+## 2026-09-26 (later) — Trace tables wrap; first push; D1.2 Subagents built
+
+**User feedback fixed:** D1.1's "Execution Trace" tables truncated long cells (e.g. "Response content") because they were `st.dataframe`. They are now the wrapped HTML table used elsewhere (wrap CSS added); verified with AppTest (0 dataframes, full cell text present).
+
+**Pushed (user asked explicitly):** commit `7c28e32` (CONCEPTS + D1.1 + rules) — first push, whole history scanned first (no keys / PDFs / .env); `origin/master` now tracks. `push.ps1`'s first-push confirmation prompt can't run non-interactively, so the push itself was `git push -u origin master` after the scan.
+
+**Built D1.2 Subagents** (guide TS 1.2 pp.5–6 + TS 1.3 pp.6–7; `utils/concepts_content/subagents.py`):
+- Docs read (2026-09-26): code.claude.com agent-sdk/subagents, sub-agents, agent-sdk/sessions. **Two guide-vs-docs differences recorded in SOURCES.md:** the guide says the spawn tool is `Task`, the docs say `Agent` (Task = legacy alias, renamed v2.1.63); the guide's hub-and-spoke vs the docs allowing nested subagents.
+- 16 ⭐ exam points (every Knowledge/Skill bullet of both task statements) with exact refs; 24 grounding claims; 9 lab variants (correct + A–G from the guide, H from the docs' warning), 3 scenarios (broad_topic, simple_question, source_fails); left-to-right colour-keyed flowchart whose red bug nodes light only for the bug a run shows; decision tree; side-by-side; 6 questions (4 guide-based in the bank tagged by their own TS — 1.2:1, 1.3:3 — plus 2 docs-based); FAQ.
+- Agent playground: 10 tabs (Spawn tool, Isolated context, AgentDefinition tools, Structured findings, Parallel spawning + concurrency limit, Dynamic selection, Goals not procedures, Decomposition, Review & refinement, Session fork) with per-tab knobs; new engines `research_playground.py` (coordinator + subagents, prompt built from knobs, each subagent's received prompt shown) and a no-model fork demo.
+- Infra (additive): `mock_claude.py` ROLE dispatch (coordinator/searcher/analyst/synthesizer, parallel tool_use blocks, stop_sequences/context-window earlier), `research_backend.py`, `PlayTab.engine`, `ConceptContent.scenarios/show_ledger`, `Question.ts`, harness records scenario id.
+- Matrix verified by running: correct passes all 3 scenarios; A,C,F fail all; B,D,E,H fail broad+source_fails; G fails only source_fails (hides until a source fails). Two design fixes came from running it: F ("route around the coordinator") originally passed because only search hops were hidden — now measured as results the coordinator received but couldn't use ("blind"); some chart states were misleading (fixed).
+- Tests: 28 flow graphs + decision tree parse (pydot); AppTest — page, Run, variant switch, all playground tabs with changed knobs, fork demo, practice question; D1.1 regression (matrix, edges, page, playground, DOT), Home/Blueprint/index/default page all clean.
+- Not verified: visual layout (no browser). Simulated coordinator is keyword-driven — stated on the page.
+
+**Uncommitted** after `7c28e32`. Not pushed. Next: `/next-concept` → D1.3 Stop Reason (or whichever the map lists next).
+
+## 2026-09-26 (later still) — D1.3 Stop Reason built
+
+**Picked** D1.3 (`stop-reason`, guide TS 1.1) as the first unbuilt exam concept. It overlaps D1.1's loop, so it is framed as the *decision at the top of each iteration*: one response → which value → which action.
+
+**Docs re-read (2026-09-26):** handling-stop-reasons, refusals-and-fallback. New verified facts: the stop-sequence text is NOT in the content (corrected D1.1's playground text + grounding claim that had said "not verified"); pause_turn default iteration limit 10 and the same tools must be resent; refusal `category`/`explanation` are nullable and named categories are cyber/bio/frontier_llm/reasoning_extraction/general_harms; a context-window stop still returns valid partial content.
+
+**Built** (`utils/concepts_content/stop_reason.py`): 3 ⭐ exam points (TS 1.1 K1/S1/S3 — the guide names only tool_use/end_turn); lab where the learner writes `decide(response)` across 10 single-call scenarios (each stop reason, incomplete tool call at max_tokens, empty end_turn, API error); 8 distractors (A,B guide S3; C–H docs: tool_use blocks vs stop_reason, else-branch, same-model refusal retry, blind empty retry, no try/except, decide-from-explanation); LR colour-keyed chart showing your handler's branch vs the docs' branch; 9 playground tabs (`engine="stop"`: raw response + chosen vs expected action); 6 questions (2 guide → bank TS 1.1, 4 docs-based); mental model on every sub-concept.
+Infra (additive): mock `Turn.special` (max_tokens mid tool call, context full), `STOP_SCENARIOS`, `utils/stop_lab.py`, `utils/stop_inspector.py`, harness `stop_lab.configure`.
+
+**Verified by running:** every variant × 10 scenarios (correct passes all; A only tool_use; B six; C only max_tokens_tool; D seven; E,H only refusal; F only empty; G only API error); lab variants and playground policies agree on all 90 combinations; 91 DOT graphs parse; AppTest (page, Run, variant switch, all 9 tabs, changed handlers/knobs, practice); D1.1, D1.2, Home, Blueprint, index regressions clean. Not verified: visual layout (no browser).
+
+**Uncommitted** (D1.2 + D1.3 on top of pushed 7c28e32).
+
+
+## 2026-09-27 — D1.4 Session State & Persistence and D1.5 Human-in-the-Loop Escalation built
+
+**Request (user):** build D1.4 and D1.5 without asking; apply all earlier feedback and CLAUDE.md rules; ground in the exam guide; no guesses.
+
+**Grounding.** Guide text read from the PDF for TS 1.7 (pp.8–9), TS 5.4 (pp.21–22), TS 5.2 (pp.20–21), TS 1.4 (p.7), and the §5 scenario descriptions (used for the practice questions' scenario tags). Docs fetched 2026-09-27: code.claude.com sessions, best-practices, agent-sdk/sessions, agent-sdk/hooks; platform customer-support-chat, claude-prompting-best-practices. Recorded in SOURCES.md, with two guide-vs-docs rows (CLI `--resume <name>` vs SDK `resume=<id>`; escalation rules are the guide's, the docs give mechanisms).
+
+**D1.4** (`utils/concepts_content/session_state.py`): all 17 TS 1.7 + 5.4 bullets as ⭐ exam points (5.4 K3/S1 point to D1.2); simulated session layer `utils/session_lab.py` (named sessions, --continue picking the most recent, resume, fork, a fake codebase that changes overnight, simulated degradation threshold, scratchpad, crash manifest); 6 guide distractors (silent resume, fresh without summary, always resume, no fork, restart after crash, --continue) × 5 scenarios; 5 playground tabs (`utils/session_play.py`).
+**D1.5** (`utils/concepts_content/escalation.py`): all 15 TS 5.2 + 1.4 bullets (1.4 S2 points to D1.2); fake support backend + scripted customers `utils/support_lab.py`; keyword-driven simulated support agent in mock_claude; code gate vs prompt-only; structured vs free-text handoff; 7 guide distractors (sentiment, confidence, investigate-first, heuristic pick, prompt-only verification, free-text handoff, "complex cases") × 7 scenarios; 7 playground tabs (`utils/escalation_play.py`).
+
+**Verified by running:** both matrices (D1.4: correct passes 5/5, each distractor fails exactly its scenarios; D1.5: correct 7/7, A 2 fails, B 4, C 1, D 1, E 1, F 4, G 5); every observe text matched to observed output (fixed one false claim in D1.4 A before writing; found and fixed a simulator realism bug — the support agent ignored refund_allowed=false; fixed two playground verdicts that missed failures); 95 new DOT graphs parse; AppTest on both pages (render, Run, variant switch, every playground tab, knob changes, all practice questions); full regression of D1.1–D1.3, Home, Blueprint, index, stubs. Not verified: visual layout (no browser).
+
+**Uncommitted** (D1.2–D1.5 on top of pushed 7c28e32). Next: `/next-concept` → D1.6 Subagent State Handoff.
+
+
+## 2026-09-27 (later) — D1.6, D1.7, D1.8 built; all flowcharts top-down; committed + pushed
+
+**Request (user):** build D1.6–D1.8 without asking; ground in the exam guide and cross-check the Claude Code docs; mental models where they help; commit to GitHub when done. Mid-turn: all flowcharts must be top-down (LR charts illegible); then continue with D2.1–D2.3.
+
+**Grounding.** Guide PDF: TS 1.6 (p.8), TS 3.1 (pp.12–13); TS 1.3/1.4/5.4 re-used. Docs fetched 2026-09-27: code.claude.com memory (CLAUDE.md scopes, loading, @import, rules, /memory, AGENTS.md), common-workflows; platform prompting best practices (chaining, subagent orchestration, state tracking). SOURCES.md row 7: AGENTS.md is docs-only.
+
+**D1.6 Subagent State Handoff** (`subagent_state_handoff.py`, `handoff_lab.py`, `handoff_play.py`): 7 exam points; 6 distractors (pointer, prose, transcripts[docs], top-2 only, no phase summary, no saved state) × 4 scenarios; 5 playground tabs.
+**D1.7 Agent Instruction Files** (`agent_instruction_files.py`, `memory_lab.py`, `memory_play.py`): a simulated loader implementing the memory docs' rules, printing /memory views per persona; 8 TS 3.1 exam points; 6 distractors (user-level team rule, root-level imports, monolith — guide; no @AGENTS.md, CLAUDE.local.md team rule, root-relative import path — docs) × 4 scenarios; 5 tabs. Bug found by running: path normalisation stripped the dot from `.claude/`.
+**D1.8 Task Decomposition** (`task_decomposition.py`, `decomp_lab.py`, `decomp_play.py`): 6 exam points; 5 guide distractors (single pass, no integration pass, fixed plan, non-adaptive plan, adaptive picking for a review) × 3 scenarios; 3 tabs. Two texts corrected after running (single pass finds 0/4, not 1/4; the picked-file list).
+
+**Top-down charts:** every flow_dot and decision tree now `rankdir=TB`, bug nodes in one bottom row, 12pt font — FLOWCHART RULE added to CLAUDE.md. A knob named `send` collided with the Send button's widget key (renamed; now asserted).
+
+**Verified:** all 8 concepts' matrices by running; AppTest on every page (render, Run, variant, every tab, all practice questions); 310 DOT graphs parse and are top-down; D1.1–D1.5 regressions and Home/Blueprint/index clean. Not verified: visual layout (no browser).
+
+**Committed and pushed** at the user's explicit request. Next: D2.1–D2.3.
