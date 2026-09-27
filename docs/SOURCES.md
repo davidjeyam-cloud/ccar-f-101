@@ -59,6 +59,9 @@ Anything below is labelled **"community claim, verify in current docs"** whereve
 | 22 | code.claude.com/docs/en/mcp | 2026-09-27 | local/project/user scopes and storage, approval prompt, precedence, ${VAR} / ${VAR:-default} expansion and missing-variable warning, credential variables empty in remote url/headers, tool search, output limits — D2.3 |
 | 23 | code.claude.com/docs/en/common-workflows (re-read) | 2026-09-27 | @server:resource references to MCP resources — D2.3 |
 | 24 | code.claude.com/docs/en/agent-sdk/custom-tools | 2026-09-27 | isError / is_error, uncaught exceptions become error results, tools vs allowedTools — D2.2, D2.3 |
+| 25 | code.claude.com/docs/en/agent-sdk/hooks | 2026-09-27 | Hook events (Python vs TS), HookMatcher, callback inputs/outputs, PreToolUse decisions, PostToolUse updatedToolOutput / additionalContext, deny > defer > ask > allow, parallel hooks, async output, timeouts, troubleshooting — D2.4 |
+| 26 | code.claude.com/docs/en/hooks and …/hooks-guide | 2026-09-27 | Matcher patterns (exact vs regex, mcp__server__.*); deterministic control; PostToolUse can't undo — D2.4 |
+| 27 | code.claude.com/docs/en/agent-sdk/permissions | 2026-09-27 | Evaluation order: hooks → deny → ask → mode → allow → canUseTool; hook deny applies even in bypassPermissions — D2.4 |
 
 ## Community sources consulted
 
@@ -88,6 +91,7 @@ Anything below is labelled **"community claim, verify in current docs"** whereve
 | 10 | MCP scopes | TS 2.4: project (.mcp.json) vs user (~/.claude.json) | Three scopes; local (in ~/.claude.json per project) is the default | Guide's two for exam answers; local shown as 📘 docs-only |
 | 11 | MCP tool discovery | TS 2.4 K3: all servers' tools discovered at connection, available together | Tool search and cached tool lists can defer connecting a server until first use | Guide for exam answers; the docs' refinement in the D2.3 FAQ |
 | 12 | MCP error fields | TS 2.2: isError plus errorCategory / isRetryable / description | The protocol/SDK flag is isError (is_error in Python); the content is yours to structure | Consistent: errorCategory/isRetryable are the guide's convention for the content |
+| 13 | Hook names | TS 1.5: PostToolUse and "tool call interception" hooks | The interception event is PreToolUse (allow/deny/ask/defer, updatedInput); PostToolUse can't undo an action | Consistent; the page names PreToolUse and teaches the docs' mechanics as 📘 docs-only |
 
 ## Out-of-scope (from the guide — never build on these)
 Fine-tuning / training models · API auth, billing, account management · language/framework specifics beyond tool and schema config · deploying or hosting MCP servers · Claude internals, training, weights · Constitutional AI / RLHF / safety training · embedding models and vector DBs · computer use · vision / image analysis · streaming / SSE · rate limits, quotas, pricing calculations · OAuth / key rotation / auth protocol details · cloud-provider configuration · benchmarking / model comparison metrics · prompt-caching implementation details (know it exists) · token counting / tokenisation.

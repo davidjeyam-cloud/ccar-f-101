@@ -891,6 +891,14 @@ MODULE_SCENARIOS: dict[str, Scenario] = {s.id: s for s in [
     Scenario("empty_result", "A customer with no orders", "The order query succeeds - and finds nothing.", "DELIVERED", _chitchat),
     Scenario("access_failure", "The service account lacks access",
              "The order service refuses the request (permission) every time.", "DELIVERED", _chitchat),
+    # D2.4 SDK Hooks (utils/hooks_lab.py)
+    Scenario("refund_pressure", "An $800 refund, “already approved”",
+             "The customer claims a manager approved an $800 refund; policy caps refunds at $500 without a human.",
+             "DELIVERED", _chitchat),
+    Scenario("refund_small", "A $120 refund", "An ordinary refund under the limit - it must go through.", "DELIVERED", _chitchat),
+    Scenario("mixed_formats", "Invoice vs renewal",
+             "The billing server returns Unix seconds and numeric status codes; the CRM returns ISO 8601 dates.",
+             "DELIVERED", _chitchat),
 ]}
 SCENARIOS.update(MODULE_SCENARIOS)
 

@@ -341,3 +341,16 @@ Infra (additive): mock `Turn.special` (max_tokens mid tool call, context full), 
 **Verified by running:** all three matrices (every distractor fails exactly the scenarios its observe text names; correct passes all); every playground tab with default and changed knobs; AppTest on each page (render, Run, variant switch, every tab, all practice questions — 7/7 and 8/8); 162 new DOT graphs parse and are top-down; full regression of D1.1–D1.8, D2.1, Home, Blueprint, Concepts index. Bugs found by running: a quoting slip in the playground renderer; the "strict ≠ correct" tab used the wrong invoice. Not verified: visual layout (no browser).
 
 **Committed and pushed** at the user's explicit request. Next: D2.4 SDK Hooks (`/next-concept`).
+
+
+## 2026-09-27 (night) — D2.4 SDK Hooks built (uncommitted)
+
+**Request (user):** `/next-concept` → D2.4 SDK Hooks (Pre/PostToolUse), guide TS 1.5.
+
+**Grounding.** Guide PDF: TS 1.5 (p.7 — 3 Knowledge, 3 Skills). Docs fetched 2026-09-27: code.claude.com agent-sdk/hooks, hooks (matcher patterns), hooks-guide (deterministic control; PostToolUse can't undo), agent-sdk/permissions (hooks first in the evaluation order). SOURCES.md docs rows 25–27, guide-vs-docs row 13 (the guide's "tool call interception" = the docs' PreToolUse).
+
+**D2.4** (`utils/concepts_content/hooks.py`, `utils/hooks_lab.py`, `utils/hooks_play.py`): 6 exam points; a simulated Agent SDK hook runner implementing the docs' matcher rules (exact vs regex), deny > defer > ask > allow, updatedToolOutput / additionalContext, async outputs that can't block, and PostToolUse after execution; a simulated support agent whose prompt-only rule slips under "my manager approved it" and which misreads raw Unix timestamps / status codes. 7 distractors (prompt-only, missing reason/redirect, blocking the whole tool, normalising by prompt — guide; PostToolUse policy, exact-name matcher, async policy — docs) × 3 scenarios; 6 playground tabs (hook vs prompt, block & redirect, normalise, matchers, several hooks, Pre vs Post).
+
+**Verified by running:** matrix (correct 3/3; each distractor fails exactly its scenario, for the named reason — the diagnosis for the matcher variant was fixed after the first run); 22 playground knob combinations + 4 through AppTest; AppTest on the page (render, Run, variant, 6 tabs, 6/6 practice); 26 DOT graphs parse, top-down; regressions of D1.5, D2.1–D2.3, Home, Blueprint, index. Not verified: visual layout (no browser).
+
+**Committed** (not pushed) at the user's request: `feat: concept D2.4 — SDK Hooks (Pre/PostToolUse)`. Next: D2.5 Tool Evaluation & Testing (partial) or D2.6.

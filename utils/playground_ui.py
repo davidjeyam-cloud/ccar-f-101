@@ -21,6 +21,7 @@ from utils.decomp_play import DecompConfig, run_decomp
 from utils.toolsel_play import ToolSelConfig, run_toolsel
 from utils.toolchoice_play import ToolChoiceConfig, run_toolchoice
 from utils.mcp_play import McpConfig, run_mcp
+from utils.hooks_play import HooksConfig, run_hooks
 from utils.stop_lab import POLICIES
 from utils.guide_index import resolve_source
 
@@ -82,6 +83,18 @@ _KNOBS = {
                                                                        "error": "empty → isError “not found”", "swallow": "any exception → []"}}),
     "local_retry": ("Subagent retries retryable errors locally?", "choice", {"options": {"yes": "yes (up to 3)", "no": "no"}}),
     "partial_info": ("Propagates error + attempts + partial results?", "choice", {"options": {"yes": "yes", "no": "no — just “failed”"}}),
+    "enforcement": ("Where the $500 refund limit is enforced", "choice", {"options": {
+        "hook": "PreToolUse hook only", "prompt": "system prompt only", "both": "hook + prompt"}}),
+    "deny_reason": ("What the hook tells the model when it denies", "choice", {"options": {
+        "redirect": "reason + “call escalate_to_human instead”", "reason_only": "“not allowed” only", "none": "no reason"}}),
+    "normalize": ("How mixed formats are handled", "choice", {"options": {
+        "hook": "PostToolUse hook (updatedToolOutput)", "prompt": "explained in the prompt", "none": "not at all"}}),
+    "pre_matcher": ("PreToolUse matcher", "choice", {"options": {
+        "mcp__billing__process_refund": "mcp__billing__process_refund", "process_refund": "process_refund",
+        "mcp__billing": "mcp__billing", "mcp__billing__.*": "mcp__billing__.*", ".*refund.*": ".*refund.*", "": "(none - every tool)"}}),
+    "logger": ("Also register an audit logger that returns allow?", "choice", {"options": {"allow": "yes", "none": "no"}}),
+    "policy_mode": ("Policy hook output", "choice", {"options": {"sync": "synchronous decision", "async": "async (agent doesn't wait)"}}),
+    "policy_event": ("Register the policy hook on", "choice", {"options": {"PreToolUse": "PreToolUse", "PostToolUse": "PostToolUse"}}),
     "quality": ("Tool descriptions", "choice", {"options": {"detailed": "detailed (the docs' checklist)", "minimal": "one line each"}}),
     "web_tool": ("The web-results tool", "choice", {"options": {
         "renamed": "extract_web_results (renamed, web-only)", "overlapping": "analyze_content + a near-identical analyze_document"}}),
@@ -398,6 +411,15 @@ def _render_mcp(run: dict) -> None:
         st.success("✅ Works for everyone, and the agent recovers correctly.")
 
 
+def _render_hooks(run: dict) -> None:
+    for line in run["lines"]:
+        st.markdown(f"- {line}")
+    if run["notes"]:
+        st.error("  \n".join("⚠️ " + n for n in run["notes"]))
+    else:
+        st.success("✅ The rule held and the agent did the right thing.")
+
+
 def _render_fork(slug: str, spec) -> None:
     """Session fork demo (docs: agent-sdk/sessions § Fork) — no model involved; it shows what a fork is."""
     base = f"pg_{slug.replace('-', '_')}_{spec.key}"
@@ -479,7 +501,8 @@ def _render_tab(slug: str, spec) -> None:
             with cols[i % len(cols)]:
                 fallback = {"research": ResearchConfig, "stop": StopConfig, "session": SessionConfig, "escalation": EscalationConfig, "handoff": HandoffConfig,
                  "memory": MemoryConfig, "decomp": DecompConfig, "toolsel": ToolSelConfig,
-                 "toolchoice": ToolChoiceConfig, "mcp": McpConfig}.get(
+                 "toolchoice": ToolChoiceConfig, "mcp": McpConfig,
+                 "hooks": HooksConfig}.get(
                     spec.engine, PlayConfig).__dataclass_fields__.get(knob)
                 values[knob] = _knob_widget(base, knob, spec.defaults.get(knob, fallback.default if fallback else 0))
     else:
@@ -501,10 +524,11 @@ def _render_tab(slug: str, spec) -> None:
                 if spec.engine == "research":
                     cfg = ResearchConfig(**values)
                     run = run_research(msg.strip(), cfg)
-                elif spec.engine in ("handoff", "memory", "decomp", "toolsel", "toolchoice", "mcp"):
+                elif spec.engine in ("handoff", "memory", "decomp", "toolsel", "toolchoice", "mcp", "hooks"):
                     cls, fn = {"handoff": (HandoffConfig, run_handoff), "memory": (MemoryConfig, run_memory),
                                "decomp": (DecompConfig, run_decomp), "toolsel": (ToolSelConfig, run_toolsel),
-                               "toolchoice": (ToolChoiceConfig, run_toolchoice), "mcp": (McpConfig, run_mcp)}[spec.engine]
+                               "toolchoice": (ToolChoiceConfig, run_toolchoice), "mcp": (McpConfig, run_mcp),
+                               "hooks": (HooksConfig, run_hooks)}[spec.engine]
                     cfg = cls(mode=spec.condition, **values)
                     run = fn(msg.strip(), cfg)
                 elif spec.engine == "escalation":
@@ -534,7 +558,7 @@ def _render_tab(slug: str, spec) -> None:
                 st.markdown(f"*Earlier run #{i}*")
             {"research": _render_research, "stop": _render_stop, "session": _render_session, "escalation": _render_escalation,
              "handoff": _render_handoff, "memory": _render_memory, "decomp": _render_decomp,
-             "toolsel": _render_toolsel, "toolchoice": _render_toolchoice, "mcp": _render_mcp}.get(spec.engine, _render_run)(item["run"])
+             "toolsel": _render_toolsel, "toolchoice": _render_toolchoice, "mcp": _render_mcp, "hooks": _render_hooks}.get(spec.engine, _render_run)(item["run"])
 
     if spec.try_this:
         with st.expander("Try this next"):
