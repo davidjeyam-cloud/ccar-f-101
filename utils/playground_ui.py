@@ -22,6 +22,20 @@ from utils.toolsel_play import ToolSelConfig, run_toolsel
 from utils.toolchoice_play import ToolChoiceConfig, run_toolchoice
 from utils.mcp_play import McpConfig, run_mcp
 from utils.hooks_play import HooksConfig, run_hooks
+from utils.casefacts_play import CaseFactsConfig, run_casefacts
+from utils.ctxwin_play import CtxWinConfig, run_ctxwin
+from utils.mpreview_play import MPReviewConfig, run_mpreview
+from utils.fewshot_play import FewshotConfig, run_fewshot
+from utils.attention_play import AttentionConfig, run_attention
+from utils.extract_play import ExtractConfig, run_extract
+from utils.batch_play import BatchConfig, run_batch
+from utils.review_play import ReviewConfig, run_review
+from utils.checkpoint_play import CheckpointConfig, run_checkpoint
+from utils.skills_play import SkillsConfig, run_skills
+from utils.plan_play import PlanConfig, run_plan
+from utils.rules_play import RulesConfig, run_rules
+from utils.builtin_play import BuiltinConfig, run_builtin
+from utils.eval_play import EvalConfig, run_eval
 from utils.stop_lab import POLICIES
 from utils.guide_index import resolve_source
 
@@ -95,6 +109,76 @@ _KNOBS = {
     "logger": ("Also register an audit logger that returns allow?", "choice", {"options": {"allow": "yes", "none": "no"}}),
     "policy_mode": ("Policy hook output", "choice", {"options": {"sync": "synchronous decision", "async": "async (agent doesn't wait)"}}),
     "policy_event": ("Register the policy hook on", "choice", {"options": {"PreToolUse": "PreToolUse", "PostToolUse": "PostToolUse"}}),
+    "candidate": ("Candidate tool set", "choice", {"options": {"v1": "v1 — vague web tool", "v2": "v2 — sharpened descriptions", "v3": "v3 — sharpened, lost ORD- formatting"}}),
+    "cover_ambiguous": ("Test set includes ambiguous requests?", "choice", {"options": {"yes": "yes", "no": "no — clear + edge only"}}),
+    "criteria_style": ("Success criteria", "choice", {"options": {"per_category": "a bar per category", "overall_80": "overall ≥ 80%"}}),
+    "grader": ("Grader", "choice", {"options": {"exact": "exact job + input", "job_only": "job only", "any_tool": "“a tool was called”"}}),
+    "rerun": ("After a change, re-run", "choice", {"options": {"full": "the whole suite", "failures_only": "only last time's failures"}}),
+    "search_tool": ("Tool", "choice", {"options": {"grep": "Grep (contents)", "glob": "Glob (paths)"}}),
+    "edit_strategy": ("How to change the [payments] timeout", "choice", {"options": {"short_anchor": "Edit “timeout = 30”", "longer_anchor": "Edit with “[payments]” in the anchor", "replace_all": "Edit with replace_all", "read_write": "Edit, falling back to Read + Write"}}),
+    "explore": ("How to explore", "choice", {"options": {"incremental": "Grep the entry point, Read along imports", "read_all": "Read every file first"}}),
+    "wrapper_names": ("Names to search for", "choice", {"options": {"exported": "the wrapper's exported names", "original": "the functions' original names"}}),
+    "need": ("The need", "choice", {"options": {"always_rule": "“Use pnpm, not npm” every session", "deploy_workflow": "a /deploy checklist run sometimes", "guardrail": "never edit .env", "external_data": "read the issue tracker", "verbose_research": "scan 200 files, report findings"}}),
+    "surface": ("Surface", "choice", {"options": {"claude_md": "CLAUDE.md", "skill": "skill", "hook": "hook", "mcp": "MCP server", "subagent": "subagent"}}),
+    "who": ("Session", "choice", {"options": {"teammate": "a teammate (fresh clone)", "you": "you"}}),
+    "api_rule_where": ("Where the API rule lives", "choice", {"options": {"project_rule": "project .claude/rules/api.md (paths: src/api/**)", "root_claude_md": "project root CLAUDE.md", "user_rule": "your ~/.claude/rules/api.md", "local_md": "CLAUDE.local.md (gitignored)"}}),
+    "tf_paths": ("Terraform rule frontmatter", "choice", {"options": {"scoped": "paths: terraform/**/*", "none": "no frontmatter", "misspelled": "path: terraform/**/* (typo)"}}),
+    "test_rule_as": ("Test convention lives in", "choice", {"options": {"glob_rule": ".claude/rules/testing.md, paths **/*.test.tsx", "dir_claude_md": "src/web/CLAUDE.md", "root_glob": ".claude/rules/testing.md, paths *.test.tsx"}}),
+    "task_pick": ("Task", "choice", {"options": {"library_migration": "45-file library migration (2 approaches)", "single_bug": "one-line bug with a stack trace", "choose_integration": "hosted vs embedded payments (2 files)", "big_discovery": "search 300 files, change 12"}}),
+    "mode_pick": ("Mode", "choice", {"options": {"plan": "plan mode", "direct": "direct execution"}}),
+    "discovery": ("Files to discover", "choice", {"options": {"50": "50", "300": "300", "1000": "1,000"}}),
+    "use_explore": ("Use the Explore subagent?", "choice", {"options": {"yes": "yes", "no": "no — discover in the main conversation"}}),
+    "approval": ("At the plan-approval prompt", "choice", {"options": {"acceptEdits": "Yes — auto-accept edits", "default": "Yes — manually approve edits", "auto": "Yes — use auto mode", "keep_planning": "No — keep planning"}}),
+    "cmd_where": ("Where /review-pr is stored", "choice", {"options": {"project_commands": ".claude/commands/review-pr.md", "project_skills": ".claude/skills/review-pr/SKILL.md", "user_commands": "~/.claude/commands/review-pr.md"}}),
+    "fork_on": ("context: fork?", "choice", {"options": {"yes": "yes", "no": "no"}}),
+    "fork_agent": ("agent (when forked)", "choice", {"options": {"Explore": "Explore (read-only)", "general-purpose": "general-purpose"}}),
+    "allowed_list": ("allowed-tools", "choice", {"options": {"write_edit": "Write Edit", "none": "(none)"}}),
+    "disallowed_list": ("disallowed-tools", "choice", {"options": {"bash": "Bash", "none": "(none)"}}),
+    "session_mode": ("Session permission mode", "choice", {"options": {"acceptEdits": "acceptEdits", "default": "default"}}),
+    "hint_on": ("argument-hint: [issue-number]?", "choice", {"options": {"yes": "yes", "no": "no"}}),
+    "std_where": ("The “use pnpm” standard lives in", "choice", {"options": {"claude_md": "CLAUDE.md", "skill": "a skill (package-manager)"}}),
+    "rw_action": ("Rewind option", "choice", {"options": {"code": "Restore code", "conversation": "Restore conversation", "code_and_conversation": "Restore code and conversation"}}),
+    "git_too": ("Also git restore config.json?", "choice", {"options": {"yes": "yes", "no": "no — rely on /rewind"}}),
+    "ctx_action": ("To free the context", "choice", {"options": {"summarize_from_here": "Summarize from prompt 2", "summarize_up_to_here": "Summarize up to prompt 2", "compact": "/compact", "clear": "/clear"}}),
+    "alt_action": ("To try approach B", "choice", {"options": {"branch": "/branch (fork the session)", "rewind": "rewind to prompt 2 (code + conversation)"}}),
+    "resume_first": ("Resume cart-pence first?", "choice", {"options": {"yes": "yes — claude --resume cart-pence", "no": "no — rewind in today's session"}}),
+    "instruction_style": ("Instruction", "choice", {"options": {"explicit": "Report / Skip categories", "accurate": "“check that comments are accurate”", "conservative": "“be conservative, high-confidence only”"}}),
+    "sev_examples": ("Severity levels have concrete examples?", "choice", {"options": {"yes": "yes", "no": "no"}}),
+    "perf_off": ("Performance category switched off?", "choice", {"options": {"yes": "yes (for now)", "no": "no"}}),
+    "job_pick": ("Job", "choice", {"options": {"premerge": "pre-merge check (blocking)", "nightly": "nightly test generation", "tool_loop": "investigations that call tools", "results_order": "weekly audit summaries"}}),
+    "api_pick": ("API", "choice", {"options": {"sync": "synchronous Messages API", "batch": "Message Batches API"}}),
+    "match_by": ("Match results by", "choice", {"options": {"custom_id": "custom_id", "position": "position in the list"}}),
+    "retry_mode": ("Resubmit", "choice", {"options": {"failed_chunked": "failed only, chunking the too-long ones", "failed_only": "failed only, unchanged", "all": "the whole batch"}}),
+    "window_hours": ("Submit every", "choice", {"options": {"1": "1 h", "4": "4 h", "6": "6 h", "12": "12 h", "24": "24 h"}}),
+    "sample_on": ("Refine the prompt on a sample first?", "choice", {"options": {"yes": "yes", "no": "no"}}),
+    "sem_check": ("Semantic check (calculated vs stated total)?", "choice", {"options": {"yes": "yes", "no": "no"}}),
+    "absent_policy": ("When information isn't in the document", "choice", {"options": {"flag": "store null + flag", "retry": "retry twice"}}),
+    "po_nullable": ("po_number nullable?", "choice", {"options": {"yes": "yes", "no": "no - required string"}}),
+    "conflict_field": ("conflict_detected field?", "choice", {"options": {"yes": "yes", "no": "no"}}),
+    "norm_rules": ("Normalisation rules in the prompt", "choice", {"options": {"iso_uk": "ISO 8601 + UK day/month", "iso_only": "ISO 8601 only", "none": "none"}}),
+    "pattern_field": ("detected_pattern on findings?", "choice", {"options": {"yes": "yes", "no": "no"}}),
+    "lead_summary": ("Key-findings summary at the start?", "choice", {"options": {"yes": "yes", "no": "no"}}),
+    "q_position": ("Question position", "choice", {"options": {"end": "at the end", "start": "at the start"}}),
+    "keep_facts": ("Case-facts block?", "choice", {"options": {"yes": "yes", "no": "no - rely on the summary"}}),
+    "trim_fields": ("Fields kept per lookup", "choice", {"options": {"5": "5 relevant fields", "12": "12 fields", "all": "all 40"}}),
+    "n_examples": ("Complete format examples", "choice", {"options": {"0": "0", "1": "1", "2": "2", "3": "3"}}),
+    "ex_style": ("Routing examples", "choice", {"options": {"reasoned": "varied, with “why X over Y”", "answers_only": "varied, answers only", "all_same": "all the same outcome"}}),
+    "ex_formats": ("Extraction examples", "choice", {"options": {"varied": "approximate, imperial and metric", "one": "metric only"}}),
+    "fix_mode": ("Raise the two bugs", "choice", {"options": {"together": "together, one message", "sequential": "one at a time"}}),
+    "reviewer_kind": ("Reviewer", "choice", {"options": {"new_instance": "a new, independent instance", "same_session": "the generator's own session", "same_session_thinking": "same session + extended thinking"}}),
+    "pass_plan": ("Review plan", "choice", {"options": {"per_file_integration": "per-file passes + integration pass", "per_file_only": "per-file passes only", "one_pass": "one pass over all 14 files"}}),
+    "auto_threshold": ("Auto-post findings with confidence ≥", "choice", {"options": {"0.8": "0.8", "0.5": "0.5", "none": "(no confidence - post all)"}}),
+    "cw_history": ("What each API call sends", "choice", {"options": {"full": "the whole conversation", "latest": "only the newest message", "recent3": "the last 3 messages (sliding window)"}}),
+    "cw_explore": ("Where the exploration happens", "choice", {"options": {"subagent": "in a subagent's own window", "main": "in the main conversation"}}),
+    "cw_rule": ("Where the persistent rule lives", "choice", {"options": {"claude_md": "CLAUDE.md", "chat": "said once in the conversation"}}),
+    "cw_full": ("When the window is 95% full", "choice", {"options": {"compact": "/compact with a focus", "clear": "/clear"}}),
+    "cw_upstream": ("What the analysis subagents return", "choice", {"options": {"structured": "key facts + citations + relevance", "verbose": "full reasoning chains"}}),
+    "cw_budget": ("Report agent's input budget (tokens)", "choice", {"options": {"6000": "6,000", "12000": "12,000", "24000": "24,000"}}),
+    "cf_block": ("Case-facts block", "choice", {"options": {"every_prompt": "in every prompt, outside the summary", "none": "none (facts only in the history)"}}),
+    "cf_format": ("Block format", "choice", {"options": {"json": "structured (JSON)", "prose": "a prose note"}}),
+    "cf_per_issue": ("One record per issue?", "choice", {"options": {"yes": "yes, keyed by order id", "flat": "no, one flat record"}}),
+    "cf_updates": ("When a newer value arrives", "choice", {"options": {"overwrite": "overwrite (newest wins)", "set_once": "keep the first value"}}),
+    "cf_customer": ("Capture customer-stated facts?", "choice", {"options": {"yes": "yes (deadlines, needs)", "tools_only": "no, tool data only"}}),
     "quality": ("Tool descriptions", "choice", {"options": {"detailed": "detailed (the docs' checklist)", "minimal": "one line each"}}),
     "web_tool": ("The web-results tool", "choice", {"options": {
         "renamed": "extract_web_results (renamed, web-only)", "overlapping": "analyze_content + a near-identical analyze_document"}}),
@@ -420,6 +504,15 @@ def _render_hooks(run: dict) -> None:
         st.success("✅ The rule held and the agent did the right thing.")
 
 
+def _render_lines(run: dict) -> None:
+    for line in run["lines"]:
+        st.markdown(f"- {line}")
+    if run["notes"]:
+        st.error("  \n".join("⚠️ " + n for n in run["notes"]))
+    else:
+        st.success("✅ That worked the way it should.")
+
+
 def _render_fork(slug: str, spec) -> None:
     """Session fork demo (docs: agent-sdk/sessions § Fork) — no model involved; it shows what a fork is."""
     base = f"pg_{slug.replace('-', '_')}_{spec.key}"
@@ -502,7 +595,7 @@ def _render_tab(slug: str, spec) -> None:
                 fallback = {"research": ResearchConfig, "stop": StopConfig, "session": SessionConfig, "escalation": EscalationConfig, "handoff": HandoffConfig,
                  "memory": MemoryConfig, "decomp": DecompConfig, "toolsel": ToolSelConfig,
                  "toolchoice": ToolChoiceConfig, "mcp": McpConfig,
-                 "hooks": HooksConfig}.get(
+                 "hooks": HooksConfig, "evaltools": EvalConfig, "builtin": BuiltinConfig, "rules": RulesConfig, "plan": PlanConfig, "skills": SkillsConfig, "checkpoint": CheckpointConfig, "review": ReviewConfig, "batch": BatchConfig, "extract": ExtractConfig, "attention": AttentionConfig, "fewshot": FewshotConfig, "mpreview": MPReviewConfig, "ctxwin": CtxWinConfig, "casefacts": CaseFactsConfig}.get(
                     spec.engine, PlayConfig).__dataclass_fields__.get(knob)
                 values[knob] = _knob_widget(base, knob, spec.defaults.get(knob, fallback.default if fallback else 0))
     else:
@@ -524,11 +617,11 @@ def _render_tab(slug: str, spec) -> None:
                 if spec.engine == "research":
                     cfg = ResearchConfig(**values)
                     run = run_research(msg.strip(), cfg)
-                elif spec.engine in ("handoff", "memory", "decomp", "toolsel", "toolchoice", "mcp", "hooks"):
+                elif spec.engine in ("handoff", "memory", "decomp", "toolsel", "toolchoice", "mcp", "hooks", "builtin", "evaltools", "rules", "plan", "skills", "checkpoint", "review", "batch", "extract", "attention", "fewshot", "mpreview", "ctxwin", "casefacts"):
                     cls, fn = {"handoff": (HandoffConfig, run_handoff), "memory": (MemoryConfig, run_memory),
                                "decomp": (DecompConfig, run_decomp), "toolsel": (ToolSelConfig, run_toolsel),
                                "toolchoice": (ToolChoiceConfig, run_toolchoice), "mcp": (McpConfig, run_mcp),
-                               "hooks": (HooksConfig, run_hooks)}[spec.engine]
+                               "hooks": (HooksConfig, run_hooks), "evaltools": (EvalConfig, run_eval), "builtin": (BuiltinConfig, run_builtin), "rules": (RulesConfig, run_rules), "plan": (PlanConfig, run_plan), "skills": (SkillsConfig, run_skills), "checkpoint": (CheckpointConfig, run_checkpoint), "review": (ReviewConfig, run_review), "batch": (BatchConfig, run_batch), "extract": (ExtractConfig, run_extract), "attention": (AttentionConfig, run_attention), "fewshot": (FewshotConfig, run_fewshot), "mpreview": (MPReviewConfig, run_mpreview), "ctxwin": (CtxWinConfig, run_ctxwin), "casefacts": (CaseFactsConfig, run_casefacts)}[spec.engine]
                     cfg = cls(mode=spec.condition, **values)
                     run = fn(msg.strip(), cfg)
                 elif spec.engine == "escalation":
@@ -558,7 +651,7 @@ def _render_tab(slug: str, spec) -> None:
                 st.markdown(f"*Earlier run #{i}*")
             {"research": _render_research, "stop": _render_stop, "session": _render_session, "escalation": _render_escalation,
              "handoff": _render_handoff, "memory": _render_memory, "decomp": _render_decomp,
-             "toolsel": _render_toolsel, "toolchoice": _render_toolchoice, "mcp": _render_mcp, "hooks": _render_hooks}.get(spec.engine, _render_run)(item["run"])
+             "toolsel": _render_toolsel, "toolchoice": _render_toolchoice, "mcp": _render_mcp, "hooks": _render_hooks, "evaltools": _render_lines, "builtin": _render_lines, "rules": _render_lines, "plan": _render_lines, "skills": _render_lines, "checkpoint": _render_lines, "review": _render_lines, "batch": _render_lines, "extract": _render_lines, "attention": _render_lines, "fewshot": _render_lines, "mpreview": _render_lines, "ctxwin": _render_lines, "casefacts": _render_lines}.get(spec.engine, _render_run)(item["run"])
 
     if spec.try_this:
         with st.expander("Try this next"):

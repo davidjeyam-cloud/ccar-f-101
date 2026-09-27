@@ -21,9 +21,9 @@ import re
 import streamlit as st
 
 from utils import concepts_map as cm
-from utils.concept_types import CLAIM_KINDS, ConceptContent
+from utils.concept_types import CLAIM_KINDS, AwarenessContent, ConceptContent
 from utils.course_map import DOMAINS
-from utils.guide_index import point_ref, resolve_source, scenario_ref, ts_ref
+from utils.guide_index import SCENARIO_NAME, point_ref, resolve_source, scenario_ref, ts_ref
 from utils.lab_runner import run_lab
 from utils.playground_ui import render_playground
 from utils.mock_claude import SCENARIO_ORDER, SCENARIOS
@@ -38,7 +38,7 @@ def load_content(slug: str) -> ConceptContent | None:
     if not cm.is_built(slug):
         return None
     module = importlib.import_module(f"utils.concepts_content.{cm.content_module_name(slug)}")
-    return module.CONTENT
+    return getattr(module, "CONTENT", None) or getattr(module, "AWARENESS")
 
 
 def _inline(text: str) -> str:
@@ -276,6 +276,10 @@ def _render_questions(slug: str, content: ConceptContent) -> None:
                "official-docs behaviour beyond the guide's task-statement text; they are not in the question bank.")
     for i, q in enumerate(content.questions, 1):
         with st.container(border=True):
+            if q.scenarios:
+                s = q.scenarios[0]
+                also = ", ".join(f"Scenario {x}" for x in q.scenarios[1:])
+                st.markdown(f"**📋 Scenario {s}: {SCENARIO_NAME[s]}**" + (f"  ·  also fits {also}" if also else ""))
             if q.basis == "docs":
                 st.caption("📘 docs-based item (beyond the guide's wording)")
             choice = st.radio(f"**Q{i}.** {q.q}", q.opts, index=None, key=f"q_{slug.replace('-', '_')}_{i}")
@@ -286,6 +290,9 @@ def _render_questions(slug: str, content: ConceptContent) -> None:
                     st.success(f"Correct. {q.explain}")
                 else:
                     st.error(f"Not quite. The best answer is: **{q.opts[q.ans]}**  \n{q.explain}")
+                if choice is not None and q.points:
+                    refs = [point_ref(p.split(":")[0], p.split(":")[1][0], int(p.split(":")[1][1:])) for p in q.points]
+                    st.caption("⭐ What this tests in the exam guide: " + " · ".join(refs))
 
 
 def _render_full(concept: cm.Concept, content: ConceptContent) -> None:
@@ -366,6 +373,78 @@ def _render_full(concept: cm.Concept, content: ConceptContent) -> None:
     render_progress_ticks(f"concept-{concept.slug}")
 
 
+def _render_related(content) -> None:
+    st.subheader("Related concepts")
+    pages = st.session_state.get("_concept_pages", {})
+    related = [cm.get(s) for s in content.related if cm.get(s)]
+    cols = st.columns(max(1, len(related)))
+    for col, rel in zip(cols, related):
+        with col:
+            label = f"{rel.code} {rel.title}" if rel.code else rel.title
+            if rel.slug in pages:
+                st.page_link(pages[rel.slug], label=label, icon="🔗")
+            else:
+                st.write(label)
+
+
+def _render_grounding(content) -> None:
+    st.subheader("Grounded in the official docs")
+    st.caption(f"Rule: every concept is grounded in the official Claude documentation. These pages were fetched and "
+               f"read on {content.docs_verified_on}; if a page has changed since, the docs win — tell me and I will fix this one.")
+    for ref in content.docs_refs:
+        st.markdown(f"- 📘 [{ref.title}]({ref.url})")
+    with st.expander("Where each claim on this page comes from (provenance)"):
+        st.markdown(_table(("#", "Claim", "Source type", "Where"),
+                           [(str(i), c.text, ("⭐ " if c.kind == "guide" else "") + CLAIM_KINDS[c.kind], c.ref)
+                            for i, c in enumerate(content.grounding, 1)]), unsafe_allow_html=True)
+
+
+def _render_awareness(concept: cm.Concept, content: AwarenessContent) -> None:
+    """An ℹ️ awareness-only page: orient for the exam without teaching out-of-scope implementation detail."""
+    _page_css("awareness_unused")
+    domain_label = f"CONCEPTS · D{concept.domain} · {cm.DOMAIN_SHORT[concept.domain]}" if concept.domain else "CONCEPTS"
+    st.markdown(phase_header(domain_label, f"ℹ️ {concept.code} {concept.title}" if concept.code else f"ℹ️ {concept.title}",
+                             "Awareness only — know that it exists, what it is for, and what it does NOT fix.",
+                             accent=ACCENT_CURRENT), unsafe_allow_html=True)
+    st.markdown(_chips(concept), unsafe_allow_html=True)
+
+    st.subheader("Summary")
+    st.markdown(content.tldr)
+    st.info(f"🧭 **Mental model.** {content.mental_model}")
+    st.markdown('<div class="cc-exam"><h4>⭐ What the exam demands — from the official guide</h4>'
+                f"{_inline(content.exam_note)}</div>", unsafe_allow_html=True)
+
+    st.subheader("What it is — and what it is not")
+    st.markdown(content.what_it_is)
+
+    st.subheader("Looks right, isn't")
+    st.caption("Answer options that reach for this feature to fix a problem it cannot fix. No lab: running it would "
+               "mean teaching implementation detail the guide puts out of scope.")
+    st.markdown(_table(("#", "Tempting answer", "Why it looks right", "Why it fails", "Do this instead", "Source"),
+                       [(str(i), *row[:4], resolve_source(row[4])) for i, row in enumerate(content.distractors, 1)]),
+                unsafe_allow_html=True)
+
+    st.subheader("Side-by-side")
+    st.markdown(_table(content.side_by_side_headers, content.side_by_side_rows), unsafe_allow_html=True)
+
+    st.subheader("Deliberately not on this page")
+    st.markdown(content.not_examinable)
+
+    st.subheader("Practice")
+    _render_questions(concept.slug, content)
+    st.caption("These items are not added to the question bank: the guide lists no task statement for this topic.")
+
+    st.subheader("Frequently asked")
+    for q, a in content.faq:
+        with st.expander(q):
+            st.markdown(a)
+
+    _render_related(content)
+    _render_grounding(content)
+    st.caption(content.guide_note)
+    render_progress_ticks(f"concept-{concept.slug}")
+
+
 _STUB_TEXT = {
     "in_guide": ("🔜 Planned",
                  "This concept is covered by the official guide, so it will be built with the same template as "
@@ -428,5 +507,7 @@ def render_concept(slug: str) -> None:
     content = load_content(slug)
     if content is None:
         _render_stub(concept)
+    elif isinstance(content, AwarenessContent):
+        _render_awareness(concept, content)
     else:
         _render_full(concept, content)

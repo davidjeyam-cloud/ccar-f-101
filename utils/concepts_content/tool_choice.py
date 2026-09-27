@@ -9,6 +9,7 @@ that reject forced tool use — both shown. Paraphrased; no real exam question r
 """
 
 from utils.concept_types import Claim, ConceptContent, DocRef, ExamPoint, PlayTab, Question, Variant
+from utils.flow_style import readable
 
 DOCS_VERIFIED_ON = "2026-09-27"
 _P = "https://platform.claude.com/docs/en"
@@ -304,7 +305,7 @@ def flow_dot(states):
               "  ANY -> STRICT; FORCE -> STRICT; AUTO -> STRICT; STRICT -> OUT; SCOPE -> Q;",
               "  { rank=same; " + "; ".join(_BUGS[:4]) + "; }", "  { rank=same; " + "; ".join(_BUGS[4:]) + "; }",
               "  OUT -> AUTOBUG [style=invis]; AUTOBUG -> SCHEMA [style=invis];", _key(hl), "  SCHEMA -> KEY [style=invis];", "}"]
-    return "\n".join(lines)
+    return readable("\n".join(lines))   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 
 def node_states(trace):
@@ -538,57 +539,130 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("An extraction pipeline sometimes gets a conversational text reply instead of structured data, especially when documents arrive "
-           "as friendly emails. tool_choice is left at its default. What change guarantees a tool call?"),
-        opts=("Add “please use the tool” to the system prompt.", "Set tool_choice to {\"type\": \"any\"}.",
-              "Increase max_tokens.", "Lower the temperature."),
-        ans=1,
-        explain="auto (the default) lets the model answer in text; any requires it to call one of the provided tools.",
-        scenarios=(6,), ts="2.3"),
+        q=("An invoice-extraction pipeline defines one extraction tool, but on short or odd documents Claude sometimes "
+           "replies in plain text (“This appears to be a receipt…”) instead of calling it, and the parser crashes. "
+           "tool_choice is “auto”. What's the most direct fix?"),
+        opts=("Add “always call the tool” to the system prompt.",
+              "Parse the text reply with a regex when it happens.",
+              "Set tool_choice to “any”, so the model must call a tool instead of answering in text.",
+              "Lower the temperature to zero."),
+        ans=2,
+        explain=("With “auto” the model may answer in text. “any” guarantees a tool call. A prompt instruction improves "
+                 "the odds but guarantees nothing."),
+        scenarios=(6,), points=("2.3:K4", "2.3:S5", "4.3:K2"),
+    ),
     Question(
-        q=("Documents may be invoices, receipts or contracts, each with its own extraction tool, and the type isn't known in advance. Which "
-           "tool_choice fits best?"),
-        opts=("{\"type\": \"tool\", \"name\": \"extract_invoice\"}", "{\"type\": \"any\"}", "{\"type\": \"auto\"}", "{\"type\": \"none\"}"),
-        ans=1,
-        explain="any guarantees structured output while letting the model pick the schema that matches the document.",
-        scenarios=(6,), ts="4.3"),
+        q=("Incoming documents may be invoices, receipts or contracts, each with its own extraction tool and schema. The "
+           "type isn't known in advance, and every document must produce structured output. How should tool_choice be set?"),
+        opts=("“any” with all three tools, so the model must call one and picks which fits the document.",
+              "Force the invoice tool, then retry with the others if it fails.",
+              "“auto”, trusting the model to call the right tool.",
+              "Classify the document in a separate call and parse its text answer."),
+        ans=0,
+        explain=("“any” guarantees structured output when several extraction schemas exist and the type is unknown: "
+                 "the model must call a tool but chooses which. Forcing one tool would push contracts into the invoice schema."),
+        scenarios=(6,), points=("4.3:S2", "4.3:K2"),
+    ),
     Question(
-        q=("extract_metadata must run before any enrichment tool, and later steps should proceed normally. How should tool_choice be configured?"),
-        opts=("Force extract_metadata on every call.",
-              "Force {\"type\": \"tool\", \"name\": \"extract_metadata\"} on the first call, then handle later steps in follow-up turns without forcing it.",
-              "Use any on every call.", "Describe the order in the system prompt only."),
-        ans=1,
-        explain="Forcing the named tool guarantees the first step; keeping it forced repeats it forever, and any doesn't control which tool runs first.",
-        scenarios=(6,), ts="2.3"),
+        q=("In an extraction workflow, extract_metadata must always run first. After that, the model should decide "
+           "freely between enrichment tools or answer. How should tool_choice be configured?"),
+        opts=("“any” on every turn.",
+              "“auto” on every turn, with “call extract_metadata first” in the prompt.",
+              "Force extract_metadata on every turn.",
+              "Force extract_metadata on the first request, then use “auto” on the follow-up turns."),
+        ans=3,
+        explain=("Forcing {\"type\": \"tool\", \"name\": \"extract_metadata\"} guarantees it runs first. Later steps are "
+                 "handled in follow-up turns with normal choice. Forcing it every turn would loop the same tool."),
+        scenarios=(6,), points=("2.3:S4", "4.3:S3"),
+    ),
     Question(
-        q=("An extraction schema marks tax_id as a required string. Audits show invented tax ids on invoices that don't have one. What is the best schema fix?"),
-        opts=("Add “don't make things up” to the prompt.", "Make tax_id nullable (or optional) so the model can return null when the document lacks it.",
-              "Remove tax_id from the schema.", "Turn strict mode off."),
+        q=("An extraction schema marks tax_id as a required string. Audits find plausible-looking but invented tax ids on "
+           "invoices that don't contain one. What's the best schema change?"),
+        opts=("Add “never invent values” to the tool description.",
+              "Make tax_id optional/nullable, so the model can report it as absent.",
+              "Validate tax ids with a checksum and retry until one passes.",
+              "Change tax_id from a string to an integer."),
         ans=1,
-        explain="Required fields push the model to fabricate; nullable/optional fields let it say the value isn't there (TS 4.3 S4).",
-        scenarios=(6,), ts="4.3"),
+        explain=("A required field pushes the model to fill it even when the source has nothing. Making it "
+                 "optional/nullable lets it report absence. A retry loop can't produce information that isn't there."),
+        scenarios=(6,), points=("4.3:S4", "4.3:K4"),
+    ),
     Question(
-        q=("A multi-agent research system gives all 18 tools to every agent. The synthesis agent keeps running web searches. What's the most effective change?"),
-        opts=("Tell the synthesis agent not to search.", "Give each agent only its role's tools, and the synthesizer a scoped verify_fact tool for quick checks.",
-              "Add more detail to the web_search description.", "Remove web_search from the system."),
-        ans=1,
-        explain="Scoped tool access prevents cross-specialisation misuse and improves selection; a scoped cross-role tool covers the frequent need.",
-        scenarios=(3,), ts="2.3"),
+        q=("A document_type enum lists invoice, receipt and contract. New kinds, such as credit notes and delivery "
+           "slips, keep being squeezed into “receipt”, and some scans are too blurry to classify. What's the best "
+           "schema design?"),
+        opts=("Add every future document type to the enum now.",
+              "Remove the enum and accept free text.",
+              "Add “other” with a detail string for new kinds, and “unclear” for documents that can't be classified.",
+              "Make document_type required so the model tries harder."),
+        ans=2,
+        explain=("An enum with “other” plus a detail string handles extensible categories, and “unclear” covers "
+                 "ambiguous cases, while keeping the field structured. Free text loses the structure."),
+        scenarios=(6,), points=("4.3:K4", "4.3:S5"),
+    ),
     Question(
-        q=("Strict tool use returns a perfectly schema-valid invoice whose line items add up to $1,200 while the total says $1,240. What does this show?"),
-        opts=("Strict mode is broken.", "Strict schemas prevent syntax/type errors, not semantic errors — the values still need validating.",
-              "The schema needs more required fields.", "tool_choice should have been forced."),
-        ans=1,
-        explain="The guide: strict JSON schemas eliminate syntax errors but not semantic ones such as totals that don't add up.",
-        scenarios=(6,), ts="4.3"),
+        q=("In the research system, every agent gets all 18 tools. The synthesis agent keeps running web searches of its "
+           "own instead of synthesising, and reports drift off-brief. What's the best change?"),
+        opts=("Tell the synthesis agent not to search unless necessary.",
+              "Lower the synthesis agent's max_turns.",
+              "Put the web search tools last in the list.",
+              "Restrict each agent's tools to its role, so the synthesis agent has no general web search."),
+        ans=3,
+        explain=("Agents given tools outside their specialisation tend to misuse them. Scoped tool access per role "
+                 "prevents that. A prompt request is probabilistic, and tool order doesn't change what's available."),
+        scenarios=(3,), points=("2.3:K2", "2.3:S1"),
+    ),
     Question(
-        q=("Your code sets tool_choice {\"type\": \"any\"} and gets a 400 after switching to a newer model. Per the tool-use docs, what should you do?"),
-        opts=("Retry with backoff.", "Use tool_choice auto with strict tool use (and an explicit instruction), or structured outputs.",
-              "Switch to tool_choice none.", "Enable manual extended thinking."),
+        q=("After scoping, the synthesis agent often needs to check a single fact (a date, a figure) and each check takes "
+           "a slow round trip through the coordinator to the search agent. About 85% of checks are that simple. What's "
+           "the best design?"),
+        opts=("Give the synthesis agent a narrowly scoped verify_fact tool, and keep complex verification routed through the coordinator.",
+              "Give the synthesis agent every web search tool back.",
+              "Let the synthesis agent message the search agent directly.",
+              "Skip verification for simple facts."),
+        ans=0,
+        explain=("Scoped cross-role tools for high-frequency needs cut the round trips, while complex cases still go "
+                 "through the coordinator. Full tool access brings back the misuse, and direct messaging bypasses the hub."),
+        scenarios=(3,), points=("2.3:S3", "2.3:K3"),
+    ),
+    Question(
+        q=("A document-analysis subagent has a generic fetch_url tool. It sometimes fetches unrelated web pages, and even "
+           "tracking pixels, instead of the documents it was given. What's the best fix?"),
+        opts=("Add “only fetch documents” to fetch_url's description.",
+              "Log every fetch and review them weekly.",
+              "Give the subagent a larger context window.",
+              "Replace fetch_url with a constrained load_document tool that only accepts and validates document URLs."),
+        ans=3,
+        explain=("Replacing a generic tool with a constrained one (fetch_url → load_document, which validates its "
+                 "input) removes the misuse at the source. A description change still leaves the generic capability there."),
+        scenarios=(3,), points=("2.3:S2",),
+    ),
+    Question(
+        q=("A single support agent was given 18 tools as features were added: refunds, shipping, loyalty, marketing and "
+           "analytics. Tool-selection mistakes rose with each addition. Which design best restores reliability?"),
+        opts=("Rewrite all 18 descriptions to be twice as long.",
+              "Split the work across focused agents, each with the 4–5 tools its job needs.",
+              "Number the tools so the model can refer to them precisely.",
+              "Add examples of all 18 tools to the system prompt."),
         ans=1,
-        explain="The docs list models and settings that reject any/tool with a 400 and recommend auto + strict tool use or structured outputs there.",
-        basis="docs", in_bank=False),
+        explain=("Too many tools (such as 18 instead of 4–5) degrade selection reliability. Scoping tools to focused "
+                 "roles addresses that. Longer descriptions and examples add context without reducing the choice."),
+        scenarios=(1,), points=("2.3:K1", "2.3:K3"),
+    ),
+    Question(
+        q=("An extraction service that sets tool_choice {\"type\": \"any\"} starts getting HTTP 400 errors after being "
+           "moved to a newer model. According to the tool-use docs, what's the right adjustment?"),
+        opts=("Retry the request, since a 400 is transient.",
+              "Switch to forcing a specific tool instead of “any”.",
+              "Use tool_choice “auto” with strict tools, or structured outputs, on models that don't support forced tool use.",
+              "Remove the tools and parse JSON from the text."),
+        ans=2,
+        explain=("Per the docs, forced tool use (“any” or a named tool) isn't supported on some models or with manual "
+                 "extended thinking, and returns a 400. The documented route is “auto” with strict tools, or structured outputs."),
+        scenarios=(6,), basis="docs", in_bank=False,
+    ),
 )
+
 
 FAQ = (
     ("Why can't I get an explanation with a forced tool call?",
@@ -652,6 +726,8 @@ PLAYGROUND = (
          ("Default — mock-opus-5.5 + auto + “use the extraction tool”: works.", "Switch tool_choice to any: 400.",
           "mock-claude + thinking enabled + any: 400.", "mock-claude + any, thinking off: works.")),
 )
+
+DECISION_DOT = readable(DECISION_DOT)   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 CONTENT = ConceptContent(
     slug="tool-choice", tldr=TLDR, mental_model=MENTAL_MODEL, what_it_is=WHAT_IT_IS, how_it_works=HOW_IT_WORKS,

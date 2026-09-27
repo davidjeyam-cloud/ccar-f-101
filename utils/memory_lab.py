@@ -53,10 +53,62 @@ def _norm(path: str) -> str:
 
 
 def _frontmatter_paths(text: str):
+    """The rule's `paths` globs, or None when it has none. Docs: `paths` is the ONLY field read (a YAML list or a
+    comma-separated string); any other field is ignored; frontmatter that doesn't parse is ignored (the rule loads as if it
+    had no paths)."""
     m = re.match(r"\s*---\s*\n(.*?)\n---", text or "", re.S)
     if not m:
         return None
-    return re.findall(r'-\s*"?([^"\n]+?)"?\s*$', m.group(1), re.M) or None
+    block = m.group(1)
+    km = re.search(r"^paths:[ \t]*(.*)$", block, re.M)
+    if not km:
+        return None
+    inline = km.group(1).strip()
+    if inline:                                                   # paths: "a, b"  or  paths: a, b  or  paths: ["a", "b"]
+        items = [x.strip().strip('"').strip("'") for x in inline.strip("[]").split(",")]
+    else:                                                        # paths:\n  - "a"\n  - "b"
+        rest = block[km.end():].lstrip("\n")
+        items = []
+        for line in rest.splitlines():
+            lm = re.match(r'\s+-\s*"?([^"\n]+?)"?\s*$', line)
+            if not lm:
+                break
+            items.append(lm.group(1))
+    items = [x for x in items if x]
+    return items or None
+
+
+def _brace(pattern: str) -> list:
+    m = re.search(r"\{([^{}]*)\}", pattern)
+    if not m:
+        return [pattern]
+    return [q for alt in m.group(1).split(",") for q in _brace(pattern[:m.start()] + alt + pattern[m.end():])]
+
+
+def glob_match(path: str, pattern: str) -> bool:
+    """Glob semantics as in the memory docs' examples: `*` stays inside one directory (`*.md` = root only), `**` crosses
+    directories (`**/*.ts` = any depth), `{a,b}` brace expansion."""
+    for pat in _brace(pattern):
+        rx, i = "", 0
+        while i < len(pat):
+            if pat.startswith("**/", i):
+                rx += "(?:.*/)?"
+                i += 3
+            elif pat.startswith("**", i):
+                rx += ".*"
+                i += 2
+            elif pat[i] == "*":
+                rx += "[^/]*"
+                i += 1
+            elif pat[i] == "?":
+                rx += "[^/]"
+                i += 1
+            else:
+                rx += re.escape(pat[i])
+                i += 1
+        if re.fullmatch(rx, path):
+            return True
+    return False
 
 
 def _dir(path: str) -> str:
@@ -113,7 +165,7 @@ def load(persona: str, repo: dict, user: dict, reads=()) -> list:
                     _expand(p, files, 0, seen, loaded, f"subdirectory file, loaded when Claude read {r}")
         for p in rules:
             globs = _frontmatter_paths(files[p])
-            if globs and any(fnmatch.fnmatch(r, g) for g in globs):
+            if globs and any(glob_match(r, g) for g in globs):
                 _expand(p, files, 0, seen, loaded, f"path-scoped rule ({', '.join(globs)}) matched {r}")
     return loaded
 

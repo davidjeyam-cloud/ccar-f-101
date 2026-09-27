@@ -2,7 +2,7 @@
 
 > Auto-generated from `utils/concepts_map.py` — do not hand-edit. The taxonomy mirrors a community concept list (claudearchitectcertification.com/concepts, a third-party site: unverified, structure only, no content copied). **Scope statuses are Claude's judgment from a keyword search and reading of guide v1.0 on 2026-09-26 — verify them.**
 
-**71 concepts · 12 built.** 🎯 In the guide: 22 · ◐ Partly in the guide: 15 · ℹ️ Awareness only: 1 · ⛔ Out of scope: 3 · ⚪ Not in the guide: 30
+**71 concepts · 27 built.** 🎯 In the guide: 22 · ◐ Partly in the guide: 15 · ℹ️ Awareness only: 1 · ⛔ Out of scope: 3 · ⚪ Not in the guide: 30
 
 **Kinds:** exam = in the guide (built with docs + guide) · ➕ extra = not on the exam but an official docs page covers it (built only if grounded, labelled *not on the exam*) · ungroundable = no official docs basis found, stays a stub · excluded = out of scope / awareness, never built. Candidate docs are fetched and read when the concept is built.
 
@@ -20,24 +20,24 @@
 | 10 | D2.2 | Tool Choice | 🎯 In the guide | exam | TS 2.3 — Tool choice (pp.10–11) · TS 4.3 — Structured output (pp.17–18) | — | — | 🧪 |
 | 11 | D2.3 | Model Context Protocol | 🎯 In the guide | exam | TS 2.4 — MCP config (p.11) · TS 2.2 — Structured errors (pp.9–10) | — | — | 🧪 |
 | 12 | D2.4 | SDK Hooks (Pre/PostToolUse) | 🎯 In the guide | exam | TS 1.5 — Hooks (pp.7–8) | — | — | 🧪 |
-| 13 | D2.5 | Tool Evaluation & Testing | ◐ Partly in the guide | exam | TS 2.1 — Tool descriptions (p.9) | — | Guide §7/§8 asks you to test tool-selection reliability with ambiguous requests; there is no dedicated task statement. | — |
-| 14 | D2.6 | Built-In Tools vs Custom Tools vs Skills vs MCP | 🎯 In the guide | exam | TS 2.5 — Built-in tools (pp.11–12) · TS 3.2 — Commands and skills (p.13) · TS 2.4 — MCP config (p.11) | — | — | — |
-| 15 | D3.1 | CLAUDE.md Hierarchy | 🎯 In the guide | exam | TS 3.1 — CLAUDE.md hierarchy (pp.12–13) · TS 3.3 — Path-specific rules (pp.13–14) | — | — | — |
-| 16 | D3.2 | Plan Mode | 🎯 In the guide | exam | TS 3.4 — Plan vs direct (p.14) | — | — | — |
-| 17 | D3.3 | Skills | 🎯 In the guide | exam | TS 3.2 — Commands and skills (p.13) | — | — | — |
-| 18 | D3.4 | Checkpoints & Session Management | ◐ Partly in the guide | exam | TS 1.7 — Session state (pp.8–9) · TS 5.4 — Codebase exploration (pp.21–22) | — | The guide covers --resume, fork_session and /compact; the word “checkpoints” does not appear. | — |
-| 19 | D4.1 | System Prompts & Instructions | 🎯 In the guide | exam | TS 4.1 — Explicit criteria (p.16) | — | — | — |
-| 20 | D4.2 | Prompt Caching | ℹ️ Awareness only | excluded | — | — | Guide Appendix: prompt-caching implementation details are out of scope “beyond knowing it exists”. | — |
-| 21 | D4.3 | Batch API | 🎯 In the guide | exam | TS 4.5 — Batch (pp.18–19) | — | — | — |
-| 22 | D4.4 | Structured Outputs | 🎯 In the guide | exam | TS 4.3 — Structured output (pp.17–18) · TS 4.4 — Validation-retry (p.18) | — | — | — |
+| 13 | D2.5 | Tool Evaluation & Testing | ◐ Partly in the guide | exam | TS 2.1 — Tool descriptions (p.9) | — | Guide §7/§8 asks you to test tool-selection reliability with ambiguous requests; there is no dedicated task statement. | 🧪 |
+| 14 | D2.6 | Built-In Tools vs Custom Tools vs Skills vs MCP | 🎯 In the guide | exam | TS 2.5 — Built-in tools (pp.11–12) · TS 3.2 — Commands and skills (p.13) · TS 2.4 — MCP config (p.11) | — | — | 🧪 |
+| 15 | D3.1 | CLAUDE.md Hierarchy | 🎯 In the guide | exam | TS 3.1 — CLAUDE.md hierarchy (pp.12–13) · TS 3.3 — Path-specific rules (pp.13–14) | — | — | 🧪 |
+| 16 | D3.2 | Plan Mode | 🎯 In the guide | exam | TS 3.4 — Plan vs direct (p.14) | — | — | 🧪 |
+| 17 | D3.3 | Skills | 🎯 In the guide | exam | TS 3.2 — Commands and skills (p.13) | — | — | 🧪 |
+| 18 | D3.4 | Checkpoints & Session Management | ◐ Partly in the guide | exam | TS 1.7 — Session state (pp.8–9) · TS 5.4 — Codebase exploration (pp.21–22) | — | The guide covers --resume, fork_session and /compact; the word “checkpoints” does not appear. | 🧪 |
+| 19 | D4.1 | System Prompts & Instructions | 🎯 In the guide | exam | TS 4.1 — Explicit criteria (p.16) | — | — | 🧪 |
+| 20 | D4.2 | Prompt Caching | ℹ️ Awareness only | excluded | — | — | Guide §17 Appendix · Out-of-Scope Topics · p.39: implementation details out of scope “beyond knowing it exists”. An awareness page (no lab) was built at the user's request on 2026-09-28. | 📘 awareness page |
+| 21 | D4.3 | Batch API | 🎯 In the guide | exam | TS 4.5 — Batch (pp.18–19) | — | — | 🧪 |
+| 22 | D4.4 | Structured Outputs | 🎯 In the guide | exam | TS 4.3 — Structured output (pp.17–18) · TS 4.4 — Validation-retry (p.18) | — | — | 🧪 |
 | 23 | D4.5 | Vision & Multimodal | ⛔ Out of scope | excluded | — | — | Guide Appendix: vision / image-analysis capabilities will not appear on the exam. | — |
 | 24 | D4.6 | Streaming | ⛔ Out of scope | excluded | — | — | Guide Appendix: streaming API implementation and server-sent events will not appear on the exam. | — |
-| 25 | D4.7 | Attention Engineering | ◐ Partly in the guide | exam | TS 5.1 — Context preservation (pp.19–20) · TS 1.6 — Task decomposition (p.8) | — | The guide names the lost-in-the-middle effect (5.1) and attention dilution (1.6, 4.6); no dedicated task statement. | — |
+| 25 | D4.7 | Attention Engineering | ◐ Partly in the guide | exam | TS 5.1 — Context preservation (pp.19–20) · TS 1.6 — Task decomposition (p.8) | — | The guide names the lost-in-the-middle effect (5.1) and attention dilution (1.6, 4.6); no dedicated task statement. | 🧪 |
 | 26 | D4.8 | 4D Framework | ⚪ Not in the guide | ungroundable | — | — | No matching task statement or knowledge item in guide v1.0 (keyword search, 2026-09-26). | — |
-| 27 | D4.9 | Prompt Engineering Techniques | 🎯 In the guide | exam | TS 4.1 — Explicit criteria (p.16) · TS 4.2 — Few-shot (pp.16–17) · TS 3.5 — Iterative refinement (pp.14–15) | — | — | — |
-| 28 | D4.10 | Multi-Instance & Multi-Pass Review Architectures | 🎯 In the guide | exam | TS 4.6 — Multi-pass review (p.19) | — | — | — |
-| 29 | D5.1 | Context Window Management | 🎯 In the guide | exam | TS 5.1 — Context preservation (pp.19–20) · TS 5.4 — Codebase exploration (pp.21–22) | — | — | — |
-| 30 | D5.2 | Case Facts Block | 🎯 In the guide | exam | TS 5.1 — Context preservation (pp.19–20) | — | — | — |
+| 27 | D4.9 | Prompt Engineering Techniques | 🎯 In the guide | exam | TS 4.1 — Explicit criteria (p.16) · TS 4.2 — Few-shot (pp.16–17) · TS 3.5 — Iterative refinement (pp.14–15) | — | — | 🧪 |
+| 28 | D4.10 | Multi-Instance & Multi-Pass Review Architectures | 🎯 In the guide | exam | TS 4.6 — Multi-pass review (p.19) | — | — | 🧪 |
+| 29 | D5.1 | Context Window Management | 🎯 In the guide | exam | TS 5.1 — Context preservation (pp.19–20) · TS 5.4 — Codebase exploration (pp.21–22) | — | — | 🧪 |
+| 30 | D5.2 | Case Facts Block | 🎯 In the guide | exam | TS 5.1 — Context preservation (pp.19–20) | — | — | 🧪 |
 | 31 | — | Translating Business Requirements into Claude Solutions | ⚪ Not in the guide | ungroundable | — | — | No matching task statement or knowledge item in guide v1.0 (keyword search, 2026-09-26). | — |
 | 32 | — | End-to-End Architecture Design (Input to Feedback Loop) | ⚪ Not in the guide | ungroundable | — | — | No matching task statement or knowledge item in guide v1.0 (keyword search, 2026-09-26). | — |
 | 33 | — | Workflow vs Agent: Choosing the Right Architecture | ◐ Partly in the guide | exam | TS 1.6 — Task decomposition (p.8) · TS 1.1 — Agentic loops (p.5) | — | Fixed pipelines vs dynamic decomposition (1.6) and model-driven vs pre-set sequences (1.1). | — |

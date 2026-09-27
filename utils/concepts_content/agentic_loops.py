@@ -963,80 +963,78 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("Your support agent's loop exits as soon as the assistant's reply contains the word “resolved”. "
-           "In testing, 8% of refund requests end with the refund never issued even though the agent's last "
-           "message says “resolved”. What is the most likely root cause?"),
-        opts=("The model is hallucinating tool results.",
-              "Completion is inferred from prose instead of stop_reason, and models can narrate before "
-              "requesting a tool.",
-              "max_tokens is set too high.",
-              "The tool descriptions are too long."),
-        ans=1,
-        explain=("Text can say “resolved” in the same response that still requests a tool. The control signal "
-                 "is stop_reason (tool_use → keep going, end_turn → finished). Nothing here suggests "
-                 "fabricated tool output, and neither max_tokens nor description length explains a loop "
-                 "that exits early."),
-        scenarios=(1,),
+        q=("Your support agent's loop exits as soon as the assistant's reply contains the word “resolved”. In "
+           "testing, 8% of refund requests end with the refund never issued even though the agent's last message"
+           ' says “resolved”. What is the most likely root cause?'),
+        opts=('Completion is inferred from prose instead of stop_reason, and models can narrate before requesting a tool.',
+              'The model is hallucinating tool results.',
+              'max_tokens is set too high.',
+              'The tool descriptions are too long.'),
+        ans=0,
+        explain=('Text can say “resolved” in the same response that still requests a tool. The control signal is '
+                 'stop_reason (tool_use → keep going, end_turn → finished). Nothing here suggests fabricated tool '
+                 'output, and neither max_tokens nor description length explains a loop that exits early.'),
+        scenarios=(1,), points=('1.1:S3',),
     ),
     Question(
-        q=("A migration agent needs anywhere from 2 to 15 tool calls depending on the repository. The team "
-           "wrote `for _ in range(5)` and returns the last message when the loop ends. Some runs report "
-           "success but leave the migration half-done, with no error. Which change addresses the root cause?"),
-        opts=("Raise the cap to 50 and keep the same structure.",
-              "Drive the loop from stop_reason (continue on tool_use, finish on end_turn) and keep any limit only "
-              "as a guard that raises.",
-              "Tell the model in the system prompt to always finish within 5 tool calls.",
-              "Run the agent three times and take the majority result."),
-        ans=1,
-        explain=("The cap is doing the deciding, so any task longer than the guess is silently truncated. "
-                 "A bigger cap keeps the same flaw; a prompt instruction is probabilistic and does not fix a "
-                 "structural problem; majority voting hides an intermittent failure instead of fixing the loop."),
-        scenarios=(4,),
+        q=('A migration agent needs anywhere from 2 to 15 tool calls depending on the repository. The team wrote'
+           ' `for _ in range(5)` and returns the last message when the loop ends. Some runs report success but '
+           'leave the migration half-done, with no error. Which change addresses the root cause?'),
+        opts=('Raise the cap to 50 and keep the same structure.',
+              'Tell the model in the system prompt to always finish within 5 tool calls.',
+              'Run the agent three times and take the majority result.',
+              'Drive the loop from stop_reason (continue on tool_use, finish on end_turn) and keep any limit only as a guard that raises.'),
+        ans=3,
+        explain=('The cap is doing the deciding, so any task longer than the guess is silently truncated. A bigger cap'
+                 ' keeps the same flaw; a prompt instruction is probabilistic and does not fix a structural problem; '
+                 'majority voting hides an intermittent failure instead of fixing the loop.'),
+        scenarios=(4,), points=('1.1:S3', '1.1:S1'),
     ),
     Question(
-        q=("After each tool call your loop executes the tool and prints the result, then sends the next "
-           "request. The agent keeps asking for the same tool on every turn, and the tool always returns "
-           "valid data. What is the most likely cause?"),
-        opts=("The sampling temperature is too high.",
-              "The tool result is never added to the conversation, so the model cannot see it.",
-              "tool_choice is left on auto.",
-              "The system prompt has no persona."),
-        ans=1,
-        explain=("The model only reasons over the conversation it is sent. If neither the assistant turn nor "
-                 "the tool_result is appended, every request looks like the first one and it asks again. "
-                 "tool_choice auto is the normal default, and persona/temperature do not explain identical "
-                 "repeated requests."),
-        scenarios=(1,),
+        q=('After each tool call your loop executes the tool and prints the result, then sends the next request.'
+           ' The agent keeps asking for the same tool on every turn, and the tool always returns valid data. '
+           'What is the most likely cause?'),
+        opts=('The sampling temperature is too high.',
+              'tool_choice is left on auto.',
+              'The tool result is never added to the conversation, so the model cannot see it.',
+              'The system prompt has no persona.'),
+        ans=2,
+        explain=('The model only reasons over the conversation it is sent. If neither the assistant turn nor the '
+                 'tool_result is appended, every request looks like the first one and it asks again. tool_choice auto '
+                 'is the normal default, and persona/temperature do not explain identical repeated requests.'),
+        scenarios=(1,), points=('1.1:K2', '1.1:S2'),
     ),
     Question(
-        q=("Your loop treats every response whose stop_reason is not \"tool_use\" as the final answer and prints its "
-           "text. Users report blank answers on some requests and half-finished sentences on others, and no errors "
-           "are logged. What is the best first fix?"),
-        opts=("Wrap the request in try/except and retry on any exception.",
-              "Handle each stop_reason explicitly: end_turn is the answer, max_tokens means truncated, refusal needs "
-              "a retry on a different model.",
-              "Lower the sampling temperature.",
-              "Append a text block after each tool result telling Claude to keep going."),
+        q=('Your loop treats every response whose stop_reason is not "tool_use" as the final answer and prints '
+           'its text. Users report blank answers on some requests and half-finished sentences on others, and no '
+           'errors are logged. What is the best first fix?'),
+        opts=('Wrap the request in try/except and retry on any exception.',
+              'Handle each stop_reason explicitly: end_turn is the answer, max_tokens means truncated, refusal needs a retry on a different model.',
+              'Lower the sampling temperature.',
+              'Append a text block after each tool result telling Claude to keep going.'),
         ans=1,
-        explain=("Per the docs, the loop exits on any stop reason other than tool_use and the application must handle it: "
-                 "a refusal is an HTTP 200 with empty content (no exception to catch) and max_tokens is a truncated "
-                 "response. Adding text after tool results is a documented cause of empty end_turn responses."),
-        basis="docs", in_bank=False,
+        explain=('Per the docs, the loop exits on any stop reason other than tool_use and the application must handle '
+                 'it: a refusal is an HTTP 200 with empty content (no exception to catch) and max_tokens is a '
+                 'truncated response. Adding text after tool results is a documented cause of empty end_turn '
+                 'responses.'),
+        scenarios=(1,), basis='docs', in_bank=False,
     ),
     Question(
-        q=("A request returns HTTP 200 with stop_reason \"refusal\" and empty content. Your retry logic re-sends the "
-           "identical request to the same model up to three times. What does the official guidance recommend instead?"),
-        opts=("Keep retrying the same model, with exponential backoff.",
-              "Retry on a different model and stay on it for later turns; escalate if that refuses too.",
-              "Parse stop_details.explanation and retry only when it mentions a transient problem.",
-              "Treat the empty content as the model's final answer."),
-        ans=1,
-        explain=("The docs say re-sending a refused request to the same model usually earns another refusal, that later "
-                 "turns should stay on the fallback model, and that the explanation text is not stable — display it, "
-                 "don't parse it. A refusal is a normal response, so backoff does not apply."),
-        basis="docs", in_bank=False,
+        q=('A request returns HTTP 200 with stop_reason "refusal" and empty content. Your retry logic re-sends '
+           'the identical request to the same model up to three times. What does the official guidance recommend'
+           ' instead?'),
+        opts=('Keep retrying the same model, with exponential backoff.',
+              'Parse stop_details.explanation and retry only when it mentions a transient problem.',
+              "Treat the empty content as the model's final answer.",
+              'Retry on a different model and stay on it for later turns; escalate if that refuses too.'),
+        ans=3,
+        explain=('The docs say re-sending a refused request to the same model usually earns another refusal, that '
+                 'later turns should stay on the fallback model, and that the explanation text is not stable — display'
+                 " it, don't parse it. A refusal is a normal response, so backoff does not apply."),
+        scenarios=(1,), basis='docs', in_bank=False,
     ),
 )
+
 
 FAQ = (
     ("Can one response contain both text and a tool_use block?",

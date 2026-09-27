@@ -28,6 +28,16 @@ DOC_REFS = (
 )
 
 GROUNDING = (
+    Claim("allowedTools pre-approves tools (permission) without adding or removing any; disallowedTools with a bare name removes the "
+          "tool from the request, with a scoped rule denies matching calls in every mode.", "docs", "agent-sdk/permissions § Allow and deny rules"),
+    Claim("Subagents inherit the main conversation's built-in and MCP tools, minus an always-removed set (AskUserQuestion, "
+          "EnterPlanMode, ExitPlanMode unless plan mode, EndConversation, ScheduleWakeup, WaitForMcpServers, Workflow, Agent at the "
+          "depth limit); background subagents keep only a listed set of built-ins; all MCP tools are kept.", "docs", "sub-agents § Available tools"),
+    Claim("If both tools and disallowedTools are set, disallowedTools is applied first and tools resolves against the rest; a tool "
+          "in both is removed; a tools list that resolves to nothing usually stops the subagent launching.", "docs", "sub-agents § Available tools"),
+    Claim("Subagents inherit permission rules from the parent conversation; settings/managed/plugin hooks apply inside subagents; "
+          "with the parent in bypassPermissions, acceptEdits or auto mode the subagent uses the parent's mode.", "docs",
+          "agent-sdk/hooks § Subagent permission prompts multiplying; sub-agents § Permission modes, hooks"),
     Claim("A subagent is a separate agent instance the main agent spawns for a focused subtask. Documented benefits: context "
           "isolation, parallelisation, specialised instructions, tool restrictions.",
           "docs", "agent-sdk/subagents § Overview, Benefits of using subagents"),
@@ -336,24 +346,25 @@ _OK, _BAD = "#BBF7D0", "#FECACA"
 
 def _key(highlighted: bool) -> str:
     rows = "".join(
-        f'<TR><TD BGCOLOR="{fill}" WIDTH="18" FIXEDSIZE="TRUE" HEIGHT="14"></TD>'
-        f'<TD ALIGN="LEFT" BORDER="0"><FONT POINT-SIZE="10">{text}</FONT></TD></TR>'
+        f'<TR><TD BGCOLOR="{fill}" WIDTH="26" FIXEDSIZE="TRUE" HEIGHT="20"></TD>'
+        f'<TD ALIGN="LEFT" BORDER="0"><FONT POINT-SIZE="16">{text}</FONT></TD></TR>'
         for fill, _line, text in _CONCEPT.values())
-    rows += ('<TR><TD WIDTH="18" FIXEDSIZE="TRUE" HEIGHT="14">⭐</TD><TD ALIGN="LEFT" BORDER="0">'
-             '<FONT POINT-SIZE="10">named by the exam guide (TS 1.2 pp.5–6, TS 1.3 pp.6–7)</FONT></TD></TR>')
+    rows += ('<TR><TD WIDTH="26" FIXEDSIZE="TRUE" HEIGHT="20"><FONT POINT-SIZE="16">⭐</FONT></TD><TD ALIGN="LEFT" BORDER="0">'
+             '<FONT POINT-SIZE="16">named by the exam guide (TS 1.2 pp.5–6, TS 1.3 pp.6–7)</FONT></TD></TR>')
     if highlighted:
-        rows += ('<TR><TD COLSPAN="2" ALIGN="LEFT" BORDER="0"><FONT POINT-SIZE="10">Your run: <B>green</B> = handled '
-                 'correctly · <B>red</B> = went wrong · grey = not reached</FONT></TD></TR>')
+        rows += ('<TR><TD COLSPAN="2" ALIGN="LEFT" BORDER="0"><FONT POINT-SIZE="16">Your run: <B>green</B> = handled '
+                 'correctly · <B>red</B> = went wrong<BR ALIGN="LEFT"/>grey = not reached</FONT></TD></TR>')
     return ('  KEY [shape=plain, label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="3" CELLPADDING="3">'
-            '<TR><TD COLSPAN="2" BORDER="0" ALIGN="LEFT"><B>Key</B></TD></TR>' + rows + '</TABLE>>];')
+            '<TR><TD COLSPAN="2" BORDER="0" ALIGN="LEFT"><FONT POINT-SIZE="18"><B>Key</B></FONT></TD></TR>' + rows + '</TABLE>>];')
 
 
 def flow_dot(states: dict) -> str:
     highlighted = bool(states)
     lines = ["digraph G {",
-             '  rankdir=TB; bgcolor="transparent"; nodesep=0.28; ranksep=0.45; newrank=true;',
-             '  node [fontname="Helvetica", fontsize=12, style="rounded,filled", penwidth=2];',
-             '  edge [fontname="Helvetica", fontsize=11, color="#6B7280"];']
+             # tall and narrow on purpose: the chart is scaled to the page width, so a wide chart shrinks its text
+             '  rankdir=TB; bgcolor="transparent"; nodesep=0.35; ranksep=0.5; newrank=true;',
+             '  node [fontname="Helvetica", fontsize=18, style="rounded,filled", penwidth=2, margin="0.2,0.1"];',
+             '  edge [fontname="Helvetica", fontsize=16, color="#6B7280", penwidth=1.5];']
     for node, (label, shape, concept) in _NODES.items():
         fill, line, _ = _CONCEPT[concept]
         text, style = label, "rounded,filled"
@@ -369,10 +380,12 @@ def flow_dot(states: dict) -> str:
         lines.append(f'  {node} [label="{text}", shape={shape}, style="{style}", fillcolor="{fill}", color="{line}"];')
     lines.append("  " + " -> ".join(_CHAIN) + ";")
     lines.append('  REVIEW -> FAN [constraint=false, label="re-delegate", color="#0D9488", fontcolor="#0D9488"];')
-    lines.append("  { rank=same; " + "; ".join(_BUGS) + "; }")
-    lines.append("  DONE -> NOTASK [style=invis];")
+    bug_rows = [_BUGS[i:i + 2] for i in range(0, len(_BUGS), 2)]     # 2 per row keeps the chart narrow
+    for row in bug_rows:
+        lines.append("  { rank=same; " + "; ".join(row) + "; }")
+    lines.append("  " + " -> ".join(["DONE"] + [r[0] for r in bug_rows]) + " [style=invis];")
     lines.append(_key(highlighted))
-    lines.append("  BLOAT -> KEY [style=invis];")
+    lines.append(f"  {bug_rows[-1][0]} -> KEY [style=invis];")
     lines.append("}")
     return "\n".join(lines)
 
@@ -622,7 +635,62 @@ into an architecture: a **hub-and-spoke** system where a coordinator decomposes 
 | 1 | `description` | yes | When Claude should use this subagent — how it chooses |
 | 2 | `prompt` | yes | The subagent's system prompt: its role and behaviour |
 | 3 | `tools` | no | Allowed tool names; **omitted = inherits every tool available to subagents**; a tool left out isn't in its session at all |
-| 4 | `disallowedTools` · `model` · `skills` · `memory` · `mcpServers` · `maxTurns` · `background` … | no | Further optional controls (beyond what the exam names) |
+| 4 | `disallowedTools` · `model` · `skills` · `memory` · `mcpServers` · `maxTurns` · `background` … | no | Further optional controls (beyond what the exam names) — see **Tools & permissions** below |
+
+---
+
+### 🧰 Tools & permissions — who gets what (coordinator → subagent)
+
+> 🧭 **Mental model:** the coordinator's toolbox is the **shop floor**; `tools` is the **list a subagent is handed**, and
+> `disallowedTools` is **what's taken out of the box first**. `allowedTools` is not a toolbox at all — it's the list of tools
+> that **don't need a signature** before use. Mixing up "can it see the tool?" with "is it pre-approved?" is the trap.
+
+**Grid 1 — each setting, where it lives, and what happens if you leave it blank** (docs, 2026-09-28)
+
+| # | Setting | Set on | Controls | If left blank / omitted | Reaches the subagent? |
+|---|---|---|---|---|---|
+| 1 | `allowedTools` / `allowed_tools` | the **query** (coordinator) | **Permission** — listed tools run **without asking**. It does **not** add or remove tools | Nothing is pre-approved; calls that need approval go to the permission mode / `canUseTool` | ✅ Permission rules are inherited from the parent conversation |
+| 2 | `disallowedTools` / `disallowed_tools` | the **query** (coordinator) | Bare name (`"Bash"`) **removes the tool** from the request; scoped rule (`"Bash(rm *)"`) **denies matching calls** in every mode | Nothing removed or denied | ✅ Deny rules apply inside subagents too; a removed tool isn't in the main conversation, so there's nothing to inherit |
+| 3 | `tools` | the **AgentDefinition** (one subagent) | **Availability** — the subagent gets **only** these tools | ⭐ **Inherits every tool available to subagents** (grid 2) | — (it *is* the subagent's list) |
+| 4 | `disallowedTools` | the **AgentDefinition** | Removes tools from **this** subagent (`mcp__server`, `mcp__*` patterns allowed) | Nothing removed | — |
+| 5 | `permissionMode` | the **AgentDefinition** | The subagent's permission mode | Runs in the parent's mode | ⚠️ If the parent is in `bypassPermissions`, `acceptEdits` or auto, the subagent uses the **parent's** mode and ignores this field; `bypassPermissions` here is never applied |
+| 6 | `mcpServers` | the **AgentDefinition** | MCP servers for this agent (by name or inline config) | The main conversation's **MCP tools are still inherited** | ✅ All MCP tools are kept (foreground and background) |
+| 7 | `skills` | the **AgentDefinition** | Skill content **preloaded** at startup | Nothing preloaded — the subagent can still invoke skills with the Skill tool | ❌ Preloaded skill content is not inherited |
+| 8 | `model` | the **AgentDefinition** | Model for this subagent (`'inherit'` = the main model) | Claude Code picks by its subagent model order | Only with `'inherit'` |
+| 9 | The spawn tool (`Task` in the guide, `Agent` in the docs) | the coordinator's tools / `allowedTools` | Whether the coordinator can spawn | ⭐ **Exam:** `allowedTools` must include `"Task"`. 📘 Docs: `Agent` is a tool that doesn't ask before running in default mode | Nested spawning allowed down to 3 levels; at the limit `Agent` is withheld |
+
+**Grid 2 — what a (non-fork) subagent inherits from the coordinator**
+
+| # | Item | Inherited? | Detail |
+|---|---|---|---|
+| 1 | Built-in tools of the main conversation | ✅ when `tools` is omitted | Minus the always-removed ones (row 9) |
+| 2 | MCP tools of the main conversation | ✅ | Kept for foreground **and** background subagents |
+| 3 | Permission rules (allow / deny) | ✅ | Deny rules such as `Bash(git push *)` apply in subagents too |
+| 4 | Permission mode | ⚠️ depends | Grid 1, row 5 |
+| 5 | Hooks from settings files, managed policy, plugins | ✅ | A settings `PreToolUse` hook runs before every subagent tool call |
+| 6 | CLAUDE.md files | ✅ | Unless the definition sets `omitClaudeMd` |
+| 7 | Extended thinking configuration | ✅ | — |
+| 8 | ⭐ Coordinator's conversation history and tool results | ❌ | Pass what it needs **in the spawn prompt** (TS 1.3) |
+| 9 | Tools always removed from subagents | ❌ | `AskUserQuestion`, `EnterPlanMode`, `ExitPlanMode` (unless plan mode), `EndConversation`, `ScheduleWakeup`, `WaitForMcpServers`, `Workflow`, and `Agent` at the depth limit |
+| 10 | Background subagents | ⚠️ fewer built-ins | Only `Read`, `Grep`, `Glob`, `LSP`, `Bash`, `PowerShell`, `Edit`, `Write`, `NotebookEdit`, `WebFetch`, `WebSearch`, `TodoWrite`, `Skill`, `ToolSearch`, `EnterWorktree`, `ExitWorktree`, `Monitor`, `TaskStop`, `SendMessage`, `Artifact` (+ all MCP tools) |
+| 11 | The parent's system prompt | ❌ | It gets its own `prompt` |
+
+**Grid 3 — worked examples: what the subagent ends up with**
+
+| # | Coordinator (query) | AgentDefinition | Subagent's tools | Why |
+|---|---|---|---|---|
+| 1 | — | `tools` omitted, `disallowedTools` omitted | Every tool available to subagents | Omitted = inherit (grid 2) |
+| 2 | — | `tools=["Read","Grep","Glob"]` | `Read`, `Grep`, `Glob` | Listed = only those; others aren't in its session at all (no error, no prompt) |
+| 3 | — | `disallowedTools=["Write","Edit"]` | Everything except `Write`, `Edit` | Removed from the inherited set |
+| 4 | — | `tools=["Read","Edit"]`, `disallowedTools=["Edit"]` | `Read` | `disallowedTools` applied **first**; a tool in both is removed |
+| 5 | `disallowed_tools=["Bash"]` | `tools` omitted | Everything except `Bash` | Bash was removed from the main conversation, so it can't be inherited |
+| 6 | `allowed_tools=["Read"]` | `tools=["Bash"]` | `Bash` (asks for approval) | `allowedTools` is permission, not availability |
+| 7 | — | `disallowedTools=["mcp__*"]` | Built-ins only | `mcp__*` removes every MCP tool |
+| 8 | — | `tools=["Agent"]` at the depth limit | nothing → usually refused to launch | `Agent` is withheld at the limit; a `tools` list that resolves to nothing is usually refused |
+
+*Sources: agent-sdk/subagents (AgentDefinition, What subagents inherit, Tool restrictions); sub-agents (Available tools, tools
+and disallowedTools, Permission modes, hooks, nesting); agent-sdk/permissions (allow and deny rules); agent-sdk/hooks
+(subagents inherit permission rules). ⭐ = what the exam guide names (TS 1.2, 1.3).*
 
 **`Task` or `Agent`?** The guide says the spawn tool is **`Task`** and that `allowedTools` must include it. The current docs say
 the tool is **`Agent`** — it shows up as `"Agent"` in `tool_use` blocks and as `"Task"` in the init tool list, `"Task"` was the
@@ -757,81 +825,156 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A research coordinator gets good results from three search subagents, then calls a synthesis subagent with the prompt "
-           "\"Combine the findings above into a final report.\" The synthesis subagent replies that it has no findings to work with. "
-           "What is the most likely root cause?"),
-        opts=("The synthesis subagent's tool list is too restrictive.",
-              "The findings were never included in the synthesis subagent's prompt, and subagents don't inherit the coordinator's "
-              "conversation.",
-              "The search subagents returned too few tokens.",
-              "The coordinator's max_tokens is set too low."),
-        ans=1,
-        explain=("A subagent starts with a fresh context; the only channel from the coordinator is the prompt string. “The findings "
-                 "above” refers to a conversation the subagent cannot see. Tool restrictions, result size and the coordinator's "
-                 "max_tokens would not make a subagent report that it received nothing."),
-        scenarios=(3,), ts="1.3",
+        q=("Your research system has a coordinator and four subagents. To save a round trip, a developer lets the "
+           "synthesis subagent call the web-search subagent directly whenever it spots a gap. Soon a search timeout "
+           "leaves a report with a silent hole: the coordinator's logs show nothing went wrong. What's the best change?"),
+        opts=("Give the synthesis subagent its own retry logic for web-search timeouts.",
+              "Add a shared message queue that all subagents can read and write.",
+              "Route every subagent request through the coordinator, so it sees, handles and logs each exchange.",
+              "Tell the synthesis subagent in its prompt to report timeouts in the final text."),
+        ans=2,
+        explain=("In hub-and-spoke, the coordinator handles all communication, error handling and routing between "
+                 "subagents. That's what gives observability and consistent error handling. A direct subagent-to-"
+                 "subagent call bypasses it, so failures disappear. Local retries and prompt reminders don't restore that visibility."),
+        scenarios=(3,), points=("1.2:K1", "1.2:S4"),
     ),
     Question(
-        q=("A research system answers “AI in the creative industries” with a polished report about digital art only; music and film are "
-           "absent. Logs show every subagent completed its assigned task without error. What is the best first fix?"),
-        opts=("Give each search subagent more turns.",
-              "Change the coordinator's decomposition so the topic is partitioned into all its major areas.",
-              "Strengthen the synthesis subagent's system prompt.",
-              "Switch the synthesis subagent to a larger model."),
-        ans=1,
-        explain=("Every subagent did what it was assigned — the gap is in what the coordinator assigned. Too-narrow decomposition "
-                 "leaves a broad topic incompletely covered; more turns, a better synthesis prompt or a bigger model can't add "
-                 "areas nobody was asked to research."),
-        scenarios=(3,), ts="1.2",
+        q=("Asked to research “renewable energy adoption in Europe”, the system returns a well-cited report that covers "
+           "only solar power in Germany. Each subagent did its job well, and the synthesis faithfully combined what it "
+           "received. Where is the root cause?"),
+        opts=("The coordinator's decomposition split the topic too narrowly, so whole areas were never assigned.",
+              "The web-search subagent's tool returned too few results per query.",
+              "The synthesis subagent's context window was too small for all the findings.",
+              "The report subagent summarised away the other countries and technologies."),
+        ans=0,
+        explain=("Decomposing a broad topic too narrowly is a named risk: every subagent succeeds, yet coverage is "
+                 "incomplete. Downstream agents can only work with what the coordinator assigned. The fix belongs in "
+                 "the coordinator's decomposition, not in the search or synthesis agents."),
+        scenarios=(3,), points=("1.2:K4",),
     ),
     Question(
-        q=("A coordinator needs three independent searches. It requests one subagent per turn, and total latency is roughly the sum of "
-           "the three searches. Which change most directly reduces it?"),
-        opts=("Shorten each subagent's system prompt.",
-              "Have the coordinator emit all three Task calls in a single response.",
-              "Cache the search results between runs.",
-              "Run the synthesis subagent before the searches."),
-        ans=1,
-        explain=("Independent subagents run concurrently when their spawn calls arrive in the same coordinator response; one per turn "
-                 "serialises them. Shorter prompts and caching don't change the ordering, and synthesis needs the findings first."),
-        scenarios=(3,), ts="1.3",
+        q=("Users ask everything from “What year was the EU ETS launched?” to “Compare carbon-pricing schemes across "
+           "five regions”. Every query currently runs all four subagents in sequence, so simple answers take minutes "
+           "and cost as much as complex ones. What design fixes this without hurting complex queries?"),
+        opts=("Cache complete reports so repeated questions are served instantly.",
+              "Drop the synthesis subagent and let the report subagent read the raw search results.",
+              "Add a keyword list that sends short questions straight to the report subagent.",
+              "Have the coordinator assess each query's complexity and invoke only the subagents it needs."),
+        ans=3,
+        explain=("The coordinator should analyse the query and select subagents dynamically rather than always "
+                 "running the full pipeline. Keyword routing is brittle, and removing synthesis breaks complex "
+                 "queries. Caching only helps repeated questions."),
+        scenarios=(3,), points=("1.2:K3", "1.2:S1"),
     ),
     Question(
-        q=("A coordinator configured with three well-described subagents keeps answering from its own knowledge. It never delegates and "
-           "no errors appear. Which cause is most likely?"),
-        opts=("The subagent descriptions are too long.",
-              "The coordinator's allowedTools does not include the spawn tool (\"Task\").",
-              "The subagents are sharing memory with the coordinator.",
-              "The coordinator has no CLAUDE.md."),
+        q=("Two search subagents are given the same topic brief. Their results overlap by about 70%, and the synthesis "
+           "subagent spends much of its context de-duplicating them. What's the most effective change?"),
+        opts=("Tell the synthesis subagent to ignore duplicate sources.",
+              "Give each search subagent a distinct slice of the scope, such as separate subtopics or source types.",
+              "Run the two search subagents one after the other so the second can skip what the first found.",
+              "Reduce the number of results each search subagent returns."),
         ans=1,
-        explain=("Defining subagents isn't enough: the coordinator must be allowed to use the tool that spawns them. Without it there is "
-                 "nothing to call, so it falls back to answering alone — silently."),
-        scenarios=(3,), ts="1.3",
+        explain=("Partitioning the research scope across subagents (distinct subtopics or source types) minimises "
+                 "duplication at the source. Running them in sequence gives up parallelism, and trimming results or "
+                 "filtering in synthesis only treats the symptom."),
+        scenarios=(3,), points=("1.2:S2",),
     ),
     Question(
-        q=("After upgrading the Agent SDK, your code that detects subagent spawns by matching tool_use blocks named \"Task\" finds "
-           "nothing, although delegation still happens. What do the docs suggest?"),
-        opts=("Subagents were disabled by the upgrade.",
-              "Match both \"Task\" and \"Agent\" — the tool is now named \"Agent\" and \"Task\" is a legacy alias.",
-              "Only the init tool list can be used to detect spawns.",
-              "Re-define the subagents with a new AgentDefinition."),
-        ans=1,
-        explain=("The docs say the tool appears as \"Agent\" in tool_use blocks (before v2.1.63 it was \"Task\") and advise matching both "
-                 "values to stay compatible across versions."),
-        basis="docs", in_bank=False,
+        q=("A first draft of a report covers regulation and market size well but has almost nothing on supply chains, "
+           "which the user explicitly asked about. What should the coordinator do next?"),
+        opts=("Return the draft with a note that supply-chain data was limited.",
+              "Rerun the whole pipeline with a longer prompt that stresses supply chains.",
+              "Check the synthesis against the request, send targeted supply-chain queries to search, then rerun synthesis.",
+              "Ask the report subagent to expand the supply-chain section from its own knowledge."),
+        ans=2,
+        explain=("Iterative refinement means the coordinator evaluates the synthesis for gaps, re-delegates targeted "
+                 "queries, and re-invokes synthesis until coverage is sufficient. Rerunning everything wastes work, and "
+                 "writing from the model's own knowledge loses the cited sources."),
+        scenarios=(3,), points=("1.2:S3",),
     ),
     Question(
-        q=("A subagent reads forty files and runs a dozen searches while investigating. What does the parent agent receive?"),
-        opts=("All forty files, so it can double-check.",
-              "The subagent's final message as the tool result — its intermediate calls and results stay inside the subagent.",
-              "A live stream of every call the subagent makes.",
-              "Nothing until the parent resumes the subagent."),
+        q=("A coordinator built with the Agent SDK has three well-described subagents configured, yet it answers every "
+           "question itself and never delegates. The subagent definitions load without errors. What's the most likely cause?"),
+        opts=("The coordinator's allowedTools doesn't include the tool that spawns subagents (“Task” in the guide).",
+              "The subagent descriptions are too long for the coordinator to read.",
+              "Subagents only run when the coordinator's prompt lists them step by step.",
+              "The coordinator needs a larger max_tokens before it can delegate."),
+        ans=0,
+        explain=("Subagents are spawned through a tool (the guide calls it Task; the current docs name it Agent, with "
+                 "Task as a legacy alias), so the coordinator's allowedTools must include it. Without the tool, the "
+                 "coordinator can't delegate, however good the definitions are."),
+        scenarios=(3,), points=("1.3:K1",),
+    ),
+    Question(
+        q=("The coordinator keeps sending document-analysis work to the web-search subagent. The team is defining "
+           "subagent types for the first time. What should each definition include so delegation is reliable and "
+           "each subagent stays in its lane?"),
+        opts=("Just a name, since the coordinator infers each subagent's role from it.",
+              "A clear description, its own system prompt, and a restricted tool set for its role.",
+              "The coordinator's full system prompt, so every subagent knows the overall goal.",
+              "A list of example queries the coordinator should never delegate."),
         ans=1,
-        explain=("Per the docs, only the subagent's final message returns to the parent; intermediate tool calls and results stay "
-                 "in the subagent, which is why delegating noisy work keeps the main context small."),
-        basis="docs", in_bank=False,
+        explain=("An agent definition gives each subagent type a description (used to decide when to delegate), a "
+                 "system prompt and tool restrictions. Copying the coordinator's prompt doesn't define the role, and "
+                 "names alone are too thin a signal."),
+        scenarios=(3,), points=("1.3:K3",),
+    ),
+    Question(
+        q=("To research three independent regions, the coordinator requests one search subagent, waits for its result, "
+           "then requests the next. Total latency is about three times one search. The searches don't depend on each "
+           "other. What's the best fix?"),
+        opts=("Give one search subagent all three regions in a single prompt.",
+              "Lower each subagent's max_turns so each search finishes sooner.",
+              "Move the three searches into a Message Batches request.",
+              "Have the coordinator emit all three spawn-tool calls in a single response, so they run in parallel."),
+        ans=3,
+        explain=("Parallel subagents are spawned by emitting several spawn calls in ONE coordinator response, not across "
+                 "separate turns. One subagent for all regions loses the parallelism and focus. Batch has no latency "
+                 "guarantee and can't run the multi-turn tool loop inside a request."),
+        scenarios=(3,), points=("1.3:S3",),
+    ),
+    Question(
+        q=("The coordinator's prompt to each search subagent is a numbered procedure: search site A, then site B, then "
+           "summarise the top five results. When site A is paywalled, subagents return thin, low-quality findings "
+           "instead of trying elsewhere. What's the best change to the coordinator's prompts?"),
+        opts=("Add fallback steps for every site that might fail.",
+              "Let subagents read the coordinator's full conversation history.",
+              "State the research goal and the quality bar the findings must meet, and let the subagent choose how.",
+              "Raise the number of results each subagent summarises."),
+        ans=2,
+        explain=("Coordinator prompts should specify goals and quality criteria rather than step-by-step procedures, "
+                 "so subagents can adapt. Enumerating fallbacks is brittle. Subagents don't inherit the coordinator's "
+                 "history anyway; context must go in the prompt."),
+        scenarios=(3,), points=("1.3:S4", "1.2:K2"),
+    ),
+    Question(
+        q=("Your monitoring counts subagent spawns by matching tool_use blocks named “Task”. After an Agent SDK upgrade "
+           "the count drops to zero, although reports still show subagents are running. What's the most robust fix?"),
+        opts=("Pin the old SDK version so the name stays “Task”.",
+              "Count spawns by searching the assistant's text for “delegating”.",
+              "Match both “Agent” and “Task”, because current docs name the spawn tool Agent and keep Task as an alias.",
+              "Remove spawn monitoring and rely on the final report."),
+        ans=2,
+        explain=("Per the current docs, the spawn tool is Agent, and Task remains a legacy alias, so match both. Text "
+                 "matching is unreliable, and pinning an old version just postpones the problem."),
+        scenarios=(3,), basis="docs", in_bank=False,
+    ),
+    Question(
+        q=("A developer-productivity agent sends a subagent to map a legacy module. The subagent reads 40 files and runs "
+           "a dozen searches. Afterwards, the main agent can't answer follow-up questions about specific files the "
+           "subagent looked at. What explains this, and what's the fix?"),
+        opts=("The parent only receives the subagent's final message, so ask the subagent to return a structured summary of what matters.",
+              "The subagent's tool results were lost to a timeout, so retry the subagent.",
+              "The parent inherits the subagent's transcript, but it's truncated, so raise the context limit.",
+              "The subagent should write its findings into the parent's system prompt."),
+        ans=0,
+        explain=("Per the docs, only the subagent's final message returns to the parent; its intermediate tool calls "
+                 "stay in its own context. Ask for a structured summary (files, key findings, references) in that "
+                 "final message."),
+        scenarios=(4,), basis="docs", in_bank=False,
     ),
 )
+
 
 FAQ = (
     ("Is it called Task or Agent?",

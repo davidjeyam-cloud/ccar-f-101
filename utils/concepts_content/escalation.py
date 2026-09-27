@@ -10,6 +10,7 @@ Paraphrased; no real exam question reproduced.
 """
 
 from utils.concept_types import Claim, ConceptContent, DocRef, ExamPoint, PlayTab, Question, Variant
+from utils.flow_style import readable
 
 DOCS_VERIFIED_ON = "2026-09-27"
 _P = "https://platform.claude.com/docs/en"
@@ -309,7 +310,7 @@ def flow_dot(states: dict) -> str:
     lines.append(_key(hl))
     lines.append("  NOPROGRESS -> KEY [style=invis];")
     lines.append("}")
-    return "\n".join(lines)
+    return readable("\n".join(lines))   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 
 def node_states(trace) -> dict:
@@ -579,77 +580,133 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A support agent escalates about 30% of conversations; reviews show most were simple, in-policy refunds from customers who "
-           "sounded angry. The escalation rule says to hand off when the customer's sentiment is negative. What is the best first change?"),
-        opts=("Lower the sentiment threshold so fewer messages count as negative.",
-              "Replace the sentiment rule with explicit triggers (a human request, a policy gap, no progress) plus examples, and have the "
-              "agent acknowledge frustration and offer a resolution.",
-              "Escalate only when the model's self-reported confidence is below 0.5.",
-              "Route every angry customer to a senior agent queue."),
+        q=("Your support agent escalates about 30% of conversations. Reviews show most were routine, in-policy refunds "
+           "from customers who sounded annoyed, while two genuine policy exceptions were handled by the agent alone. "
+           "What's the most effective fix?"),
+        opts=("Lower the model's temperature so escalation decisions are more consistent.",
+              "Put explicit escalation criteria in the system prompt, with a few examples of cases that should and shouldn't escalate.",
+              "Escalate whenever the customer's message scores as strongly negative.",
+              "Require the agent to report its confidence and escalate below 0.7."),
         ans=1,
-        explain=("Sentiment is an unreliable proxy for complexity; retuning its threshold keeps the wrong signal, and self-reported "
-                 "confidence is another unreliable proxy. Explicit triggers with examples target what actually needs a human."),
-        scenarios=(1,), ts="5.2"),
+        explain=("Clear escalation criteria (explicit human request, policy exception or gap, no progress), shown with "
+                 "few-shot examples, fix both errors. Sentiment and self-reported confidence are unreliable proxies for "
+                 "whether a case really needs a human."),
+        scenarios=(1,), points=("5.2:K1", "5.2:S1"),
+    ),
     Question(
-        q=("A customer writes “I want a human, now.” Your agent first verifies the account, checks two orders and the refund policy, then "
-           "escalates. What should change?"),
-        opts=("Nothing — gathering context helps the human agent.",
-              "Escalate immediately when a human is explicitly requested, without investigating first.",
-              "Ask the customer why they want a human before escalating.",
-              "Resolve the issue first and escalate only if the customer is still unhappy."),
-        ans=1,
-        explain="The guide's skill is to honour an explicit request for a human at once. What the agent already knows goes into the handoff.",
-        scenarios=(1,), ts="5.2"),
+        q=("A customer opens with: “I don't want a bot. Put me through to a person now.” The issue looks like a simple "
+           "address change. What should the agent do?"),
+        opts=("Verify the account and change the address first, then offer a human if still wanted.",
+              "Explain that the agent can do address changes faster than a person.",
+              "Look up the account and recent orders first, so the human gets context.",
+              "Escalate to a human straight away, without investigating first."),
+        ans=3,
+        explain=("An explicit request for a human is honoured immediately, without investigating first, even when the "
+                 "issue looks simple. Offering to resolve fits when the customer hasn't asked for a person."),
+        scenarios=(1,), points=("5.2:K2", "5.2:S2"),
+    ),
     Question(
-        q=("A customer asks to match a competitor's lower price. The policy covers price adjustments for drops on your own site only. What "
-           "should the agent do?"),
-        opts=("Grant the adjustment, since the policy doesn't forbid it.",
-              "Refuse, since the policy doesn't allow it.",
-              "Escalate to a human, because the policy is silent on competitor price matching.",
-              "Ask the customer for a screenshot and grant it if it looks genuine."),
+        q=("A customer asks you to match a competitor's lower price. Your refund policy covers price adjustments only for "
+           "drops on your own site and says nothing about competitors. What should the agent do?"),
+        opts=("Escalate, because the policy doesn't cover this request.",
+              "Decline, because competitors aren't mentioned in the policy.",
+              "Apply the own-site price adjustment rule to the competitor's price.",
+              "Ask the customer for proof of the lower price, then refund the difference."),
+        ans=0,
+        explain=("Escalate when policy is ambiguous or silent on the request. Declining or improvising a rule the policy "
+                 "doesn't contain both overstep what the agent is authorised to decide."),
+        scenarios=(1,), points=("5.2:S4",),
+    ),
+    Question(
+        q=("get_customer returns two accounts for the name “Customer A”, one in Leeds and one in Leicester, both with "
+           "recent orders. What should the agent do next?"),
+        opts=("Pick the account with the most recent order, since it's most likely the right one.",
+              "Escalate to a human, because multiple matches are a policy exception.",
+              "Ask the customer for another identifier, such as the email or an order number, before continuing.",
+              "Continue with both accounts and resolve the issue on each."),
         ans=2,
-        explain="When policy is ambiguous or silent on the specific request, the guide says escalate — neither granting nor refusing on the agent's own authority.",
-        scenarios=(1,), ts="5.2"),
+        explain=("Several matches call for clarification, not a heuristic pick. Ask for another identifier. It isn't an "
+                 "escalation trigger, and acting on the wrong account is the risk to avoid."),
+        scenarios=(1,), points=("5.2:K4", "5.2:S5"),
+    ),
     Question(
-        q=("get_customer returns two accounts for the name the customer gave. What should the agent do?"),
-        opts=("Pick the account with the most recent order.",
-              "Ask the customer for another identifier, such as an email address or an order number.",
-              "Escalate to a human immediately.",
-              "Refund both accounts and reconcile later."),
+        q=("To cut unnecessary escalations, a team proposes escalating whenever the model's self-reported confidence "
+           "drops below 0.6 or the customer's sentiment turns negative. Why is this a weak design?"),
+        opts=("Confidence scores can only be computed in batch mode.",
+              "Neither signal reliably indicates whether a case actually needs a human.",
+              "Sentiment detection needs a separate model that costs too much.",
+              "Escalation should be random so humans see a representative sample."),
         ans=1,
-        explain="Multiple matches call for clarification — another identifier — not heuristic selection or escalation.",
-        scenarios=(1,), ts="5.2"),
+        explain=("Sentiment and self-reported confidence are unreliable proxies for case complexity. A calm customer can "
+                 "raise a policy exception, and an angry one can have a trivial issue. Use explicit criteria."),
+        scenarios=(1,), points=("5.2:K3",),
+    ),
     Question(
-        q=("The system prompt says “always verify the customer before issuing a refund”, yet audits find a few refunds per thousand issued "
-           "without verification. What is the most reliable fix?"),
-        opts=("Repeat the instruction in capital letters at the top and bottom of the prompt.",
-              "Add a programmatic prerequisite that blocks process_refund until get_customer has returned a verified customer id.",
-              "Add more few-shot examples showing verification.",
-              "Lower the temperature."),
-        ans=1,
-        explain=("Prompt instructions have a non-zero failure rate; when compliance must be deterministic, enforce it in code (a hook or "
-                 "prerequisite gate). Stronger wording and more examples reduce the rate but don't remove it."),
-        scenarios=(1,), ts="1.4"),
+        q=("A customer is clearly frustrated after a late delivery but hasn't asked for a person. The agent can issue "
+           "the standard late-delivery credit itself. What's the best response?"),
+        opts=("Escalate immediately, because frustration signals a complex case.",
+              "Ignore the frustration and process the credit without comment.",
+              "Acknowledge the frustration and offer the credit; escalate if the customer then asks for a person.",
+              "Ask the customer to rate their frustration before deciding."),
+        ans=2,
+        explain=("Acknowledge frustration and offer a resolution the agent can deliver. Escalate if the customer repeats "
+                 "a request for a human. Frustration alone isn't an escalation trigger."),
+        scenarios=(1,), points=("5.2:S3",),
+    ),
     Question(
-        q=("Human agents complain that escalated tickets say only “Customer needs help — see the chat”. What should the escalate tool "
-           "require?"),
-        opts=("A link to the model's reasoning.",
-              "Structured fields such as customer id, root cause, refund amount and recommended action.",
-              "The full raw conversation transcript pasted into the message.",
-              "A sentiment score for the customer."),
-        ans=1,
-        explain="Human agents can't see the transcript; a structured handoff summary with the key facts and a recommended action is what they need.",
-        scenarios=(1,), ts="1.4"),
+        q=("The system prompt says “always verify the customer with get_customer before issuing a refund”. Audits find a "
+           "few refunds per thousand issued without verification, usually when customers supply an order number "
+           "confidently. Refunds without verification must never happen. What's the right fix?"),
+        opts=("Make process_refund refuse to run unless get_customer has returned a verified customer id in this conversation.",
+              "Repeat the instruction in capitals at the start and end of the system prompt.",
+              "Add few-shot examples of verifying before refunding.",
+              "Lower the refund limit so unverified refunds cost less."),
+        ans=0,
+        explain=("When compliance must be deterministic, prompt instructions alone have a non-zero failure rate. A "
+                 "programmatic prerequisite gate blocks the downstream call until verification happened. Examples and "
+                 "emphasis improve odds but give no guarantee."),
+        scenarios=(1,), points=("1.4:K1", "1.4:K2", "1.4:S1"),
+    ),
     Question(
-        q=("In the Agent SDK, how does a hook stop a process_refund call that hasn't met a prerequisite, and tell the model why?"),
-        opts=("Return an error string from the tool itself after running it.",
-              "A PreToolUse hook returns permissionDecision \"deny\" with a permissionDecisionReason.",
-              "A PostToolUse hook deletes the refund.",
-              "Add the rule to CLAUDE.md."),
+        q=("Human agents complain that escalated tickets arrive as “Customer needs help, see chat”, and they can't see "
+           "the chat transcript. What should the escalation step produce?"),
+        opts=("A link to the full chat transcript.",
+              "The agent's reasoning, verbatim, so the human can follow its thinking.",
+              "A polite apology to the customer saying a human will be in touch.",
+              "A structured summary: customer id, root cause, amounts involved and the recommended action."),
+        ans=3,
+        explain=("Humans picking up an escalation often can't see the transcript, so the handoff must be self-contained "
+                 "and structured: who, what was found, amounts, and what to do next."),
+        scenarios=(1,), points=("1.4:K3", "1.4:S3"),
+    ),
+    Question(
+        q=("One message from a customer covers three things: a damaged blender, a double charge on last month's bill, and "
+           "a new delivery address. The agent currently handles only the first issue and forgets the rest. What's the "
+           "best approach?"),
+        opts=("Ask the customer to send each issue in a separate conversation.",
+              "Split the message into distinct issues, investigate them in parallel with shared context, then give one combined resolution.",
+              "Escalate, because multi-issue requests are too complex for the agent.",
+              "Handle the issues strictly one after another, confirming each with the customer before the next."),
         ans=1,
-        explain="Per the docs, a PreToolUse hook can deny the call before it runs; the reason tells the model why so it avoids retrying. CLAUDE.md is advisory.",
-        basis="docs", in_bank=False),
+        explain=("Decompose multi-concern requests into distinct items, investigate each (in parallel, using shared "
+                 "context), then synthesise a single resolution. Pushing the work back to the customer or escalating "
+                 "by default hurts first-contact resolution."),
+        scenarios=(1,), points=("1.4:S2",),
+    ),
+    Question(
+        q=("In an Agent SDK support agent, a refund must be blocked whenever the customer hasn't been verified, and the "
+           "model should learn why so it can verify first. How is this done?"),
+        opts=("Raise an exception inside process_refund.",
+              "Remove process_refund from the tool list until verification.",
+              "A PreToolUse hook that denies the call and returns a reason the model can read.",
+              "A PostToolUse hook that reverses the refund afterwards."),
+        ans=2,
+        explain=("Per the Agent SDK hooks docs, a PreToolUse hook can deny a tool call with a reason that's passed back "
+                 "to the model. PostToolUse runs after the tool, so it can't undo an action already taken."),
+        scenarios=(1,), basis="docs", in_bank=False,
+    ),
 )
+
 
 FAQ = (
     ("Is the “three triggers” list from the docs?",
@@ -751,6 +808,8 @@ PLAYGROUND = (
          ("Structured: customer id C-1001, root cause (system unavailable after 3 tries), amount, next action.",
           "Free text: “Customer needs help - please see the conversation.”")),
 )
+
+DECISION_DOT = readable(DECISION_DOT)   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 CONTENT = ConceptContent(
     slug="escalation",

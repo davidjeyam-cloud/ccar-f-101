@@ -7,6 +7,7 @@ claim is in GROUNDING with its source type. Paraphrased; no real exam question r
 """
 
 from utils.concept_types import Claim, ConceptContent, DocRef, ExamPoint, PlayTab, Question, Variant
+from utils.flow_style import readable
 from utils.decomp_lab import expected_issues
 
 DOCS_VERIFIED_ON = "2026-09-27"
@@ -237,7 +238,7 @@ def flow_dot(states):
               '  Q -> MAP [label="no: open-ended"]; MAP -> PRIO; PRIO -> DO; DO -> ADAPT; ADAPT -> DO [label="new subtask", constraint=false];',
               '  ADAPT -> DONE;', "  { rank=same; LOCAL; MAP; }", "  { rank=same; " + "; ".join(_BUGS) + "; }",
               "  DONE -> ONEPASS [style=invis];", _key(hl), "  NOINTEG -> KEY [style=invis];", "}"]
-    return "\n".join(lines)
+    return readable("\n".join(lines))   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 
 def node_states(trace):
@@ -411,43 +412,71 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A single review call over a 20-file pull request catches obvious issues in a few files but misses most others, including a "
-           "renamed function whose callers weren't updated. What restructuring fits best?"),
-        opts=("Use a larger model for the single pass.",
-              "Review each file in its own pass, then run a separate cross-file integration pass over the per-file results.",
-              "Ask the model to be more thorough in the same single pass.",
-              "Review only the files with the most changed lines."),
-        ans=1,
-        explain="Per-file passes avoid attention dilution; the integration pass catches problems between files, like a renamed function's stale callers.",
-        scenarios=(5,), ts="1.6"),
+        q=("Your CI review step sends one prompt with all 20 changed files of a pull request. It catches obvious issues "
+           "in a few files, misses most others, and never notices that a changed function signature breaks a caller in "
+           "another file. What's the best restructuring?"),
+        opts=("Use a model with a larger context window for the same single prompt.",
+              "Review only the five largest files.",
+              "Ask the reviewer to be more thorough and check every file carefully.",
+              "Review each file in its own pass, then run a separate cross-file integration pass."),
+        ans=3,
+        explain=("Chaining per-file local passes with a separate cross-file integration pass avoids attention "
+                 "dilution. A bigger window doesn't fix dilution, and “be thorough” changes nothing structural."),
+        scenarios=(5,), points=("1.6:K2", "1.6:S2"),
+    ),
     Question(
-        q=("A team asks an agent to “add comprehensive tests to our legacy codebase”. Which approach does the guide recommend?"),
-        opts=("A fixed list of test tasks for every module, in alphabetical order.",
-              "Map the structure, identify high-impact areas, then follow a prioritised plan that adapts as dependencies are discovered.",
-              "One prompt asking for all tests at once.",
-              "Start with the smallest modules to build momentum."),
-        ans=1,
-        explain="Open-ended tasks call for dynamic decomposition: map, prioritise, adapt.",
-        scenarios=(4,), ts="1.6"),
+        q=("An engineer asks the agent to “add comprehensive tests to our legacy billing codebase”. Nobody knows which "
+           "modules are risky, and dependencies are tangled. Which approach fits best?"),
+        opts=("Map the structure, find the high-impact areas, then follow a prioritised plan that adapts as dependencies emerge.",
+              "Generate tests file by file in alphabetical order.",
+              "Write a fixed ten-step pipeline up front and run it unchanged.",
+              "Ask the agent to write all the tests in one response."),
+        ans=0,
+        explain=("Open-ended work calls for dynamic decomposition: the plan generates subtasks from what each step "
+                 "discovers. A fixed pipeline can't respond to what the exploration finds."),
+        scenarios=(4,), points=("1.6:K3", "1.6:S3"),
+    ),
     Question(
-        q=("Which task is the best fit for prompt chaining rather than dynamic decomposition?"),
-        opts=("Investigating why an unfamiliar service intermittently times out.",
-              "A predictable multi-aspect review of every pull request (security, style, tests).",
-              "Exploring a legacy system to find where business rules live.",
-              "Adding tests to a codebase nobody has mapped."),
-        ans=1,
-        explain="Chaining suits predictable, repeatable multi-aspect work; the others are open-ended investigations.",
-        scenarios=(5,), ts="1.6"),
+        q=("A team has two workflows. Workflow 1: every pull request gets the same security, style and test-coverage "
+           "checks. Workflow 2: finding why checkout latency spikes under load in a system nobody fully understands. "
+           "Which pattern suits each?"),
+        opts=("Dynamic decomposition for both, since agents should always adapt.",
+              "Prompt chaining for both, since fixed steps are easier to audit.",
+              "Prompt chaining for workflow 1, dynamic decomposition for workflow 2.",
+              "Dynamic decomposition for workflow 1, prompt chaining for workflow 2."),
+        ans=2,
+        explain=("Prompt chaining suits predictable, multi-aspect work that repeats. Dynamic decomposition suits "
+                 "open-ended investigations whose next steps depend on intermediate findings."),
+        scenarios=(5, 4), points=("1.6:K1", "1.6:S1"),
+    ),
     Question(
-        q=("Per the prompting docs, when is explicit prompt chaining (separate sequential calls) still worth it with current models?"),
-        opts=("Never — models handle everything in one call.",
-              "When you need to inspect intermediate outputs or enforce a specific pipeline structure.",
-              "Only when the context window is small.",
-              "Only for image tasks."),
+        q=("An agent investigating a production memory leak was given a fixed plan: profile service A, then B, then C. "
+           "The profile of A shows the leak comes from a shared caching library used by D and E, which aren't in the "
+           "plan. What would have handled this better?"),
+        opts=("A longer fixed plan that covers every service.",
+              "An adaptive plan that creates the next subtasks from what each step finds.",
+              "Running A, B and C in parallel to finish sooner.",
+              "Stopping the investigation and escalating after step 1."),
         ans=1,
-        explain="The docs: chaining is still useful to inspect intermediate outputs or enforce a pipeline; each step can be logged, evaluated or branched.",
-        basis="docs", in_bank=False),
+        explain=("Adaptive investigation plans generate subtasks from what each step discovers. A fixed sequence can't "
+                 "follow a lead it didn't anticipate."),
+        scenarios=(4,), points=("1.6:K3",),
+    ),
+    Question(
+        q=("A CI review runs as three separate calls: extract changes, review them, then format comments. A newer model "
+           "could do it in one call. The team must log and evaluate each stage's output for audits. Should they keep "
+           "the chain?"),
+        opts=("No, a single call is always better with current models.",
+              "Only if the context window is too small for one call.",
+              "No, chaining is only for image tasks.",
+              "Yes, chaining is still worth it when you need to inspect intermediate outputs or enforce a pipeline structure."),
+        ans=3,
+        explain=("Per the prompting docs, explicit chaining is still useful when you need to inspect intermediate "
+                 "outputs or enforce a specific pipeline. Each step can be logged, evaluated or branched."),
+        scenarios=(5,), basis="docs", in_bank=False,
+    ),
 )
+
 
 FAQ = (
     ("Is the “3 files per pass” limit real?",
@@ -493,6 +522,8 @@ PLAYGROUND = (
          ("Review + chaining: 4/4.", "Review + dynamic: files that don't look important are skipped.",
           "Tests + chaining: a fixed plan, payments untested.", "Tests + dynamic: all high-impact modules tested.")),
 )
+
+DECISION_DOT = readable(DECISION_DOT)   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 CONTENT = ConceptContent(
     slug="task-decomposition", tldr=TLDR, mental_model=MENTAL_MODEL, what_it_is=WHAT_IT_IS, how_it_works=HOW_IT_WORKS,

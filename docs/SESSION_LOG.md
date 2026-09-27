@@ -354,3 +354,146 @@ Infra (additive): mock `Turn.special` (max_tokens mid tool call, context full), 
 **Verified by running:** matrix (correct 3/3; each distractor fails exactly its scenario, for the named reason — the diagnosis for the matcher variant was fixed after the first run); 22 playground knob combinations + 4 through AppTest; AppTest on the page (render, Run, variant, 6 tabs, 6/6 practice); 26 DOT graphs parse, top-down; regressions of D1.5, D2.1–D2.3, Home, Blueprint, index. Not verified: visual layout (no browser).
 
 **Committed** (not pushed) at the user's request: `feat: concept D2.4 — SDK Hooks (Pre/PostToolUse)`. Next: D2.5 Tool Evaluation & Testing (partial) or D2.6.
+
+
+## 2026-09-28 — Readable flowcharts (D1.2 by hand, D1.3–D2.4 via utils/flow_style.py)
+
+**Request (user):** D1.2's flowchart text was too small — make it readable even if it needs scrolling; then ("this is good size, keep it in memory") apply the same size to every flowchart from D1.3 onwards.
+
+**Cause:** st.graphviz_chart scales a chart to the column width; D1.2 had 8 distractor nodes in one row, so the whole chart shrank.
+**D1.2** (`subagents.py`): node 18pt, edge labels 16pt, key 16pt, distractors stacked 2 per row. Approved by the user.
+**D1.3–D2.4** (10 modules): new `utils/flow_style.py::readable()` post-processes flow_dot and DECISION_DOT — same sizes; any row (or fan-out of >2 children) re-cut into rows of at most 2 nodes, or 1 when a pair is estimated wider than 720 px; stacked with invisible edges. Estimated widest rows now ~630–710 px (D1.2 ≈ 615 px). Rule saved in CLAUDE.md FLOWCHART RULE and memory.
+
+**Verified:** every variant × scenario re-run for all 10 concepts — results identical to before; 481 DOT graphs parse, all 18pt and ≤ 2 nodes per row; AppTest renders each page and its lab (no exceptions). Not verified: the rendered pixel width (no Graphviz binary or browser here) — widths are estimates from label length. Not changed: D1.1's charts and D1.2's decision tree (outside the request).
+
+**Uncommitted.**
+
+
+## 2026-09-28 — D1.2 tools grid; D2.5, D2.6 and all of D3 (D3.1–D3.4) built
+
+**Requests (user):** (1) D1.2: explain `tools` / `allowedTools` / `disallowedTools` and what a subagent inherits "as a simple table, separate section … grid type explanation". (2) "continue from D2.5, D2.6 and all sections of D3".
+
+**D1.2 tools & permissions section** (`subagents.py` WHAT_IT_IS): three grids — each setting (where set, controls, if blank, reaches the subagent?), what a non-fork subagent inherits (✅/❌/⚠️), and 8 worked examples. Grounded in agent-sdk/subagents, sub-agents (Available tools, tools vs disallowedTools order, permission modes, hooks), agent-sdk/permissions, agent-sdk/hooks — all fetched 2026-09-28.
+
+**Built** (each: guide TS text read from the PDF, docs fetched 2026-09-28, lab + distractors verified by running, playground tabs run with default and changed knobs, AppTest page test, 18pt charts):
+- **D2.5 Tool Evaluation** (◐; guide §7 p.24 + TS 2.1; docs develop-tests, troubleshooting-tool-use) — `evaluation.py`, `eval_lab.py`, `eval_play.py`; 5 distractors × 3 scenarios; 5 tabs.
+- **D2.6 Built-in vs Custom vs Skills vs MCP** (TS 2.5 + 3.2 S5 + 2.4 S3; docs tools-reference, features-overview) — `agentic_tool_surface_selection.py`, `builtin_lab.py`, `builtin_play.py`; 6 × 5; 5 tabs.
+- **D3.1 CLAUDE.md Hierarchy** (TS 3.1 + 3.3; memory docs re-read) — `claude_md_hierarchy.py`, `rules_lab.py`, `rules_play.py`; 5 × 3; 4 tabs. Fixed `memory_lab.py` to the docs' glob semantics (`*` = one directory, `**` = any depth, braces) and to read only the `paths` field; D1.7's matrix re-run — unchanged.
+- **D3.2 Plan Mode** (TS 3.4; permission-modes, sub-agents built-ins) — `plan_mode.py`, `plan_lab.py`, `plan_play.py`; 5 × 4; 3 tabs.
+- **D3.3 Skills** (TS 3.2; skills docs) — `skills.py`, `skills_lab.py`, `skills_play.py`; 6 × 6; 5 tabs. Guide says allowed-tools restricts; docs say it pre-approves and disallowed-tools restricts — both taught (SOURCES row 14).
+- **D3.4 Checkpoints** (◐; TS 1.7 + 5.4 S5; checkpointing docs) — `checkpoints.py`, `checkpoint_lab.py`, `checkpoint_play.py`; 5 × 5; 5 tabs.
+
+**SOURCES.md:** docs rows 28–36; guide-vs-docs rows 14–19 (allowed-tools, argument-hint, rules trigger on read, Grep/Glob absent by default, checkpoints docs-only, evaluation partial).
+
+**Bugs found by running:** the wiring script skipped three lookup tables for the second concept (fixed; it now asserts every edit); two playground tabs had an empty first example so Send did nothing; memory_lab's fnmatch let `*` cross directories (contradicting the docs' `*.md` = root only).
+
+**Not verified:** rendered chart width and layout (no Graphviz binary or browser here). **Uncommitted.**
+
+
+## 2026-09-28 — CONCEPTS D4: D4.1, D4.3, D4.4, D4.7, D4.9, D4.10
+
+**Built (docs-grounded, verified by running):**
+
+| # | Concept | Guide | Distractors × scenarios | Playground engine |
+|---|---|---|---|---|
+| 1 | D4.1 System Prompts | TS 4.1 | 4 × 4 | review |
+| 2 | D4.3 Batch API | TS 4.5 | 7 × 7 | batch |
+| 3 | D4.4 Structured Outputs | TS 4.3 + 4.4 | 6 × 5 | extract |
+| 4 | D4.7 Attention Engineering | TS 5.1 + docs | 4 × 4 | attention |
+| 5 | D4.9 Prompt Engineering Techniques | TS 4.2 + 3.5 | 6 × 5 | fewshot |
+| 6 | D4.10 Multi-Pass Review | TS 4.6 | 5 × 5 | mpreview |
+
+**Not built, by rule:** D4.2 Prompt Caching (awareness only), D4.5 Vision and D4.6 Streaming (out of scope), D4.8 4D Framework (no official docs basis).
+
+**Verified:** every variant × scenario matrix matches its `observe` text. All 24 built concepts pass the regression with earlier matrices unchanged, and all 979 DOT graphs parse. AppTest renders every page with its tabs, and every practice answer is accepted. The default page, Home, Exam Blueprint and the Concepts index show no exceptions.
+
+**Bugs found by running:**
+- The knob name `prompt_style` clashed with an existing one; it was renamed to `instruction_style`.
+- The D4.1 prompt splitter didn't split severity lines; the regex is fixed.
+- The D4.4 due date was ambiguous in both conventions; it was changed so the day/month rule matters.
+- D4.7 had a headers knob the simulation didn't model; it was removed.
+
+**SOURCES.md:** docs rows 37–39; guide-vs-docs rows 20–23 (batch and tools, few-shot count, long-context placement, confidence for routing vs escalation).
+
+**Not verified:** rendered chart width and layout (no browser here). **Uncommitted.**
+
+### 2026-09-28 (later) — D4.2 Prompt Caching as an awareness page
+
+The user asked not to skip D4.2. **Guide check:** no task statement mentions prompt caching. Its only appearance is the Appendix's out-of-scope list: implementation details are out of scope beyond knowing it exists (p.39).
+
+**Built:** an ℹ️ awareness page with no lab, no playground and no implementation detail. It covers:
+
+- the summary, a mental model, and the exam box;
+- what it is and isn't, with 5 sub-concepts, each with a 🧭 line;
+- 5 wrong answers that reach for caching to fix quality, stale-context or agent-context problems (labelled 💡 my recommendation, derived from the docs);
+- a caching vs Batch API table;
+- 3 practice items, kept out of the bank;
+- a FAQ and the grounding list.
+
+**Code changes:**
+
+- New `AwarenessContent` dataclass.
+- New `concept_page._render_awareness`.
+- `load_content` falls back to `AWARENESS`.
+- The sidebar marker is `ℹ️📘` and the index card shows "📘 awareness page".
+
+**Verified:** py_compile passes. The page renders in AppTest with 0 exceptions, and 3/3 practice answers are accepted. The index, Home, Exam Blueprint and the full concept regression are unchanged. **Uncommitted.**
+
+### 2026-09-28 (later) — Practice questions grounded in guide scenarios and pinned to guide bullets
+
+The user asked that every quiz question be grounded in the guide's scenarios and linked to what the exam tests, starting at D1.3 and filling gaps in the earlier ones.
+
+**Audit before:**
+- 129 questions, 98 of them bank items.
+- Scenario tags existed but weren't shown on the page.
+- No question was pinned to a guide bullet.
+- 29 docs items had no scenario, and several were recall ("Per the docs, what…").
+- Many correct answers sat in position B, and all of D1.1's did.
+
+**Done:**
+- `Question.points` added and validated at import. A bank item without a pin or scenario is rejected.
+- Pages show a 📋 scenario banner above each question and a "⭐ What this tests" reference after answering.
+- Question sets rewritten for D1.2–D4.10: 22 concepts, in exam style.
+- D1.1 pinned, with its answer positions rebalanced.
+- Docs items reframed into scenarios, as judgment rather than recall.
+- New `docs/QUESTION_MAP.md` coverage map.
+
+**Result:**
+- 173 questions: 138 bank items and 35 docs/awareness items.
+- All 206 bullets of the covered task statements are pinned by at least one question.
+- Answer positions: A 34 · B 31 · C 36 · D 37.
+- Primary scenarios: S1 33 · S2 30 · S3 24 · S4 20 · S5 14 · S6 17.
+- Gaps: only TS 3.6, 5.3, 5.5 and 5.6 (no built concept yet).
+
+**Verified:**
+- AppTest on all 25 built concept pages: 0 exceptions, every correct answer accepted, and a banner on every question.
+- A wrong answer shows the pin caption.
+- Index, Home and Blueprint render cleanly.
+- Full regression: matrices unchanged, 979 DOT graphs.
+
+**Uncommitted.**
+
+### 2026-09-28 (later) — Domain 5 concepts: D5.1 Context Window Management, D5.2 Case Facts Block
+
+The user asked to "run all of D5". The concept list has two numbered D5 concepts, and both are now built, docs-grounded and verified by running.
+
+| # | Concept | Guide | Distractors × scenarios | Engine |
+|---|---|---|---|---|
+| 1 | D5.1 Context Window Management | TS 5.1 (K3, K4, S6) + TS 5.4 (K1, K3, S1, S5) | 5 × 4 | ctxwin |
+| 2 | D5.2 Case Facts Block | TS 5.1 (K1, S1, S2) + docs state management | 5 × 4 | casefacts |
+
+**Docs read:** Context windows; Context editing; Compaction; Claude Code "How Claude Code works"; prompting best practices (state management).
+
+**Bugs found by running:**
+- The "last 2 messages" knob would have started a request with an assistant turn. It's now "last 3 messages".
+- D5.2 labelled variant E's refund_promise failure as "no block". It's now "customer expectations left out".
+
+**Verified:**
+- Both matrices through the real runner.
+- AppTest: every tab and every practice answer.
+- Full regression: 27 concept pages; all earlier matrices unchanged; 1,031 DOT graphs parse.
+- Question map: 147 bank questions, 206/206 bullets of the covered task statements.
+
+**Gap flagged to the user:** the concept list has no concept for TS 5.3 (error propagation) or 5.6 (provenance). TS 5.5 (human review) and 3.6 (CI/CD) exist only as unnumbered cross-cutting concepts.
+
+**Uncommitted.**

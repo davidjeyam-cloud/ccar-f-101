@@ -10,6 +10,7 @@ claim is in GROUNDING with its source type. Paraphrased; no real exam question r
 import re
 
 from utils.concept_types import Claim, ConceptContent, DocRef, ExamPoint, PlayTab, Question, Variant
+from utils.flow_style import readable
 
 DOCS_VERIFIED_ON = "2026-09-27"
 _P = "https://platform.claude.com/docs/en"
@@ -254,7 +255,7 @@ def flow_dot(states):
               "  { rank=same; REQ; SYS; }", "  { rank=same; DESC; DIFF; SPLIT; FMT; }", "  REQ -> DESC [style=invis];",
               "  PICK -> CALL;", "  { rank=same; " + "; ".join(_BUGS) + "; }", "  CALL -> MINIMAL [style=invis];", _key(hl),
               "  OVERLAP -> KEY [style=invis];", "}"]
-    return "\n".join(lines)
+    return readable("\n".join(lines))   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 
 def _bug(e):
@@ -468,49 +469,82 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("An agent has analyze_content and analyze_document, both described as “Analyzes content and returns key information.” Requests about "
-           "web search results are often routed to analyze_document. What is the most effective fix?"),
-        opts=("Add a system-prompt rule: “if the user mentions the web, use analyze_content”.",
-              "Rename analyze_content to extract_web_results and rewrite both descriptions to state each tool's input, output and when not to use it.",
-              "Merge both tools into one and let the model decide.",
-              "Lower the temperature so routing is more consistent."),
+        q=("A research agent has two tools, analyze_content and analyze_document, both described as “Analyzes content "
+           "and returns key information.” About a third of requests go to the wrong one. What's the root cause?"),
+        opts=("The model needs a lower temperature to choose tools consistently.",
+              "The descriptions are too minimal and overlapping for the model to tell the tools apart.",
+              "Two analysis tools is too many; agents should have only one tool.",
+              "The tools return results in different formats."),
         ans=1,
-        explain=("Overlapping descriptions cause misrouting; the guide's fix is renaming and differentiated descriptions. A keyword rule creates "
-                 "new unintended associations; lower temperature doesn't add the missing information."),
-        scenarios=(3,), ts="2.1"),
+        explain=("Tool descriptions are the model's main basis for choosing a tool. Minimal, overlapping descriptions "
+                 "make selection between similar tools unreliable."),
+        scenarios=(3,), points=("2.1:K1", "2.1:K3"),
+    ),
     Question(
-        q=("A single analyze_document tool is used to extract figures, summarise reports and check claims, and downstream code often receives "
-           "the wrong kind of output. What change fits best?"),
-        opts=("Add more examples to analyze_document's description.",
-              "Split it into extract_data_points, summarize_content and verify_claim_against_source, each with its own input/output contract.",
-              "Force tool_choice to analyze_document.",
-              "Parse the output with a regular expression."),
-        ans=1,
-        explain="The guide splits generic tools into purpose-specific tools with defined input/output contracts.",
-        scenarios=(3,), ts="2.1"),
+        q=("In the same system, analyze_content is actually only for processing web search results, and analyze_document "
+           "is for uploaded PDFs. Which change best removes the misrouting?"),
+        opts=("Add a system prompt rule: “prefer analyze_document when unsure”.",
+              "Merge both into one analyze tool with a mode parameter.",
+              "Give the tools random, distinct names so the model can't confuse them.",
+              "Rename analyze_content to extract_web_results and rewrite both descriptions to say what each takes and when to use it."),
+        ans=3,
+        explain=("Renaming tools and rewriting descriptions to remove the overlap addresses the cause. A tie-break rule "
+                 "keeps the ambiguity, and meaningless names give the model less to go on."),
+        scenarios=(3,), points=("2.1:S2",),
+    ),
     Question(
-        q=("Tool descriptions were rewritten carefully, yet requests containing the word “report” still go to the wrong tool. What should you check next?"),
-        opts=("The tool names' length.", "The system prompt, for keyword-sensitive instructions such as “when the user mentions a report, use …”.",
-              "The model's max_tokens.", "The order of properties in the input schema."),
-        ans=1,
-        explain="Keyword-sensitive system-prompt wording can override well-written descriptions — review it (TS 2.1 K4, S4).",
-        scenarios=(3,), ts="2.1"),
+        q=("Customers say things like “order 1001”, but lookup_order only accepts ids like ORD-1001. Lookups keep "
+           "failing, and the agent sometimes calls get_customer instead. Its description is “Looks up an order.” What's "
+           "the best first fix?"),
+        opts=("Expand the description: the accepted id format with examples, what to do with bare numbers, and when not to use it.",
+              "Tell customers to always type the ORD- prefix.",
+              "Retry every failed lookup three times.",
+              "Merge lookup_order into get_customer."),
+        ans=0,
+        explain=("Good descriptions include input formats, example queries, edge cases and boundaries, and separate each "
+                 "tool from similar ones. Retries repeat the same bad input."),
+        scenarios=(1,), points=("2.1:K2", "2.1:S1"),
+    ),
     Question(
-        q=("Customers say “order 1001”; the order system only accepts ids like ORD-1001, and lookups keep failing. What is the best first fix?"),
-        opts=("Retry failed lookups three times.",
-              "State the id format with an example in the tool/parameter description (ORD-####; prefix bare numbers), plus when to use get_customer instead.",
-              "Ask customers to always type ORD-.", "Remove the order_id parameter."),
-        ans=1,
-        explain="Input formats, examples, edge cases and boundaries belong in the description (TS 2.1 K2).",
-        scenarios=(1,), ts="2.1"),
+        q=("A single analyze_document tool is used to pull out figures, write summaries and check claims. Downstream code "
+           "often can't parse what comes back, because the output shape depends on what the model decided to do. What's "
+           "the most robust redesign?"),
+        opts=("Add “always return JSON” to the tool description.",
+              "Post-process every result with a regex parser.",
+              "Split it into purpose-specific tools (extract_data_points, summarize_content, verify_claim_against_source), each with a defined input/output contract.",
+              "Let the model choose the output format and document it in the response."),
+        ans=2,
+        explain=("Splitting a generic tool into purpose-specific tools with defined input/output contracts makes both "
+                 "selection and output predictable. A JSON instruction doesn't fix a tool doing three different jobs."),
+        scenarios=(3,), points=("2.1:S3",),
+    ),
     Question(
-        q=("Per the tool-use docs, what is “by far the most important factor” in tool performance, and roughly how long should a description be?"),
-        opts=("The number of tools; fewer than five.", "Extremely detailed descriptions; at least 3–4 sentences per tool, more for complex tools.",
-              "Short names; one word.", "Strict mode; always on."),
+        q=("Tool descriptions were carefully rewritten, yet any request mentioning a “report”, such as “summarise this "
+           "report”, still goes to generate_report. What should the team check next?"),
+        opts=("Whether generate_report's description is too long.",
+              "The system prompt, for keyword-driven instructions like “when the user mentions a report, use generate_report”.",
+              "Whether the model supports more than five tools.",
+              "The order in which tools are listed."),
         ans=1,
-        explain="The define-tools best practices say detailed descriptions are by far the most important factor, aiming for at least 3–4 sentences.",
-        basis="docs", in_bank=False),
+        explain=("System prompt wording influences tool choice: keyword-sensitive instructions create unintended "
+                 "associations that can override good descriptions. Review the system prompt for them."),
+        scenarios=(3,), points=("2.1:K4", "2.1:S4"),
+    ),
+    Question(
+        q=("To save tokens, a platform team caps every tool description at one short line. Tool selection gets noticeably "
+           "worse across the developer-productivity agents. What does the tool-use documentation suggest?"),
+        opts=("Keep descriptions short and move guidance into tool names instead.",
+              "Descriptions don't matter; add few-shot examples of tool calls instead.",
+              "Detailed descriptions are the most important factor; aim for several sentences covering what, when and caveats.",
+              "Reduce the number of parameters so one line is enough."),
+        ans=2,
+        explain=("Per the tool-use docs, detailed descriptions are by far the most important factor in tool performance. "
+                 "They say what the tool does, when to use it, and its limits, and they suggest at least three to four "
+                 "sentences for most tools."),
+        scenarios=(4,), basis="docs", in_bank=False,
+    ),
 )
+
 
 FAQ = (
     ("Does the model really just match words?",
@@ -564,6 +598,8 @@ PLAYGROUND = (
          ("formats",), {"formats": "with"}, (_EX[3], "Where is the order for alice@example.com?"),
          ("With: ORD-1001; the email request goes to get_customer.", "Without: '1001', and lookup_order with no id.")),
 )
+
+DECISION_DOT = readable(DECISION_DOT)   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 CONTENT = ConceptContent(
     slug="tool-calling", tldr=TLDR, mental_model=MENTAL_MODEL, what_it_is=WHAT_IT_IS, how_it_works=HOW_IT_WORKS,

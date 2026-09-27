@@ -10,6 +10,7 @@ flag is isError. Paraphrased; no real exam question reproduced.
 """
 
 from utils.concept_types import Claim, ConceptContent, DocRef, ExamPoint, PlayTab, Question, Variant
+from utils.flow_style import readable
 
 DOCS_VERIFIED_ON = "2026-09-27"
 _C = "https://code.claude.com/docs/en"
@@ -381,7 +382,7 @@ def flow_dot(states):
               "  DESC -> OUT; RES -> OUT; LOCAL -> OUT;",
               "  { rank=same; " + "; ".join(_BUGS[:6]) + "; }", "  { rank=same; " + "; ".join(_BUGS[6:]) + "; }",
               "  OUT -> SECRET [style=invis]; SECRET -> GENERIC [style=invis];", _key(hl), "  GENERIC -> KEY [style=invis];", "}"]
-    return "\n".join(lines)
+    return readable("\n".join(lines))   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 
 def node_states(trace):
@@ -645,66 +646,143 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A team wants every developer to get the same GitHub MCP server when they clone the repository, without anyone "
-           "committing their personal access token. What should they do?"),
-        opts=("Add the server to each developer's ~/.claude.json with their token.",
-              "Add it to the project's .mcp.json, with the token written as ${GITHUB_TOKEN} and set in each developer's environment.",
-              "Add it to .mcp.json with a shared team token.", "Document the setup steps in the README."),
+        q=("The team wants every developer to get the same GitHub MCP server as soon as they clone the repository. Each "
+           "developer has their own access token, and no token may ever be committed. What's the right configuration?"),
+        opts=("Each developer adds the server to their own ~/.claude.json.",
+              "A project-level .mcp.json in the repository, with the token referenced as ${GITHUB_TOKEN}.",
+              "A project-level .mcp.json containing a shared team token.",
+              "A setup script that writes each developer's token into .mcp.json."),
         ans=1,
-        explain="Project-scoped .mcp.json is shared through the repo; environment-variable expansion keeps the credential out of it.",
-        scenarios=(4,), ts="2.4"),
+        explain=("Project-scoped .mcp.json is how shared team tooling travels with the repo. Environment-variable "
+                 "expansion keeps credentials out of version control. User-level config doesn't reach teammates."),
+        scenarios=(4,), points=("2.4:K1", "2.4:S1", "2.4:K2"),
+    ),
     Question(
-        q=("A developer is trying out an experimental MCP server that nobody else on the team uses yet. Where should it be configured?"),
-        opts=("The project's .mcp.json.", "Their user-level ~/.claude.json.", "The project's CLAUDE.md.", "A new shared config repository."),
-        ans=1,
-        explain="User scope keeps personal and experimental servers private to that developer and out of the team's config.",
-        scenarios=(4,), ts="2.4"),
+        q=("A developer wants to try an experimental MCP server that nobody else uses yet and that might be removed next "
+           "week. Where should it be configured?"),
+        opts=("In the project .mcp.json, with a comment saying it's experimental.",
+              "In a new branch's .mcp.json.",
+              "In the project CLAUDE.md.",
+              "In their user-level ~/.claude.json."),
+        ans=3,
+        explain=("Personal or experimental servers belong in user scope, ~/.claude.json, so teammates aren't affected. "
+                 "Putting them in project scope pushes them on everyone."),
+        scenarios=(4,), points=("2.4:S2", "2.4:K1"),
+    ),
     Question(
-        q=("The team's MCP server has a find_references tool that searches every service repository, but the agent keeps using Grep "
-           "and misses callers in other repos. What's the most effective first fix?"),
-        opts=("Disable Grep.", "Expand find_references' description to explain what it searches, what it returns and when to prefer it over Grep.",
-              "Add “never use Grep” to CLAUDE.md.", "Rename the tool to grep_all."),
-        ans=1,
-        explain="The guide's fix: enhance MCP tool descriptions so the agent doesn't prefer built-in tools over more capable MCP tools.",
-        scenarios=(4,), ts="2.4"),
+        q=("Your MCP server has find_references, which searches across all service repositories and returns call sites "
+           "with the owning team. Yet the agent keeps using Grep, which only sees the current repository. Its description "
+           "is “Finds references.” What's the best fix?"),
+        opts=("Describe find_references in detail: what it searches, what it returns, and when it beats Grep.",
+              "Remove Grep from the agent's tools.",
+              "Tell developers to type “use find_references” in every request.",
+              "Rename the tool to grep_all."),
+        ans=0,
+        explain=("Describing MCP tools' capabilities and outputs in detail stops the agent preferring built-ins like "
+                 "Grep. Removing Grep breaks the many local searches it's right for."),
+        scenarios=(4,), points=("2.4:S3",),
+    ),
     Question(
-        q=("An agent makes a dozen describe_table calls before every database question. How can the MCP server reduce this?"),
-        opts=("Raise MAX_MCP_OUTPUT_TOKENS.", "Expose the schema catalog as an MCP resource.",
-              "Add a retry wrapper to describe_table.", "Merge all tables into one tool response."),
-        ans=1,
-        explain="Resources expose content catalogs so the agent sees what data exists without exploratory tool calls.",
-        scenarios=(4,), ts="2.4"),
+        q=("Before answering any question about the analytics database, the agent makes a dozen describe_table calls to "
+           "discover which tables and columns exist. What's the best way for the MCP server to cut this?"),
+        opts=("Add a list_all_tables tool the agent must call first.",
+              "Cache describe_table results for an hour.",
+              "Expose the schema catalog as an MCP resource, so the agent can see what data exists without exploratory calls.",
+              "Tell the agent in its prompt to guess table names first."),
+        ans=2,
+        explain=("MCP resources expose content catalogs, such as database schemas, so agents see what's available "
+                 "without exploratory tool calls. Another tool call still costs a round trip."),
+        scenarios=(4,), points=("2.4:K4", "2.4:S5"),
+    ),
     Question(
-        q=("A refund tool returns isError with the text “Operation failed” for every failure. When a refund exceeds the policy limit, "
-           "the agent retries three times and then tells the customer something went wrong. What's the root cause?"),
-        opts=("The agent's retry limit is too high.", "The error carries no category or retryability, so the agent can't tell a policy refusal from a transient fault.",
-              "The tool should raise an exception instead.", "The refund limit is too low."),
+        q=("The team needs Claude to read and update Jira tickets, and separately to run the company's own deployment "
+           "approval workflow, which exists nowhere else. How should they source the MCP servers?"),
+        opts=("Build custom servers for both, for full control.",
+              "Use an existing community Jira server, and build a custom server only for the in-house approval workflow.",
+              "Use a community server for both and adapt the approval process to fit it.",
+              "Skip MCP and paste Jira data into prompts."),
         ans=1,
-        explain="Uniform errors prevent the right recovery; structured metadata (business, not retryable, customer-friendly text) fixes both the retries and the reply.",
-        scenarios=(1,), ts="2.2"),
+        explain=("Prefer existing community MCP servers for standard integrations like Jira, and reserve custom servers "
+                 "for team-specific workflows."),
+        scenarios=(4,), points=("2.4:S4",),
+    ),
     Question(
-        q=("An order-lookup tool catches every exception and returns an empty list. What goes wrong?"),
-        opts=("Nothing — the agent keeps going.", "Access failures look like valid empty results, so the agent tells customers they have no orders.",
-              "The agent retries too often.", "The tool output becomes too large."),
-        ans=1,
-        explain="Access failures need a retry or escalation decision; a valid empty result is a successful query with no matches — they must be distinguishable.",
-        scenarios=(1,), ts="2.2"),
+        q=("A developer has both a GitHub MCP server and a Jira MCP server configured. To “let Claude use both”, a "
+           "colleague proposes a wrapper agent that connects to one server, then disconnects and connects to the other "
+           "when needed. What's the flaw?"),
+        opts=("There's none; only one MCP server can be active at a time.",
+              "Wrappers are only allowed in user scope.",
+              "The wrapper would need its own .mcp.json.",
+              "It's unnecessary: tools from all configured servers are discovered at connection and available together."),
+        ans=3,
+        explain=("Tools from every configured MCP server are discovered at connection time and available to the agent at "
+                 "once. Switching servers adds complexity and delay for nothing."),
+        scenarios=(4,), points=("2.4:K3",),
+    ),
     Question(
-        q=("A research subagent's source API times out intermittently. What's the best design?"),
-        opts=("Send every error straight to the coordinator.",
-              "Retry transient failures inside the subagent; propagate only what it can't resolve, with partial results and what was attempted.",
-              "Return an empty result so the coordinator carries on.", "Terminate the whole workflow on the first error."),
-        ans=1,
-        explain="Local recovery for transient errors; propagation with context for the rest (TS 2.2 Skill 3).",
-        scenarios=(3,), ts="2.2"),
+        q=("process_refund returns isError with the text “Operation failed” for every failure. When a refund exceeds the "
+           "policy limit, the agent retries it four times and then tells the customer to try again later. What should "
+           "the tool return for this case?"),
+        opts=("A business-rule error marked not retryable, with a customer-friendly explanation of the policy limit.",
+              "The same generic error, but with a longer retry delay.",
+              "A success response with amount 0.",
+              "A transient error, so the agent waits before retrying."),
+        ans=0,
+        explain=("Uniform errors stop the agent from choosing the right recovery. Policy violations should be marked not "
+                 "retryable and include an explanation the agent can pass on, which prevents wasted retries."),
+        scenarios=(1,), points=("2.2:K3", "2.2:S2", "2.2:K4"),
+    ),
     Question(
-        q=("Per the Claude Code docs, what happens if .mcp.json references ${GITHUB_TOKEN} and a developer hasn't set that variable?"),
-        opts=("Claude Code refuses to start.", "The config loads, claude mcp list shows a missing-variable warning, and the literal ${GITHUB_TOKEN} text is used.",
-              "The variable expands to an empty string silently.", "The server is moved to user scope."),
+        q=("A customer gives the date “next Tuesday”, and lookup_order rejects it because it expects YYYY-MM-DD. Which "
+           "error response lets the agent recover on its own?"),
+        opts=("isError with “Error 422”.",
+              "An empty result list.",
+              "isError with errorCategory “validation”, isRetryable true, and a description of the expected date format.",
+              "isError with errorCategory “transient”, so the agent retries unchanged."),
+        ans=2,
+        explain=("Structured errors carry an errorCategory (transient, validation, permission), an isRetryable flag and "
+                 "a readable description, so the agent can fix the input and retry. A bare code or an empty list hides "
+                 "what went wrong."),
+        scenarios=(1,), points=("2.2:K1", "2.2:K2", "2.2:S1"),
+    ),
+    Question(
+        q=("An order-lookup tool catches every exception and returns an empty list. When the order database is down, the "
+           "agent tells customers they have no orders. What's the core design error?"),
+        opts=("The tool should raise exceptions up to the user interface.",
+              "The agent should retry every empty result three times.",
+              "Empty lists should be replaced with null.",
+              "It merges access failures and genuinely empty results, so the agent can't tell “couldn't check” from “nothing found”."),
+        ans=3,
+        explain=("Distinguish access failures, which need a retry or escalation decision, from valid empty results. "
+                 "Retrying every empty result wastes calls on real “no orders” answers."),
+        scenarios=(1,), points=("2.2:S4",),
+    ),
+    Question(
+        q=("A research subagent's source API times out now and then. Currently every timeout is passed straight up to "
+           "the coordinator, which restarts the whole subagent. What's the best design?"),
+        opts=("Have the coordinator retry the API itself.",
+              "Retry transient failures inside the subagent; pass up only errors it can't resolve, with partial results and what was tried.",
+              "Hide timeouts and return whatever results arrived.",
+              "Stop the whole research run on the first timeout."),
         ans=1,
-        explain="Docs: an unset variable with no default leaves the text unexpanded and produces a warning; use ${VAR:-default} for a fallback.",
-        basis="docs", in_bank=False),
+        explain=("Recover transient failures locally in the subagent, and propagate only unresolvable errors with partial "
+                 "results and what was attempted. Hiding the failure produces reports with silent gaps."),
+        scenarios=(3,), points=("2.2:S3",),
+    ),
+    Question(
+        q=("A shared .mcp.json references ${GITHUB_TOKEN}. A new developer hasn't set that variable, and the GitHub tools "
+           "fail to authenticate. What does Claude Code do, and what's the robust setup?"),
+        opts=("It refuses to start, so every developer must set the variable before opening the project.",
+              "It loads the config, warns about the missing variable and uses the literal text; document the variable, or give non-secret settings a ${VAR:-default}.",
+              "It silently expands the variable to an empty string, so nothing can be done.",
+              "It moves the server to user scope automatically."),
+        ans=1,
+        explain=("Per the MCP docs, an unset variable with no default stays unexpanded, and claude mcp list shows a "
+                 "warning. ${VAR:-default} gives a fallback. Secrets still need each developer to set the variable."),
+        scenarios=(4,), basis="docs", in_bank=False,
+    ),
 )
+
 
 FAQ = (
     ("The guide mentions two scopes; the docs have three. Which is right?",
@@ -768,6 +846,8 @@ PLAYGROUND = (
          ("What orders do I have?",),
          ("timeout + no local retry: a handover for a blip.", "permission + no partial info: a blind re-dispatch, “try again later”.")),
 )
+
+DECISION_DOT = readable(DECISION_DOT)   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 CONTENT = ConceptContent(
     slug="mcp", tldr=TLDR, mental_model=MENTAL_MODEL, what_it_is=WHAT_IT_IS, how_it_works=HOW_IT_WORKS,

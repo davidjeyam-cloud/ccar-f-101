@@ -108,7 +108,8 @@ CONCEPTS: tuple = (
     # ── D4 · Prompt Engineering & Structured Output ────────────────────────────
     _c("system-prompts", "D4.1", "System Prompts & Instructions", 4, "in_guide", ["4.1"]),
     _c("prompt-caching", "D4.2", "Prompt Caching", 4, "awareness", [],
-       "Guide Appendix: prompt-caching implementation details are out of scope “beyond knowing it exists”."),
+       "Guide §17 Appendix · Out-of-Scope Topics · p.39: implementation details out of scope “beyond knowing it exists”. "
+       "An awareness page (no lab) was built at the user's request on 2026-09-28."),
     _c("batch-api", "D4.3", "Batch API", 4, "in_guide", ["4.5"]),
     _c("structured-outputs", "D4.4", "Structured Outputs", 4, "in_guide", ["4.3", "4.4"]),
     _c("vision-multimodal", "D4.5", "Vision & Multimodal", 4, "out_of_scope", [],
@@ -244,7 +245,7 @@ def buildable(c: Concept) -> bool:
 def nav_title(c: Concept) -> str:
     base = f"{c.code} {c.title}" if c.code else c.title
     if is_built(c.slug):
-        return base + {"extra": "  ➕🧪", "exam": "  ⭐🧪"}.get(kind(c), "  🧪")
+        return base + {"extra": "  ➕🧪", "exam": "  ⭐🧪", "excluded": "  ℹ️📘"}.get(kind(c), "  🧪")
     marker = {"exam": "  ⭐", "extra": "  ➕", "ungroundable": "  ⚪", "excluded": ""}[kind(c)]
     if kind(c) == "excluded":
         marker = "  ⛔" if c.status == "out_of_scope" else "  ℹ️"
@@ -304,5 +305,5 @@ def render_concepts_map_markdown() -> str:
         align = guide_alignment(c) or "—"
         docs = "<br>".join(EXTRA_DOCS.get(c.slug, ())) or "—"
         lines.append(f"| {i} | {c.code or '—'} | {c.title} | {STATUS_ICON[c.status]} {STATUS_LABEL[c.status]} | "
-                     f"{kind(c)} | {align} | {docs} | {c.note or '—'} | {'🧪' if is_built(c.slug) else '—'} |")
+                     f"{kind(c)} | {align} | {docs} | {c.note or '—'} | {('📘 awareness page' if kind(c) == 'excluded' else '🧪') if is_built(c.slug) else '—'} |")
     return "\n".join(lines) + "\n"

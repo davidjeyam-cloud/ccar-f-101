@@ -11,6 +11,7 @@ claim is in GROUNDING with its source type. Paraphrased; no real exam question r
 import json
 
 from utils.concept_types import Claim, ConceptContent, DocRef, ExamPoint, PlayTab, Question, Variant
+from utils.flow_style import readable
 
 DOCS_VERIFIED_ON = "2026-09-27"
 _C = "https://code.claude.com/docs/en"
@@ -211,7 +212,7 @@ def flow_dot(states):
     lines.append(_key(hl))
     lines.append("  NOSTATE -> KEY [style=invis];")
     lines.append("}")
-    return "\n".join(lines)
+    return readable("\n".join(lines))   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 
 def node_states(trace):
@@ -390,46 +391,85 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A synthesis subagent writes a fluent report, but every claim is unattributed although the search subagents recorded a source "
-           "URL and page for each. The coordinator passes “a summary of the findings” to the synthesizer. What is the most likely root cause?"),
-        opts=("The synthesizer's model is too small.",
-              "The coordinator passes the findings as prose, so the source metadata never reaches the synthesizer.",
-              "The search subagents ran in parallel.",
-              "The synthesizer's max_tokens is too low."),
-        ans=1,
-        explain="Attribution survives only if metadata travels with each claim in a structured format; a prose summary drops it.",
-        scenarios=(3,), ts="1.3"),
+        q=("The synthesis subagent writes a fluent report, but none of its claims can be traced to a source, even though "
+           "the search subagents recorded a URL and page for every finding. What's the most effective change?"),
+        opts=("Tell the synthesis subagent to add citations wherever it can.",
+              "Give the synthesis subagent web search so it can find sources again.",
+              "Have the report subagent add a bibliography at the end.",
+              "Pass findings in a structured format that keeps each claim separate from its source metadata (URL, document, page)."),
+        ans=3,
+        explain=("Attribution survives handoffs only when context is passed in a structured format that separates content "
+                 "from metadata. Re-searching wastes work, and asking for citations without passing the metadata invites "
+                 "invented ones."),
+        scenarios=(3,), points=("1.3:S2",),
+    ),
     Question(
-        q=("A coordinator spawns a synthesis subagent with the prompt “Using the research results from the previous agents, write the "
-           "report.” The subagent replies that it has no research results. What should the coordinator do?"),
-        opts=("Give the synthesizer access to the coordinator's conversation history.",
-              "Include the complete findings from the earlier agents directly in the synthesizer's prompt.",
-              "Retry the synthesizer until it finds the results.",
-              "Run the synthesizer in the same session as the search agents."),
-        ans=1,
-        explain="Subagents don't inherit context or share memory; the prompt is the only channel, so the findings must be in it.",
-        scenarios=(3,), ts="1.3"),
+        q=("The coordinator spawns the synthesis subagent with the prompt “Using the research results from the previous "
+           "agents, write the report.” The report is generic and cites nothing from the research. Why?"),
+        opts=("The subagent doesn't inherit anything; the research findings must be written into its prompt.",
+              "The subagent needed a larger context window to hold the previous agents' results.",
+              "The previous agents' results expired before synthesis started.",
+              "Synthesis subagents only read results passed through a shared memory store."),
+        ans=0,
+        explain=("Subagents don't inherit the coordinator's history and have no shared memory. Their only input is "
+                 "their prompt, so the complete findings must be put there explicitly."),
+        scenarios=(3,), points=("1.3:K2", "1.3:S1"),
+    ),
     Question(
-        q=("A two-phase codebase investigation spawns fresh agents for phase 2; they spend most of their budget re-discovering what phase 1 "
-           "already mapped. What is the best fix?"),
-        opts=("Give phase-2 agents more turns.",
-              "Summarise phase 1's key findings and inject the summary into the phase-2 agents' initial context.",
-              "Run phase 2 in the phase-1 agents' sessions.",
-              "Skip phase 1."),
-        ans=1,
-        explain="The guide's pattern: summarise key findings from one phase before spawning the next, and inject that summary.",
-        scenarios=(4,), ts="5.4"),
+        q=("While onboarding a developer to a legacy monolith, the main agent's context fills with raw search output "
+           "after a handful of “where is X handled?” questions, and its overview answers get worse. What's the best "
+           "pattern?"),
+        opts=("Answer every question in the main agent but ask it to be brief.",
+              "Restart the main session after every question.",
+              "Spawn a subagent for each specific question, return only its summary, and keep the main agent coordinating.",
+              "Load the whole codebase into the main agent's context up front."),
+        ans=2,
+        explain=("Subagents isolate verbose exploration output, so the main agent keeps the high-level picture and "
+                 "receives only summaries. Restarting loses the overview, and loading everything front-loads the problem."),
+        scenarios=(4,), points=("5.4:K3", "5.4:S1"),
+    ),
     Question(
-        q=("To “give full context”, a coordinator appends each search subagent's complete transcript to the synthesis subagent's prompt. "
-           "What does the documentation suggest is wrong with that?"),
-        opts=("Nothing — more context always helps.",
-              "Only the subagent's final message is meant to return; passing detailed transcripts bloats the context and undoes isolation.",
-              "Transcripts can't be passed to subagents.",
-              "It is fine as long as max_tokens is raised."),
+        q=("A research report presents a 2016 survey as current evidence and mixes up findings from a lab study and a "
+           "field study. The search subagents had all of this information when they read the sources. What upstream "
+           "change best fixes it?"),
+        opts=("Tell the synthesis subagent to check the dates of claims.",
+              "Require search subagents to return metadata with each finding: publication date, source location and method.",
+              "Only allow sources published in the last two years.",
+              "Have the report subagent add a disclaimer about source quality."),
         ans=1,
-        explain="The docs: intermediate calls stay inside the subagent and only the final message returns; many detailed results cause context explosion.",
-        basis="docs", in_bank=False),
+        explain=("Requiring subagents to include metadata (dates, source locations, methodological context) in structured "
+                 "outputs lets downstream synthesis weigh and describe findings accurately. The synthesis agent can't "
+                 "check what it was never given."),
+        scenarios=(3,), points=("5.1:S5",),
+    ),
+    Question(
+        q=("The report subagent runs with a tight context budget. Document-analysis subagents send it several pages "
+           "each: full reasoning, quoted passages and caveats. Reports now drop findings from later analyses. What's "
+           "the best fix?"),
+        opts=("Increase the report subagent's max_tokens.",
+              "Send the analyses one at a time and build the report incrementally.",
+              "Ask the report subagent to skim the analyses.",
+              "Change the analysis subagents to return structured data: key facts, citations and relevance scores."),
+        ans=3,
+        explain=("When downstream agents have limited context budgets, upstream agents should return structured data "
+                 "rather than verbose content and reasoning chains. max_tokens limits output, not the input overload."),
+        scenarios=(3,), points=("5.1:S6",),
+    ),
+    Question(
+        q=("To “give the synthesis subagent full context”, the coordinator appends every search subagent's complete "
+           "transcript, including tool calls and intermediate reasoning, to the synthesis prompt. What's the likely "
+           "result?"),
+        opts=("Better reports, because nothing is lost.",
+              "Relevant findings get buried in noise, and the prompt may not fit the context window.",
+              "An error, because transcripts can't be passed between agents.",
+              "No change, because subagents ignore content they didn't produce."),
+        ans=1,
+        explain=("A subagent's intermediate work isn't meant for its consumer. Only the final result returns to the "
+                 "parent, and whole transcripts flood the next agent's context. Pass curated, structured findings instead."),
+        scenarios=(3,), basis="docs", in_bank=False,
+    ),
 )
+
 
 FAQ = (
     ("How is this different from D1.2?",
@@ -489,6 +529,8 @@ PLAYGROUND = (
          ("state",), {"state": "yes"}, ("Continue the refund-flow exploration.",),
          ("State yes: 1 step, continuing.", "State no: 12 reads — a restart.")),
 )
+
+DECISION_DOT = readable(DECISION_DOT)   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 CONTENT = ConceptContent(
     slug="subagent-state-handoff", tldr=TLDR, mental_model=MENTAL_MODEL, what_it_is=WHAT_IT_IS, how_it_works=HOW_IT_WORKS,

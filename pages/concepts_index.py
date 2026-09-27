@@ -74,13 +74,14 @@ def _card(c: cm.Concept) -> None:
         badge = ("➕ Extra — not on the exam" if cm.kind(c) == "extra"
                  else "⭐ EXAM TOPIC" if cm.kind(c) == "exam"
                  else f"{cm.STATUS_ICON[c.status]} {cm.STATUS_LABEL[c.status]}")
-        st.caption(f"{c.code or 'Cross-cutting'} · {badge}" + ("  ·  🧪 lab built" if built_lab else ""))
+        st.caption(f"{c.code or 'Cross-cutting'} · {badge}" + (("  ·  📘 awareness page" if cm.kind(c) == "excluded" else "  ·  🧪 lab built") if built_lab else ""))
         st.markdown(f"**{c.title}**")
         alignment = cm.guide_alignment(c)
         st.caption(alignment if alignment else "No guide task statement")
         page = pages.get(c.slug)
         if page is not None:
-            st.page_link(page, label="Open the lab" if built_lab else "Open", icon="🧪" if built_lab else "🔗")
+            st.page_link(page, label="Open the lab" if built_lab and cm.kind(c) != "excluded" else "Open",
+                         icon="🧪" if built_lab and cm.kind(c) != "excluded" else "🔗")
 
 
 def _grid(concepts: list) -> None:

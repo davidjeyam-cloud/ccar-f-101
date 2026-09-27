@@ -7,6 +7,7 @@ GROUNDING (CLAUDE.md, user rules): guide read from the PDF (2026-09-27); code.cl
 """
 
 from utils.concept_types import Claim, ConceptContent, DocRef, ExamPoint, PlayTab, Question, Variant
+from utils.flow_style import readable
 
 DOCS_VERIFIED_ON = "2026-09-27"
 _C = "https://code.claude.com/docs/en"
@@ -199,7 +200,7 @@ def flow_dot(states):
     lines.append(_key(hl))
     lines.append("  BADPATH -> KEY [style=invis];")
     lines.append("}")
-    return "\n".join(lines)
+    return readable("\n".join(lines))   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 
 def _bug(e):
@@ -403,55 +404,70 @@ EXPERIMENTS = (
 
 QUESTIONS = (
     Question(
-        q=("A new team member says Claude Code ignores the team's conventions (always run the linter, use pnpm). Experienced engineers "
-           "don't see the problem. The conventions were written into a senior engineer's ~/.claude/CLAUDE.md months ago. What's the root cause?"),
-        opts=("The new member's Claude Code version is out of date.",
-              "The conventions are in user-level configuration, which isn't shared through version control.",
-              "The conventions file is longer than 200 lines.",
-              "The project needs a .claude/rules/ directory before CLAUDE.md is read."),
-        ans=1,
-        explain="User-level instructions apply only to that user. Team conventions belong in the project CLAUDE.md, which travels with the repo.",
-        scenarios=(2,), ts="3.1"),
+        q=("A new developer says Claude Code ignores the team's conventions: always run the linter, always use pnpm. "
+           "Everyone else's sessions follow them. The team lead wrote these conventions in a CLAUDE.md months ago. "
+           "What's the most likely cause?"),
+        opts=("The new developer's Claude Code version doesn't read CLAUDE.md.",
+              "The conventions are too long for Claude to follow.",
+              "The conventions live in the lead's user-level ~/.claude/CLAUDE.md, which never reaches teammates.",
+              "The new developer needs to run /init to load the team's settings."),
+        ans=2,
+        explain=("User-level instructions apply only to that user and aren't shared through version control. Moving "
+                 "team conventions into the project-level CLAUDE.md fixes it for everyone."),
+        scenarios=(2,), points=("3.1:K2", "3.1:S1"),
+    ),
     Question(
-        q=("In a monorepo, the payments package must follow money-handling standards and the frontend package must follow UI standards. "
-           "Both standards documents already exist. What is the most maintainable setup?"),
-        opts=("Paste both standards into the root CLAUDE.md.",
-              "In each package's CLAUDE.md, @import only the standards file that package needs.",
-              "Put both standards in every developer's ~/.claude/CLAUDE.md.",
-              "Ask developers to mention the standards in each prompt."),
-        ans=1,
-        explain="The guide's pattern: @import selectively per package, based on maintainer knowledge — modular, and each package gets only what applies.",
-        scenarios=(2, 4), ts="3.1"),
+        q=("In a repository, only the services/payments directory needs extra instructions: money is stored in integer "
+           "pence, and every change needs an audit-log entry. Nothing else in the codebase should see these rules. "
+           "Which configuration fits?"),
+        opts=("A CLAUDE.md inside services/payments/, which applies when Claude works in that directory.",
+              "The user-level ~/.claude/CLAUDE.md of every payments developer.",
+              "The root CLAUDE.md, with a note saying “payments only”.",
+              "A comment at the top of each payments file."),
+        ans=0,
+        explain=("The hierarchy has user, project and directory levels. A directory-level CLAUDE.md scopes instructions "
+                 "to that part of the tree. The root file would apply the rules everywhere, and user-level files aren't shared."),
+        scenarios=(2,), points=("3.1:K1",),
+    ),
     Question(
-        q=("A project's CLAUDE.md has grown to 700 lines covering testing, API conventions and deployment, and Claude is following it "
-           "less consistently. What change fits best?"),
-        opts=("Move the whole file to ~/.claude/CLAUDE.md.",
-              "Split it into focused files in .claude/rules/ (e.g. testing.md, api-conventions.md, deployment.md).",
-              "Repeat the most important rules at the top and bottom.",
-              "Delete the file and rely on prompts."),
-        ans=1,
-        explain=".claude/rules/ is the guide's alternative to a monolithic CLAUDE.md; the docs add that long files reduce adherence and that path-scoped rules load only when relevant.",
-        scenarios=(2,), ts="3.1"),
+        q=("A monorepo holds a payments package and a frontend package, maintained by different teams with their own "
+           "standards documents. One shared CLAUDE.md now contains both sets of standards, and each package's sessions "
+           "wade through irrelevant rules. What's the most maintainable setup?"),
+        opts=("Copy the relevant standards into every file header.",
+              "Keep one CLAUDE.md but put the payments rules first.",
+              "Ask each developer to paste their package's standards at the start of every session.",
+              "Give each package a CLAUDE.md that @imports only the standards files its maintainers say apply."),
+        ans=3,
+        explain=("@import keeps CLAUDE.md modular by pulling in external files. Each package includes just the "
+                 "standards relevant to it, while the standards documents stay single-sourced."),
+        scenarios=(2, 4), points=("3.1:K3", "3.1:S2"),
+    ),
     Question(
-        q=("Two developers on the same repo see Claude Code behave differently on the same task. What's the most direct first diagnostic step?"),
-        opts=("Reinstall Claude Code on both machines.",
-              "Run /memory (and check /context) on both to compare which memory files are loaded.",
-              "Switch both to plan mode.",
-              "Delete the project CLAUDE.md."),
+        q=("Two developers on the same repository get different behaviour on the same task: one's session follows the "
+           "API conventions, the other's doesn't. Before changing any files, what should they do first?"),
+        opts=("Delete and recreate the project CLAUDE.md.",
+              "Run /memory in both sessions to see which memory files each one actually loaded.",
+              "Ask Claude in each session whether it's following the conventions.",
+              "Reinstall Claude Code on the second machine."),
         ans=1,
-        explain="The guide's skill: use /memory to verify which memory files are loaded and diagnose inconsistent behaviour across sessions.",
-        scenarios=(2,), ts="3.1"),
+        explain=("/memory shows which memory files are loaded, which is the direct way to diagnose inconsistent "
+                 "behaviour across sessions. Asking the model isn't a reliable diagnostic."),
+        scenarios=(2,), points=("3.1:S4",),
+    ),
     Question(
-        q=("A repository has an AGENTS.md used by other coding tools. The team adds a CLAUDE.md with Claude-specific notes, and Claude "
-           "stops following AGENTS.md. Per the docs, why?"),
-        opts=("AGENTS.md is never read by Claude Code.",
-              "By default Claude reads AGENTS.md only when there's no CLAUDE.md; with one present, import it (@AGENTS.md) or change the setting.",
-              "AGENTS.md must be in .claude/.",
-              "CLAUDE.md overrides AGENTS.md line by line."),
-        ans=1,
-        explain="The memory docs: AGENTS.md is read by default only when no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md is present above.",
-        basis="docs", in_bank=False),
+        q=("A repository has an AGENTS.md that other coding tools use. The team adds a CLAUDE.md with Claude-specific "
+           "notes, and from then on Claude Code stops following AGENTS.md. What's the cleanest fix?"),
+        opts=("Rename AGENTS.md to CLAUDE.md and delete the Claude-specific file.",
+              "Copy AGENTS.md's content into CLAUDE.md and keep both in sync by hand.",
+              "Import it from CLAUDE.md with @AGENTS.md, keeping one source for both tools.",
+              "Move AGENTS.md into .claude/ so Claude Code finds it."),
+        ans=2,
+        explain=("Per the memory docs, AGENTS.md is read by default only when no CLAUDE.md is present. Importing it from "
+                 "CLAUDE.md keeps a single source that other tools still use."),
+        scenarios=(2,), basis="docs", in_bank=False,
+    ),
 )
+
 
 FAQ = (
     ("Do files override each other?",
@@ -514,6 +530,8 @@ PLAYGROUND = (
          ("No CLAUDE.md: AGENTS.md is read on its own.", "CLAUDE.md without the import: AGENTS.md is skipped.",
           "CLAUDE.md with @AGENTS.md: both.")),
 )
+
+DECISION_DOT = readable(DECISION_DOT)   # FLOWCHART RULE: 18pt, max 2 nodes per row
 
 CONTENT = ConceptContent(
     slug="agent-instruction-files", tldr=TLDR, mental_model=MENTAL_MODEL, what_it_is=WHAT_IT_IS, how_it_works=HOW_IT_WORKS,

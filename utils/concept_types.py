@@ -90,6 +90,19 @@ class Question:
     basis: str = "guide"         # "guide" (examinable, checked against the guide) or "docs" (beyond the guide's scope)
     in_bank: bool = True         # only guide-based items enter utils/question_bank.py
     ts: str = ""                 # task statement this item tests, if not the concept's primary one (question bank tag)
+    points: tuple = ()           # guide bullets this item tests, "<ts>:<K|S><n>" e.g. "4.6:S2" (checked at import)
+
+    def __post_init__(self):
+        from utils.guide_index import point_ref   # local import: guide_index has no dependencies
+        if not 0 <= self.ans < len(self.opts):
+            raise ValueError(f"answer index out of range: {self.q[:60]}")
+        for p in self.points:
+            ts, b = p.split(":")
+            point_ref(ts, b[0], int(b[1:]))       # raises if the guide has no such bullet
+        if self.in_bank and (not self.points or not self.scenarios):
+            raise ValueError(f"bank question needs guide points and a scenario: {self.q[:60]}")
+        if self.scenarios and not all(1 <= s <= 6 for s in self.scenarios):
+            raise ValueError(f"scenario must be 1-6: {self.q[:60]}")
 
 
 # node id -> (state, suffix text); state is "ok" | "bad"; missing node = not visited
@@ -126,3 +139,25 @@ class ConceptContent:
     playground_intro: str = ""
     scenarios: tuple = ()       # scenario ids for the code lab (empty = the D1.1 single-agent scenarios)
     show_ledger: bool = True    # the fake support backend's refund ledger tab (D1.1); off for other labs
+
+
+@dataclass(frozen=True)
+class AwarenessContent:
+    """An ℹ️ awareness-only concept (the guide: "know that it exists"). No lab, playground or implementation detail —
+    only what it is, what it is not, and how to recognise it among answer options. Practice items stay out of the bank."""
+    slug: str
+    tldr: str
+    mental_model: str
+    exam_note: str              # the exact guide wording's place + what that means for study (paraphrased)
+    what_it_is: str             # markdown, incl. the sub-concept table with a 🧭 mental model per row
+    not_examinable: str         # markdown: what is deliberately left out (implementation detail)
+    distractors: tuple          # (tempting answer, why it looks right, why it fails, do this instead, source)
+    side_by_side_headers: tuple
+    side_by_side_rows: tuple
+    questions: tuple
+    faq: tuple
+    related: tuple
+    docs_refs: tuple
+    docs_verified_on: str
+    grounding: tuple
+    guide_note: str

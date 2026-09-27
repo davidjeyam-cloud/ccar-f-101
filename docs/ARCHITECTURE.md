@@ -164,6 +164,12 @@ ccar-f-101/
 │   ├── handoff_lab/play · memory_lab/play · decomp_lab/play  # D1.6 / D1.7 / D1.8 simulated backends + playgrounds
 │   ├── tool_select_lab · toolsel_play · toolchoice_lab/play · mcp_lab/play  # D2.1 / D2.2 / D2.3 simulated backends + playgrounds
 │   ├── hooks_lab · hooks_play  # D2.4 simulated Agent SDK hook runner + playground
+│   ├── eval_lab/play · builtin_lab/play  # D2.5 eval harness · D2.6 built-in tools + surface chooser
+│   ├── rules_lab/play · plan_lab/play · skills_lab/play · checkpoint_lab/play  # D3.1–D3.4 simulated backends + playgrounds
+│   ├── review_lab/play · batch_lab/play · extract_lab/play  # D4.1 · D4.3 · D4.4 simulated backends + playgrounds
+│   ├── attention_lab/play · fewshot_lab/play · mpreview_lab/play  # D4.7 · D4.9 · D4.10 simulated backends + playgrounds
+│   ├── ctxwin_lab/play · casefacts_lab/play  # D5.1 · D5.2 simulated backends + playgrounds
+│   ├── flow_style.py  # readable() — 18pt charts, max 2 nodes per row (FLOWCHART RULE)
 │   ├── research_backend.py · guide_index.py                              # fake research backend · exact guide-PDF positions
 │   └── concepts_content/       # one module per built concept (agentic_loops.py = template)
 ├── sandbox_project/            # real Claude Code exercises, fake data only
