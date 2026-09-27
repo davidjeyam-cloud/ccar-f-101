@@ -20,7 +20,7 @@ Anything below is labelled **"community claim, verify in current docs"** whereve
 
 | # | Claim | Where it is used | Status |
 |---|---|---|---|
-| 1 | A newer model may reject a forced `tool_choice` | `CLAUDE.md` Critical SDK Notes; page 2.3 | UNVERIFIED — check current docs before teaching |
+| 1 | A newer model may reject a forced `tool_choice` | `CLAUDE.md` Critical SDK Notes; D2.2 Tool Choice | **VERIFIED 2026-09-27** (define-tools § Forcing tool use: 400 on Opus 5.5 / Fable 5.1 / Mythos 5.1 and with manual extended thinking) |
 | 2 | Real exam scores land roughly 40–190 points below practice-exam scores, so treat 900 as a floor | Readiness gate 3; `docs/STUDY_PLAN.md` | UNVERIFIED — candidate reports only |
 | 3 | CLI flags beyond `-p`, `--output-format json`, `--json-schema` | Page 3.6; `sandbox_project/` | UNVERIFIED — verify each flag with `claude --help` / current docs before use |
 | 4 | Model-specific behaviour (any claim of the form "model X does Y") | Any page | UNVERIFIED |
@@ -54,6 +54,11 @@ Anything below is labelled **"community claim, verify in current docs"** whereve
 | 17 | code.claude.com/docs/en/common-workflows | 2026-09-27 | codebase exploration and test recipes — D1.8 |
 | 18 | platform.claude.com prompting best practices (re-read) | 2026-09-27 | chain complex prompts; subagent orchestration; state tracking; structured state formats — D1.6, D1.8 |
 | 19 | platform.claude.com/docs/llms.txt (index, 637 English pages) | 2026-09-26 | Finding docs for concepts and candidate pages for extras (`EXTRA_DOCS`) |
+| 20 | platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools | 2026-09-27 | Tool definition fields, name regex, input_examples, detailed descriptions, consolidating/namespacing tools, tool_choice auto/any/tool/none, no text before a forced call, models that reject forcing — D2.1, D2.2 |
+| 21 | platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use and …/build-with-claude/structured-outputs | 2026-09-27 | strict: true (schema-valid inputs, additionalProperties: false); schema compliance ≠ semantic correctness — D2.2 |
+| 22 | code.claude.com/docs/en/mcp | 2026-09-27 | local/project/user scopes and storage, approval prompt, precedence, ${VAR} / ${VAR:-default} expansion and missing-variable warning, credential variables empty in remote url/headers, tool search, output limits — D2.3 |
+| 23 | code.claude.com/docs/en/common-workflows (re-read) | 2026-09-27 | @server:resource references to MCP resources — D2.3 |
+| 24 | code.claude.com/docs/en/agent-sdk/custom-tools | 2026-09-27 | isError / is_error, uncaught exceptions become error results, tools vs allowedTools — D2.2, D2.3 |
 
 ## Community sources consulted
 
@@ -78,6 +83,11 @@ Anything below is labelled **"community claim, verify in current docs"** whereve
 | 5 | Resuming by name | TS 1.7: `--resume <session-name>` and `fork_session` | CLI: `claude --resume <name>` (or an ID; an ambiguous name opens the picker); Agent SDK: `resume` takes a session ID, `fork_session=True` | Consistent; the page shows which control belongs to the CLI and which to the SDK |
 | 6 | Escalation rules | TS 5.2 defines the triggers (human request, policy gap/ambiguity, no progress) and the unreliable proxies (sentiment, self-reported confidence) | The docs define no escalation rules; they supply mechanisms (examples in prompts, deterministic hooks / PreToolUse deny, an escalation-accuracy metric) | The guide for the rules, the docs for the mechanisms — tagged as such on the page |
 | 7 | AGENTS.md | Not mentioned in guide v1.0 (TS 3.1 covers CLAUDE.md only) | Claude Code reads AGENTS.md when no CLAUDE.md / .claude/CLAUDE.md / CLAUDE.local.md is present above; otherwise import it (@AGENTS.md) or change the setting (v2.1.277+) | Taught on D1.7 as 📘 docs-only, never gold; its question is `in_bank=False` |
+| 8 | tool_choice options | TS 2.3 K4 / TS 4.3 K2: auto, any, forced | Four options (+ `none`); forcing rejected on some models and with manual extended thinking | Guide's three for exam answers; the page teaches `none` and the restriction as 📘 docs-only |
+| 9 | Split vs consolidate tools | TS 2.1: split generic tools into purpose-specific ones with defined contracts | Best practices also suggest consolidating related operations behind an `action` parameter | Compatible: both aim at unambiguous selection; D2.1 teaches the guide's split and notes the docs' option |
+| 10 | MCP scopes | TS 2.4: project (.mcp.json) vs user (~/.claude.json) | Three scopes; local (in ~/.claude.json per project) is the default | Guide's two for exam answers; local shown as 📘 docs-only |
+| 11 | MCP tool discovery | TS 2.4 K3: all servers' tools discovered at connection, available together | Tool search and cached tool lists can defer connecting a server until first use | Guide for exam answers; the docs' refinement in the D2.3 FAQ |
+| 12 | MCP error fields | TS 2.2: isError plus errorCategory / isRetryable / description | The protocol/SDK flag is isError (is_error in Python); the content is yours to structure | Consistent: errorCategory/isRetryable are the guide's convention for the content |
 
 ## Out-of-scope (from the guide — never build on these)
 Fine-tuning / training models · API auth, billing, account management · language/framework specifics beyond tool and schema config · deploying or hosting MCP servers · Claude internals, training, weights · Constitutional AI / RLHF / safety training · embedding models and vector DBs · computer use · vision / image analysis · streaming / SSE · rate limits, quotas, pricing calculations · OAuth / key rotation / auth protocol details · cloud-provider configuration · benchmarking / model comparison metrics · prompt-caching implementation details (know it exists) · token counting / tokenisation.

@@ -326,3 +326,18 @@ Infra (additive): mock `Turn.special` (max_tokens mid tool call, context full), 
 **Verified:** all 8 concepts' matrices by running; AppTest on every page (render, Run, variant, every tab, all practice questions); 310 DOT graphs parse and are top-down; D1.1–D1.5 regressions and Home/Blueprint/index clean. Not verified: visual layout (no browser).
 
 **Committed and pushed** at the user's explicit request. Next: D2.1–D2.3.
+
+
+## 2026-09-27 (evening) — D2.1 Tool Calling, D2.2 Tool Choice, D2.3 MCP built; committed + pushed
+
+**Request (user):** continue into Domain 2 with D2.1–D2.3 ("key concepts — utmost care, detail, exam-centric"), top-down flowcharts, commit to GitHub when done.
+
+**Grounding.** Guide PDF: TS 2.1 (p.9), TS 2.2 (pp.9–10), TS 2.3 (pp.10–11), TS 2.4 (p.11), TS 4.3 (pp.17–18); TS 1.1 re-used. Docs fetched 2026-09-27: platform define-tools, strict-tool-use, structured-outputs; code.claude.com mcp, common-workflows (@server:resource), agent-sdk/custom-tools (isError). SOURCES.md: docs rows 20–24; guide-vs-docs rows 8–12 (tool_choice 3 vs 4 options + forcing restriction; split vs consolidate; MCP scopes 2 vs 3; tool search vs "all at connection"; isError vs errorCategory/isRetryable). Unverified-claim row 1 (models rejecting forced tool_choice) is now VERIFIED; CLAUDE.md Critical SDK Notes C updated.
+
+**D2.1 Tool Calling** (`tool_calling.py`, `tool_select_lab.py`, `toolsel_play.py`): 9 exam points; a word-overlap simulated router; 5 distractors × 4 scenarios; 5 playground tabs.
+**D2.2 Tool Choice** (`tool_choice.py`, `toolchoice_lab.py`, `toolchoice_play.py`): 19 exam points (TS 2.3 + 4.3); simulated API enforcing the documented rules (no text before a forced call, 400 where forcing isn't supported); 8 distractors × 6 scenarios; 6 tabs.
+**D2.3 MCP** (`mcp.py`, `mcp_lab.py`, `mcp_play.py`): 17 exam points (TS 2.4 + 2.2); config part simulates your session AND a teammate's fresh clone; error part runs your MCP tool handlers and orders subagent through a simulated coordinator; 12 guide distractors × 8 scenarios; 6 tabs.
+
+**Verified by running:** all three matrices (every distractor fails exactly the scenarios its observe text names; correct passes all); every playground tab with default and changed knobs; AppTest on each page (render, Run, variant switch, every tab, all practice questions — 7/7 and 8/8); 162 new DOT graphs parse and are top-down; full regression of D1.1–D1.8, D2.1, Home, Blueprint, Concepts index. Bugs found by running: a quoting slip in the playground renderer; the "strict ≠ correct" tab used the wrong invoice. Not verified: visual layout (no browser).
+
+**Committed and pushed** at the user's explicit request. Next: D2.4 SDK Hooks (`/next-concept`).

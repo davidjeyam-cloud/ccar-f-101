@@ -18,6 +18,9 @@ from utils.escalation_play import EscalationConfig, run_escalation
 from utils.handoff_play import HandoffConfig, run_handoff
 from utils.memory_play import MemoryConfig, run_memory
 from utils.decomp_play import DecompConfig, run_decomp
+from utils.toolsel_play import ToolSelConfig, run_toolsel
+from utils.toolchoice_play import ToolChoiceConfig, run_toolchoice
+from utils.mcp_play import McpConfig, run_mcp
 from utils.stop_lab import POLICIES
 from utils.guide_index import resolve_source
 
@@ -46,6 +49,46 @@ _KNOBS = {
     "handler": ("Your handler decides…", "choice", {"options": {k: v[0] for k, v in POLICIES.items()}}),
     "mid_tool_call": ("Is the limit hit mid tool call?", "choice", {"options": {
         "no": "no — the cut is in the text", "yes": "yes — inside a tool_use block (incomplete tool call)"}}),
+    "choice": ("tool_choice", "choice", {"options": {"auto": "auto", "any": "any", "tool:extract_invoice": "tool: extract_invoice",
+                                                     "tool:extract_contract": "tool: extract_contract", "none": "none"}}),
+    "doc": ("Document", "choice", {"options": {"invoice": "a chatty invoice email", "contract": "a services contract"}}),
+    "first": ("First call's tool_choice", "choice", {"options": {"forced": "tool: extract_metadata", "any": "any", "auto": "auto"}}),
+    "release": ("Release to auto after the first call?", "choice", {"options": {"yes": "yes", "no": "no — keep it"}}),
+    "nullable": ("tax_id nullable?", "choice", {"options": {"yes": "yes", "no": "no — required string"}}),
+    "other": ("category enum has other + detail?", "choice", {"options": {"yes": "yes", "no": "no — closed list"}}),
+    "strict": ("strict: true?", "choice", {"options": {"yes": "yes", "no": "no"}}),
+    "validate": ("Your own semantic check (line items = total)?", "choice", {"options": {"yes": "yes", "no": "no"}}),
+    "searcher_tools": ("Searcher's tools", "choice", {"options": {
+        "scoped": "web_search + load_document", "fetch_url": "web_search + fetch_url", "all": "all 18"}}),
+    "synth_tools": ("Synthesizer's tools", "choice", {"options": {
+        "verify_fact": "verify_fact", "web_search": "web_search", "none": "none", "all": "all 18"}}),
+    "model": ("Model", "choice", {"options": {"mock-opus-5.5": "mock-opus-5.5 (rejects forcing, per the docs' list)", "mock-claude": "mock-claude"}}),
+    "thinking": ("Manual extended thinking", "choice", {"options": {"off": "off", "enabled": "enabled"}}),
+    "github_scope": ("Where the team's GitHub server is configured", "choice", {"options": {
+        "project": ".mcp.json (project)", "user": "~/.claude.json (user)", "local": "~/.claude.json for this project (local)"}}),
+    "token_style": ("GitHub token in the config", "choice", {"options": {"var": "${GITHUB_TOKEN}", "literal": "a literal token (fake)"}}),
+    "teammate_env": ("Teammate has GITHUB_TOKEN set?", "choice", {"options": {"set": "yes", "unset": "no"}}),
+    "jira_source": ("Jira server", "choice", {"options": {"community": "community server", "custom": "our own custom server"}}),
+    "notes_scope": ("Your experimental scratch-notes server", "choice", {"options": {"user": "~/.claude.json (user)", "project": ".mcp.json (project)"}}),
+    "tool_desc": ("find_references description", "choice", {"options": {"detailed": "detailed (what, returns, when vs Grep)", "vague": "“Finds references.”"}}),
+    "resources": ("Expose the schema catalog as a resource?", "choice", {"options": {"yes": "yes", "no": "no"}}),
+    "error_style": ("How your tools report errors", "choice", {"options": {
+        "structured": "isError + category + isRetryable + readable text", "generic": "“Operation failed”", "code_only": "structured, but a code instead of words"}}),
+    "err_case": ("Situation", "choice", {"options": {"policy": "refund over the limit", "timeout": "timeout (recovers)",
+                                                     "permission": "no access", "empty": "no orders"}}),
+    "orders_state": ("Order service", "choice", {"options": {"empty": "customer has no orders", "permission": "refuses access (permission)",
+                                                             "timeout_twice": "times out twice, then answers"}}),
+    "empty_handling": ("lookup_orders handling", "choice", {"options": {"success": "empty = success; failures = isError",
+                                                                       "error": "empty → isError “not found”", "swallow": "any exception → []"}}),
+    "local_retry": ("Subagent retries retryable errors locally?", "choice", {"options": {"yes": "yes (up to 3)", "no": "no"}}),
+    "partial_info": ("Propagates error + attempts + partial results?", "choice", {"options": {"yes": "yes", "no": "no — just “failed”"}}),
+    "quality": ("Tool descriptions", "choice", {"options": {"detailed": "detailed (the docs' checklist)", "minimal": "one line each"}}),
+    "web_tool": ("The web-results tool", "choice", {"options": {
+        "renamed": "extract_web_results (renamed, web-only)", "overlapping": "analyze_content + a near-identical analyze_document"}}),
+    "doc_tools": ("Document tools", "choice", {"options": {"split": "three purpose-specific tools", "generic": "one generic analyze_document"}}),
+    "keyword_rule": ("System-prompt keyword rule", "choice", {"options": {
+        "off": "none", "on": "“whenever the user mentions a document, use summarize_content”"}}),
+    "formats": ("Formats & boundaries in lookup_order / get_customer", "choice", {"options": {"with": "stated", "without": "left out"}}),
     "payload": ("What the handoff carries", "choice", {"options": {
         "all": "ALL the findings", "first_two": "only the first two (“keep it short”)", "pointer": "a pointer: “the findings from earlier”"}}),
     "fmt": ("Shape of the findings", "choice", {"options": {
@@ -307,6 +350,54 @@ def _render_decomp(run: dict) -> None:
                                            + (f"  \nMissed: {run['missed']}" if run["missed"] else ""))
 
 
+def _html_table(rows: list) -> str:
+    import html as _h
+    if not rows:
+        return ""
+    heads = list(rows[0])
+    head = "".join(f"<th>{_h.escape(str(h))}</th>" for h in heads)
+    body = "".join("<tr>" + "".join(f"<td>{_h.escape(str(r.get(h, '')))}</td>" for h in heads) + "</tr>" for r in rows)
+    return f'<div class="wb-card"><table class="wb-table"><tr>{head}</tr>{body}</table></div>'
+
+
+def _render_toolsel(run: dict) -> None:
+    verdict = "" if run["ok"] is None else (" ✅ right kind of tool" if run["ok"] else f" ❌ this request needs a “{run['expected']}” tool")
+    st.markdown(f"**Picked:** `{run['tool']}` ({run['kind']}) · **input:** `{run['input'] or {}}`{verdict}")
+    st.caption(run["why"])
+    st.markdown(_html_table(run["rows"]), unsafe_allow_html=True)
+    with st.expander("System prompt used"):
+        st.code(run["system"], language="text")
+
+
+def _render_toolchoice(run: dict) -> None:
+    if run["request"]:
+        st.markdown("**Request**")
+        st.json(run["request"], expanded=False)
+    if run["error"]:
+        st.error(run["error"])
+    if run["response"]:
+        st.markdown(f"**Response** — `stop_reason = {run['response']['stop_reason']}`")
+        st.json(run["response"]["content"], expanded=True)
+    for line in run["lines"]:
+        st.markdown(f"- {line}")
+    if run["notes"]:
+        st.error("  \n".join("⚠️ " + n for n in run["notes"]))
+    else:
+        st.success("✅ The guarantee you needed held.")
+
+
+def _render_mcp(run: dict) -> None:
+    for name, content in run.get("files", {}).items():
+        st.markdown(f"**{name}**")
+        st.json(content, expanded=False)
+    for line in run["lines"]:
+        st.markdown(f"- {line}")
+    if run["notes"]:
+        st.error("  \n".join("⚠️ " + n for n in run["notes"]))
+    else:
+        st.success("✅ Works for everyone, and the agent recovers correctly.")
+
+
 def _render_fork(slug: str, spec) -> None:
     """Session fork demo (docs: agent-sdk/sessions § Fork) — no model involved; it shows what a fork is."""
     base = f"pg_{slug.replace('-', '_')}_{spec.key}"
@@ -387,7 +478,8 @@ def _render_tab(slug: str, spec) -> None:
         for i, knob in enumerate(spec.knobs):
             with cols[i % len(cols)]:
                 fallback = {"research": ResearchConfig, "stop": StopConfig, "session": SessionConfig, "escalation": EscalationConfig, "handoff": HandoffConfig,
-                 "memory": MemoryConfig, "decomp": DecompConfig}.get(
+                 "memory": MemoryConfig, "decomp": DecompConfig, "toolsel": ToolSelConfig,
+                 "toolchoice": ToolChoiceConfig, "mcp": McpConfig}.get(
                     spec.engine, PlayConfig).__dataclass_fields__.get(knob)
                 values[knob] = _knob_widget(base, knob, spec.defaults.get(knob, fallback.default if fallback else 0))
     else:
@@ -409,9 +501,10 @@ def _render_tab(slug: str, spec) -> None:
                 if spec.engine == "research":
                     cfg = ResearchConfig(**values)
                     run = run_research(msg.strip(), cfg)
-                elif spec.engine in ("handoff", "memory", "decomp"):
+                elif spec.engine in ("handoff", "memory", "decomp", "toolsel", "toolchoice", "mcp"):
                     cls, fn = {"handoff": (HandoffConfig, run_handoff), "memory": (MemoryConfig, run_memory),
-                               "decomp": (DecompConfig, run_decomp)}[spec.engine]
+                               "decomp": (DecompConfig, run_decomp), "toolsel": (ToolSelConfig, run_toolsel),
+                               "toolchoice": (ToolChoiceConfig, run_toolchoice), "mcp": (McpConfig, run_mcp)}[spec.engine]
                     cfg = cls(mode=spec.condition, **values)
                     run = fn(msg.strip(), cfg)
                 elif spec.engine == "escalation":
@@ -440,7 +533,8 @@ def _render_tab(slug: str, spec) -> None:
             else:
                 st.markdown(f"*Earlier run #{i}*")
             {"research": _render_research, "stop": _render_stop, "session": _render_session, "escalation": _render_escalation,
-             "handoff": _render_handoff, "memory": _render_memory, "decomp": _render_decomp}.get(spec.engine, _render_run)(item["run"])
+             "handoff": _render_handoff, "memory": _render_memory, "decomp": _render_decomp,
+             "toolsel": _render_toolsel, "toolchoice": _render_toolchoice, "mcp": _render_mcp}.get(spec.engine, _render_run)(item["run"])
 
     if spec.try_this:
         with st.expander("Try this next"):

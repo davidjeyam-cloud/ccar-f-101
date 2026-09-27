@@ -25,7 +25,7 @@ from utils import lab_trace, mock_claude, research_backend, session_lab, stop_la
 import importlib  # noqa: E402
 
 # simulated lab modules that are configured by scenario id (each exposes SCENARIO_IDS and configure())
-_SCENARIO_MODULES = ("handoff_lab", "memory_lab", "decomp_lab")
+_SCENARIO_MODULES = ("handoff_lab", "memory_lab", "decomp_lab", "tool_select_lab", "toolchoice_lab", "mcp_lab")
 
 
 def main() -> None:

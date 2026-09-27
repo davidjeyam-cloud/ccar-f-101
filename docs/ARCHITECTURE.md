@@ -162,6 +162,7 @@ ccar-f-101/
 │   ├── agent_playground.py · research_playground.py · playground_ui.py  # CONCEPTS agent playgrounds (single agent / multi-agent / fork)
 │   ├── session_lab.py · session_play.py · support_lab.py · escalation_play.py  # D1.4 / D1.5 simulated backends + playgrounds
 │   ├── handoff_lab/play · memory_lab/play · decomp_lab/play  # D1.6 / D1.7 / D1.8 simulated backends + playgrounds
+│   ├── tool_select_lab · toolsel_play · toolchoice_lab/play · mcp_lab/play  # D2.1 / D2.2 / D2.3 simulated backends + playgrounds
 │   ├── research_backend.py · guide_index.py                              # fake research backend · exact guide-PDF positions
 │   └── concepts_content/       # one module per built concept (agentic_loops.py = template)
 ├── sandbox_project/            # real Claude Code exercises, fake data only

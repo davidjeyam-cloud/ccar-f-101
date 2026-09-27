@@ -2,7 +2,7 @@
 
 > Auto-generated from `utils/concepts_map.py` — do not hand-edit. The taxonomy mirrors a community concept list (claudearchitectcertification.com/concepts, a third-party site: unverified, structure only, no content copied). **Scope statuses are Claude's judgment from a keyword search and reading of guide v1.0 on 2026-09-26 — verify them.**
 
-**71 concepts · 8 built.** 🎯 In the guide: 22 · ◐ Partly in the guide: 15 · ℹ️ Awareness only: 1 · ⛔ Out of scope: 3 · ⚪ Not in the guide: 30
+**71 concepts · 11 built.** 🎯 In the guide: 22 · ◐ Partly in the guide: 15 · ℹ️ Awareness only: 1 · ⛔ Out of scope: 3 · ⚪ Not in the guide: 30
 
 **Kinds:** exam = in the guide (built with docs + guide) · ➕ extra = not on the exam but an official docs page covers it (built only if grounded, labelled *not on the exam*) · ungroundable = no official docs basis found, stays a stub · excluded = out of scope / awareness, never built. Candidate docs are fetched and read when the concept is built.
 
@@ -16,9 +16,9 @@
 | 6 | D1.6 | Subagent State Handoff | 🎯 In the guide | exam | TS 1.3 — Subagent invocation (pp.6–7) · TS 1.4 — Enforcement & handoff (p.7) · TS 5.4 — Codebase exploration (pp.21–22) | — | — | 🧪 |
 | 7 | D1.7 | Agent Instruction Files (CLAUDE.md / AGENTS.md) | ◐ Partly in the guide | exam | TS 3.1 — CLAUDE.md hierarchy (pp.12–13) | — | CLAUDE.md is in the guide (TS 3.1); AGENTS.md does not appear anywhere in it. | 🧪 |
 | 8 | D1.8 | Task Decomposition Strategies | 🎯 In the guide | exam | TS 1.6 — Task decomposition (p.8) | — | — | 🧪 |
-| 9 | D2.1 | Tool Calling | 🎯 In the guide | exam | TS 2.1 — Tool descriptions (p.9) · TS 1.1 — Agentic loops (p.5) | — | — | — |
-| 10 | D2.2 | Tool Choice | 🎯 In the guide | exam | TS 2.3 — Tool choice (pp.10–11) · TS 4.3 — Structured output (pp.17–18) | — | — | — |
-| 11 | D2.3 | Model Context Protocol | 🎯 In the guide | exam | TS 2.4 — MCP config (p.11) · TS 2.2 — Structured errors (pp.9–10) | — | — | — |
+| 9 | D2.1 | Tool Calling | 🎯 In the guide | exam | TS 2.1 — Tool descriptions (p.9) · TS 1.1 — Agentic loops (p.5) | — | — | 🧪 |
+| 10 | D2.2 | Tool Choice | 🎯 In the guide | exam | TS 2.3 — Tool choice (pp.10–11) · TS 4.3 — Structured output (pp.17–18) | — | — | 🧪 |
+| 11 | D2.3 | Model Context Protocol | 🎯 In the guide | exam | TS 2.4 — MCP config (p.11) · TS 2.2 — Structured errors (pp.9–10) | — | — | 🧪 |
 | 12 | D2.4 | SDK Hooks (Pre/PostToolUse) | 🎯 In the guide | exam | TS 1.5 — Hooks (pp.7–8) | — | — | — |
 | 13 | D2.5 | Tool Evaluation & Testing | ◐ Partly in the guide | exam | TS 2.1 — Tool descriptions (p.9) | — | Guide §7/§8 asks you to test tool-selection reliability with ambiguous requests; there is no dedicated task statement. | — |
 | 14 | D2.6 | Built-In Tools vs Custom Tools vs Skills vs MCP | 🎯 In the guide | exam | TS 2.5 — Built-in tools (pp.11–12) · TS 3.2 — Commands and skills (p.13) · TS 2.4 — MCP config (p.11) | — | — | — |
