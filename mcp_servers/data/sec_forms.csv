@@ -1,0 +1,11 @@
+form,what_it_is,how_often
+10-K,Annual report with audited full-year financial statements,Once a year
+10-Q,Quarterly report with unaudited financial statements,Three times a year
+8-K,Report of a significant event between periodic reports,When an event happens
+3,Initial statement of an insider's holdings,When someone becomes an insider
+4,Change in an insider's holdings (a purchase or sale),After each transaction
+5,Annual statement of insider holdings not reported earlier,Once a year if needed
+DEF 14A,Proxy statement sent to shareholders before a vote,Before shareholder meetings
+S-1,Registration statement for a new public offering,Before an offering
+13F,Quarterly list of holdings filed by large investment managers,Four times a year
+20-F,Annual report filed by a foreign company listed in the US,Once a year

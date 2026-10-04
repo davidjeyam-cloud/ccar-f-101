@@ -80,8 +80,20 @@ concepts_nav: dict[str, list] = {
         concept_pages[c.slug] for c in cm.cross_cutting()
     ]
 }
+# D2.3.1 and D2.3.2 are hand-written LIVE pages (real MCP servers), not concepts_map entries: they sit straight
+# after D2.3 MCP in the sidebar and leave the 71-concept taxonomy and its counts untouched.
+mcp_live_pages = {
+    "hosted": st.Page("pages/c231_mcp_hosted.py", title="D2.3.1 MCP client → hosted server  ➕🌐", url_path="concept-mcp-hosted"),
+    "local": st.Page("pages/c232_mcp_local.py", title="D2.3.2 My own MCP server (local)  ➕🏠", url_path="concept-mcp-local"),
+}
+st.session_state["_mcp_pages"] = mcp_live_pages
 for domain, short in cm.DOMAIN_SHORT.items():
-    concepts_nav[f"CONCEPTS · D{domain} {short}"] = [concept_pages[c.slug] for c in cm.by_domain(domain)]
+    group = []
+    for c in cm.by_domain(domain):
+        group.append(concept_pages[c.slug])
+        if c.slug == "mcp":
+            group += list(mcp_live_pages.values())
+    concepts_nav[f"CONCEPTS · D{domain} {short}"] = group
 nav = {**concepts_nav, **nav}
 
 pg = st.navigation(nav)

@@ -14,3 +14,6 @@ progress.json
 
 # Generated diagram sources / exports
 output/
+
+# Notes written by the laptop MCP server's save_note tool (personal)
+mcp_servers/data/my_notes.txt

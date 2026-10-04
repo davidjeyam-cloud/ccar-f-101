@@ -527,3 +527,117 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 - `test_all_pages.py`: 0 exceptions.
 
 **Uncommitted.**
+
+
+---
+
+## 2026-10-03 — D2.3.0: a live MCP client page over SEC EDGAR (➕ extra)
+
+**Request:** a small project inside the app: an MCP client first, using the SEC EDGAR MCP server; a chat box where a company question leads to the right tool being chosen; lineage and trace; a sequence diagram of the flow.
+
+**Research first:**
+- Free finance MCP servers were listed for the user (World Bank Data360 is official; SEC EDGAR, FRED, ECB, IMF are community servers over official data). Bloomberg, S&P Global and Moody's need paid subscriptions.
+- Read modelcontextprotocol.io (*Architecture overview*, *Server → Tools*) and the server's repo page. Recorded in `docs/SOURCES.md` (community row 4).
+
+**Built:**
+- `utils/mcp_live.py`: the client and agent loop. One session per question (start the server → `initialize` → `tools/list` → loop → close). Gemini chooses the tool; results are normalised into ok / `isError=true` / soft error (`success:false` with `isError=false`). It extracts CIK, forms, dates and accession numbers for lineage and digit-matches the answer's figures against the tool results.
+- `utils/mcp_seq.py`: sequence diagrams drawn from the run's own event log.
+- `pages/c23_mcp_sec_edgar.py`: setup checks, the flow diagram, concept and code-pattern expanders, the gold "what IS on the exam" table, tool discovery with a "tools offered" selector, the chat, a manual mode (you choose the tool; works with no model key), traps, and a what-runs-where note.
+- `app.py`: the page is listed after D2.3 in the sidebar. `concepts_map` is untouched.
+- `requirements-mcp.txt` (optional): `mcp>=1.30,<2` and `sec-edgar-mcp`. `sec-edgar-mcp` 1.0.8 does not start on `mcp` 2.x.
+- `.env.example`: a commented `SEC_EDGAR_USER_AGENT` line. The real value is in the local `.env` only.
+
+**Seen in live runs (2026-10-03), used as the page's traps:**
+- `search_companies` returned an empty success for Apple, Microsoft, Tesla and Berkshire Hathaway.
+- `get_cik_by_ticker("ZZZZZZ")` returned `success:false` with `isError=false`; only a missing required argument gave `isError=true`.
+- After an empty search the model used tickers it already knew, despite the system prompt.
+- 21 tool definitions cost about 3,700 input tokens per model call; 3 tools about 475.
+
+**Checks:**
+- Page test (AppTest): connect, an example question, a restricted-tools question through the chat box, manual mode — 0 exceptions.
+- Missing SEC contact, missing model key and missing packages each show a clear message.
+- `app.py` starts with 0 exceptions; `py_compile` is clean.
+
+**Not done:** not viewed in a real browser by Claude. The MCP server build is the next step. **Uncommitted.**
+
+
+### 2026-10-04 — D2.3.0 simplified
+
+**Feedback:** "there is too much info… all I need is a simple view of the flow, when tools are used, what tool is used, when the SEC website is hit and what is the actual result (printed on the page, not a JSON message)."
+
+**Changed:**
+- The page is now a question box, the answer, and "What happened, step by step": one card per tool call showing the tool, what it says it does, what was sent, the sec.gov requests made during that call, and the result as readable tables.
+- The sec.gov requests are real, not inferred: the server is started through a one-line launcher that turns on `urllib3` debug logging, and `utils/mcp_live.py` reads the request lines the server logs during each `tools/call` (httpx and requests).
+- Removed from the page: the concept and code-pattern expanders, the exam table, the tool list and "tools offered" selector, manual mode, the lineage tab, the traps table, progress ticks. The diagram, tokens and raw JSON are in one collapsed Details expander.
+- An empty model reply (seen once live) is retried once and reported as a failure if it repeats.
+- Fixed earlier the same day: `No module named pywintypes` (the app had to be restarted after the packages were installed), and answers appearing off-screen (the question box now sits above the answer).
+
+**Seen live:** `search_companies` returns an empty list without contacting sec.gov; `get_cik_by_ticker` fetches `company_tickers_exchange.json`; `get_financials` and `get_recent_filings` fetch the company's submissions JSON and the filing text.
+
+**Checks:** page test with four question types (figures, a list of filings, insider transactions, an unknown company): 0 exceptions. **Uncommitted.**
+
+**Later the same day (user request):**
+- "What happened, step by step" is now one table in time order: step, request type (model request, MCP `initialize` + `tools/list`, MCP `tools/call`, HTTP GET to sec.gov), what was sent or fetched, outcome, time. The readable results follow under "What each tool returned".
+- Pressing Ask clears the previous result at once. Only the latest question is shown, and questions no longer carry memory of earlier ones.
+- Empty model replies: one question got an empty reply (thinking tokens, no text, no function call) in about half of 5 runs. With `thinking_budget=0` the same question answered 5 out of 5, and 3 other questions answered too. An empty reply is still retried (twice) and then reported as a failure.
+
+**Checks:** page test with two questions in a row (the second replaces the first), app start, and the three missing-setup messages: 0 exceptions. **Uncommitted.**
+
+**Synthesis agent and charts (user request, same day):** "a synthesis agent which will curate the responses from all the tools… include capabilities to draw comparison charts… what type of chart will be chosen by the LLM."
+- `mcp_live.synthesise()`: a second model call with its own system prompt and no tools. Its input is the question plus every tool result; nothing is inherited from the research agent. It returns schema-constrained JSON: headline, summary, key points, caveats and up to 3 chart specs (type, title, reason, series, points with `source_call`).
+- Chart types offered to the model: bar, grouped bar, line, stacked bar. Pie was left out on purpose (part-to-whole reads better as a stacked bar).
+- `utils/mcp_charts.py` draws them. Each plotted value is searched for in the tool result it cites: found, found in another call (the source is corrected), or not found (drawn hatched, flagged in the table beside the chart).
+- The research agent's prompt now tells it to gather the same data for every company and to reply briefly; `MAX_TURNS` is 12.
+- Chart colours follow the dataviz skill's reference palette (first four slots). Its validator script needs Node, which is not installed here, so it was not run; the palette is used unchanged.
+
+**Seen live:**
+- "Compare the revenue and net income of Apple, Microsoft and Alphabet": three `get_financials` calls in one model turn; the synthesis agent chose two bar charts (one per measure) and warned that Microsoft's figures come from a 10-K and the others from 10-Qs, with different period ends. All 6 plotted values were found in the tool results.
+- "How has Apple's revenue changed from 2021 to 2024?": the server's `compare_periods` tool fails with an internal error, so there is no data, no synthesis and no line chart. The page shows the failure.
+
+**Checks:** engine runs for 5 question types; page test for comparison, failing-tool and out-of-scope questions; app start: 0 exceptions. Charts of all four types were rendered and looked at. **Uncommitted.**
+
+**Own MCP server (user request, same day):** "create my own mcp server component… tools to get details from my laptop like hardware spec, file storage… also a tool to search the web."
+- `mcp_servers/laptop_server.py` (FastMCP, stdio): `get_hardware_spec`, `get_storage`, `get_folder_sizes(path)` (home folder only, 8-second budget, reports `complete: false` when cut short), `web_search(query, max_results)` (the `ddgs` package, no key).
+- Failures use `ToolError` with `errorCategory`, `isRetryable` and a message: a path outside home is a `permission` error, a missing folder or empty query is a `validation` error, an unreachable search service is `transient` and retryable. An empty search returns `count: 0`.
+- Nothing identifying is returned: no computer name, user name, serial numbers, network addresses or file contents.
+- `utils/mcp_live.py` now connects to several servers (one `ClientSession` each, `AsyncExitStack`), merges their tool lists and routes each call to the owning server. The page has a server picker; the steps table shows a Connect row per server and which server each tool call went to.
+- Web rows: the laptop server logs a `NET …` line per search; the client reads it the same way it reads sec-edgar's HTTP log lines.
+- The synthesis agent drops any chart with fewer than two numbers (it once drew a one-bar chart).
+
+**Seen live:**
+- With 25 tools from 2 servers offered, the model chose `get_hardware_spec` for "what laptop is this", `get_storage` for "how full are my drives" (the synthesis agent chose a stacked bar: used + free), `get_financials` for an Apple question, and chained `get_hardware_spec` → `web_search("<processor name> release date")` for a processor question.
+- Asked about C:\Windows, the model declined without calling the tool, quoting the tool description's home-folder limit. Called directly, the server refuses with a `permission` error.
+- Connecting takes about 2 s for my-laptop and 4 s for sec-edgar; the first model call carries about 4,600 input tokens of tool definitions.
+
+**Checks:** the server on its own (8 calls incl. 3 failure cases); the engine on 5 question types; the page on 2; app start: 0 exceptions. **Uncommitted.**
+
+**Split into two pages (user correction, same day):** "one for EDGAR which only helps to understand the MCP client process with the MCP server hosted separately… another subtopic which will host the server at my end… both should have a simple schematic and a sequence diagram showing the difference… on separate webpages."
+- The combined page is gone. `utils/mcp_page.py` renders both; `pages/c231_mcp_hosted.py` (D2.3.1) and `pages/c232_mcp_local.py` (D2.3.2) are one-line files. Each page connects to one server only.
+- **The SEC does not host an MCP server**, and the user was told so. To give a real "hosted separately" setup, `sec-edgar-mcp` now runs as its own service over Streamable HTTP at `http://127.0.0.1:9870/mcp` (loopback only). The client connects by URL and refuses to run when nothing is listening. A Start/Stop box on the page stands in for the provider (`mcp_live.start_service` / `stop_service`).
+- D2.3.2 keeps stdio: the client launches `mcp_servers/laptop_server.py` as a child process.
+- Each page opens with a Graphviz schematic, a sequence diagram of that setup, and an 8-row hosted-vs-local comparison table with a link to the other page. The steps table names the transport on each MCP row.
+- Seen live: connecting over HTTP to the running service took about 0.1 s; starting the service took about 5 s; starting the stdio server took about 2 s per question.
+
+**Checks:** both pages end to end (local: ask; hosted: stopped → start → ask → stop); both schematics parse; app start and missing-setup messages: 0 exceptions. **Uncommitted.**
+
+**All MCP server features, on both pages (user request, same day):** "add more tools… a list of tools available should be tabulated… add additional features of the MCP like the resources and other key components… for both local and the remote one."
+- Read modelcontextprotocol.io *Understanding MCP servers* for the control model: tools are model-controlled, resources application-controlled, prompts user-controlled.
+- `mcp_servers/laptop_server.py` now has 9 tools (new: `summarize_file_types`, `get_top_processes`, `estimate_disk_runway`, `check_internet`, `save_note`), 3 resources and 1 template (`laptop://catalog/folders` and `laptop://policy/cleanup` are MOCK data; `laptop://notes`; `laptop://drive/{letter}`), 3 prompts (`health_check`, `cleanup_plan`, `can_it_run`), progress and log notifications from the two folder-walking tools, an elicitation in `save_note` (the only tool that writes), and read-only / open-world annotations on every tool.
+- `mcp_servers/edgar_hosted_server.py` is the hosted stand-in: the community package's 21 tools registered unchanged, plus `edgar://tickers` (40 rows fetched from sec.gov's `company_tickers_exchange.json` on 2026-10-04), `edgar://forms`, the template `edgar://company/{ticker}`, and 3 prompts.
+- Client (`utils/mcp_live.py`): `catalog()`, `read_resource()`, `get_prompt()`; `ask()` takes `attach` (resources read by the application and put in the model's context) and `confirm` (the pre-set answer to an elicitation); progress and log notifications are collected per tool call.
+- Pages (`utils/mcp_page.py`): a "What this server offers" section with four tabs (Tools, Resources, Prompts, All MCP features); the question form can attach resources, use a server prompt and, on the local page, choose Decline / Approve; the steps table shows prompt, resource, notification and "the server asked you" rows.
+
+**Seen live:**
+- With `edgar://tickers` attached, "Berkshire Hathaway" was resolved to `BRK-B` from the list; earlier runs guessed `BRK.A` from memory.
+- Attaching the ticker list added about 870 input tokens to the first model call; for Nvidia and Broadcom the result was the same with or without it.
+- `save_note` with Decline returned `saved: false` and wrote nothing; with Approve it wrote one line, readable at `laptop://notes`.
+- `get_folder_sizes` on a 235-entry folder sent 235 progress notifications and one log message; none of them reach the model.
+- The community package sets no tool annotations, so its tools table reads "not stated".
+
+**Checks:** the local server on its own (all features); the engine on both servers; both pages (tables, read a resource, prompt with a missing blank, prompt + attachments, save_note declined and approved, hosted start → ask → stop): 0 exceptions. Test notes were deleted afterwards. **Uncommitted.**
+
+**Hang fixed (same day):** the user reported the page stuck on "The model is choosing a tool…". A stack dump of the running app (`py-spy`) showed the script thread waiting on the synthesis agent's Gemini request, which had no timeout. The MCP server had already finished and closed.
+- Both model requests now carry a 45-second timeout (`MODEL_TIMEOUT_MS`), and the synthesis reply is capped at 4,000 output tokens (`SYNTH_MAX_TOKENS`).
+- If the synthesis agent times out or errors, the tool results and steps table are still shown, with a warning and the research agent's own reply.
+- If the research agent's request times out, the page shows "The model did not answer within 45 seconds" instead of an `ExceptionGroup`.
+- Tested by forcing each timeout. The cause of the stall itself (Gemini's side or the network) is not known. **Uncommitted.**

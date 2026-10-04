@@ -25,8 +25,8 @@ if (-not $branch) { Write-Host "ABORT: detached HEAD - check out a branch first.
 # --- 1. Stage only the tracked folders/files that exist -----------------------
 # The build prompt's list, plus config files added at the owner's request (2026-09-21) so everything is committed.
 # .env, .venv, docs/source/, progress.json and output/ are gitignored and never staged.
-$paths = @("app.py", "pages", "utils", "docs", "sandbox_project", "AGENTS.md", "CLAUDE.md",
-           ".gitignore", "requirements.txt", ".env.example", ".streamlit", ".claude", "push.ps1")
+$paths = @("app.py", "pages", "utils", "mcp_servers", "docs", "sandbox_project", "AGENTS.md", "CLAUDE.md",
+           ".gitignore", "requirements.txt", "requirements-mcp.txt", ".env.example", ".streamlit", ".claude", "push.ps1")
 $toAdd = $paths | Where-Object { Test-Path $_ }
 if (-not $toAdd) { Write-Host "Nothing to stage: none of the tracked paths exist yet." -ForegroundColor Yellow; exit 0 }
 git add -- $toAdd

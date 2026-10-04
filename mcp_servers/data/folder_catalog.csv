@@ -1,0 +1,10 @@
+folder,purpose,safe_to_clear,keep_days,notes
+Downloads,Files saved from the browser,yes,30,Installers and duplicates collect here; clear anything older than keep_days
+Desktop,Shortcuts and work in progress,no,,Move finished work to Documents instead of deleting
+Documents,Finished work and records,no,,Back up before any clean-up
+Pictures,Photos and screenshots,no,,Screenshots older than 90 days can be reviewed by hand
+Videos,Recordings and screen captures,review,180,Usually the largest files; review before deleting
+Music,Audio files,no,,
+Projects,Source code and study projects,no,,Virtual environments (.venv) can be rebuilt and are safe to delete
+Temp,Scratch files,yes,7,Safe to clear when no program is using it
+Backups,Copies of important folders,no,,Never delete without a newer backup
