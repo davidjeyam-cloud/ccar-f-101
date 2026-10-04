@@ -52,6 +52,7 @@ Open **http://localhost:8501**. Work in VS Code; view the app in the browser. (`
 | Validation | `pydantic`, `jsonschema` |
 | Retry | `tenacity` |
 | Diagrams | `matplotlib` → PNG; `arch-diagram` skill for HTML → JPEG |
+| MCP (live pages D2.3.1 / D2.3.2) | `mcp` SDK (`<2`), `sec-edgar-mcp`, `ddgs` |
 | Fake backend | `utils/tools.py` — customers, orders, refund, escalate (deterministic, no network) |
 | Key env var | `GEMINI_API_KEY` in `.env` (live demos only; same key as agents101) |
 | Claude API (🔑 pages) | `anthropic` SDK + `ANTHROPIC_API_KEY` — **to buy before Day 1**; added with the first 🔑 page; cheapest model Claude Haiku 4.5 |

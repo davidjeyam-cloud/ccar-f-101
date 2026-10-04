@@ -641,3 +641,11 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 - If the synthesis agent times out or errors, the tool results and steps table are still shown, with a warning and the research agent's own reply.
 - If the research agent's request times out, the page shows "The model did not answer within 45 seconds" instead of an `ExceptionGroup`.
 - Tested by forcing each timeout. The cause of the stall itself (Gemini's side or the network) is not known. **Uncommitted.**
+
+**Both MCP pages on the hosted copy (user decision, same day):** opening `https://ccar-f.streamlit.app/concept-mcp-local` showed "The MCP package is not installed". Asked how the pages should behave on Streamlit Cloud, the user chose "Both pages on Cloud".
+- `requirements.txt` now includes `mcp>=1.30,<2`, `sec-edgar-mcp>=1.0.8` and `ddgs>=9.0` (this reverses the earlier "optional packages" rule). `requirements-mcp.txt` just points at it.
+- `utils/secrets_env.py` copies `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` and `SEC_EDGAR_USER_AGENT` from Streamlit's Secrets into environment variables at app start. This also makes the Gemini demos work on the hosted copy once the key is entered there.
+- `mcp_servers/laptop_server.py` has Linux code paths (`/proc/meminfo`, `/proc/cpuinfo`, `ps`, the `/` drive), and the local page warns that on the hosted copy "this computer" is the hosted Linux machine.
+- AGENTS.md and docs/ARCHITECTURE.md stack tables updated.
+
+**Checks:** the Linux parsers were tested with sample `/proc` and `ps` text, and the tools with the platform faked as Linux. They were NOT run on a real Linux machine (no WSL or Docker here), so the hosted copy is the first real run. The secrets loader was tested with and without secrets. Both pages and the all-pages regression pass on Windows.

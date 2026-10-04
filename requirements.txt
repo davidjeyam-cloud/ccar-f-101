@@ -5,3 +5,8 @@ pydantic>=2.0.0
 jsonschema>=4.0.0
 tenacity>=8.2.0
 matplotlib>=3.7.0
+# Live MCP pages D2.3.1 / D2.3.2 (user decision 2026-10-04: they must also run on the hosted copy).
+# mcp stays below 2: sec-edgar-mcp 1.0.8 imports mcp.server.fastmcp, which mcp 2.x renamed.
+mcp>=1.30,<2
+sec-edgar-mcp>=1.0.8
+ddgs>=9.0

@@ -13,6 +13,7 @@ see utils/placeholder.py's docstring for the three-step checklist.
 
 import functools
 import streamlit as st
+from utils.secrets_env import load_secrets_into_env
 from utils.styles import apply_theme
 from utils.course_map import PHASES, nav_title
 from utils.placeholder import render_placeholder
@@ -27,6 +28,7 @@ st.set_page_config(
 )
 
 apply_theme()
+load_secrets_into_env()          # a hosted copy has no .env: its keys come from Streamlit's Secrets
 
 # Real, built pages point at their file. Everything else in course_map.py
 # renders through the shared placeholder. Add a line here the same commit

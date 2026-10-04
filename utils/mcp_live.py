@@ -150,7 +150,7 @@ def server_ready(key: str) -> tuple:
     if not s["server_pkg"]:
         return False, "the sec-edgar-mcp package is not installed"
     if not s["sec_contact"]:
-        return False, f"{UA_ENV} is not set in .env"
+        return False, f"{UA_ENV} is not set (in `.env` on your PC, or in the app's Secrets on the hosted copy)"
     return True, ""
 
 

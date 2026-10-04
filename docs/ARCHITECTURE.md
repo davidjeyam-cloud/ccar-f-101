@@ -72,6 +72,7 @@ The official exam guide (`docs/source/`, local only) is the ground truth for top
 | **Validation** | `pydantic`, `jsonschema` | Domain 4 validation-retry demos |
 | **Retry** | `tenacity` | Overload and rate-limit handling |
 | **Diagrams** | `matplotlib` → PNG; `arch-diagram` skill → HTML → JPEG | Same pipelines as agents101 |
+| **MCP** | `mcp` SDK (`<2`), `sec-edgar-mcp`, `ddgs` | The live MCP pages D2.3.1 / D2.3.2 (extras): a real client, a hosted stand-in server and the workbench's own server |
 | **Env** | `python-dotenv`, `.env` (gitignored), `.env.example` (committed) | Key never enters the repo |
 | **Not installed** | `anthropic` SDK, Claude Agent SDK | Claude-specific mechanics taught with `st.code()` beside the Gemini equivalent, and built for real with Claude Code in `sandbox_project/` |
 

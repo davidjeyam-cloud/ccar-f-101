@@ -16,6 +16,7 @@ the raw JSON sit in one collapsed Details expander. Pressing Ask clears the prev
 import csv
 import io
 import json
+import platform
 import re
 
 import streamlit as st
@@ -527,10 +528,11 @@ def _setup(kind: str) -> bool:
     status = mcp_live.setup_status()
     problems = []
     if not status["mcp_sdk"]:
-        problems.append("**The MCP package is not installed.** On your PC run `uv pip install -r requirements-mcp.txt`, "
-                        "then restart the app.")
+        problems.append("**The MCP package is not installed.** Run `uv pip install -r requirements.txt`, then restart "
+                        "the app.")
     if not status["gemini_key"]:
-        problems.append("**`GEMINI_API_KEY` is not set.** The model that chooses the tool needs it.")
+        problems.append("**`GEMINI_API_KEY` is not set.** The model that chooses the tool needs it. On your PC put it "
+                        "in `.env`; on the hosted copy add it under the app's Settings → Secrets.")
     ready, why = mcp_live.server_ready(PAGES[kind]["server"])
     if not ready:
         problems.append(f"**This page's server is not available:** {why}."
@@ -586,6 +588,10 @@ def render(kind: str) -> None:
     st.caption(cfg["caption"] + "  ·  ➕ Extra: not on the CCAR-F exam  ·  Live data, not investment advice")
     if not _setup(kind):
         return
+    if kind == "local" and platform.system() != "Windows":
+        st.warning("**You are on the hosted copy of this app.** The server below is started on the machine the app "
+                   "runs on, so \"this computer\" means that hosted Linux machine — not your laptop. To see your own "
+                   "laptop's details, run the app on your PC (http://localhost:8501).")
 
     # ── the setup: schematic + sequence diagram + the difference ──
     st.subheader("How this setup works")

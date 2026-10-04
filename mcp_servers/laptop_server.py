@@ -121,9 +121,37 @@ def _registry(path: str, name: str) -> str:
         return ""
 
 
+def _read(path: str) -> str:
+    try:
+        return Path(path).read_text(encoding="utf-8", errors="replace").strip()
+    except OSError:
+        return ""
+
+
+def _linux_memory(meminfo: str) -> dict:
+    """Parse /proc/meminfo (values are in kB)."""
+    kb = {}
+    for line in meminfo.splitlines():
+        name, _, rest = line.partition(":")
+        if rest.split():
+            kb[name.strip()] = int(rest.split()[0])
+    total, free = kb.get("MemTotal", 0), kb.get("MemAvailable", kb.get("MemFree", 0))
+    if not total:
+        return {}
+    return {"ram_total_gb": round(total / 1024 ** 2, 1), "ram_available_gb": round(free / 1024 ** 2, 1),
+            "ram_in_use_percent": int(round(100 * (total - free) / total))}
+
+
+def _linux_cpu(cpuinfo: str) -> str:
+    for line in cpuinfo.splitlines():
+        if line.lower().startswith("model name"):
+            return line.partition(":")[2].strip()
+    return ""
+
+
 def _memory() -> dict:
     if platform.system() != "Windows":
-        return {}
+        return _linux_memory(_read("/proc/meminfo"))
 
     class Status(ctypes.Structure):
         _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
@@ -161,10 +189,12 @@ def get_hardware_spec() -> dict:
         "@{ cores = $p.NumberOfCores; graphics = @($g); "
         "battery = $(if ($b) { $b.EstimatedChargeRemaining } else { $null }) } | ConvertTo-Json -Compress")
         if platform.system() == "Windows" else None) or {}
+    windows = platform.system() == "Windows"
     spec = {
-        "maker": _registry(bios_key, "SystemManufacturer") or "unknown",
-        "model": _registry(bios_key, "SystemProductName") or "unknown",
-        "processor": _registry(cpu_key, "ProcessorNameString") or platform.processor() or "unknown",
+        "maker": (_registry(bios_key, "SystemManufacturer") if windows else _read("/sys/devices/virtual/dmi/id/sys_vendor")) or "unknown",
+        "model": (_registry(bios_key, "SystemProductName") if windows else _read("/sys/devices/virtual/dmi/id/product_name")) or "unknown",
+        "processor": (_registry(cpu_key, "ProcessorNameString") if windows else _linux_cpu(_read("/proc/cpuinfo")))
+                     or platform.processor() or "unknown",
         "physical_cores": cim.get("cores"),
         "logical_cores": os.cpu_count(),
         **_memory(),
@@ -174,8 +204,11 @@ def get_hardware_spec() -> dict:
         "architecture": platform.machine(),
         "measured_at": _now(),
     }
-    if not cim and platform.system() == "Windows":
+    if not cim and windows:
         spec["note"] = "Core count, graphics and battery were unavailable: the Windows inventory query failed."
+    if not windows:
+        spec["note"] = ("This server is running on a Linux machine (for example a hosted copy of the app), so these "
+                        "are that machine's details. Physical cores, graphics and battery are not reported there.")
     return spec
 
 
@@ -311,6 +344,26 @@ async def summarize_file_types(ctx: Context, path: str = "") -> dict:
             "note": "" if complete else f"Counting stopped after {WALK_BUDGET_S} seconds: totals are partial."}
 
 
+def _ps_rows(ps_output: str) -> list:
+    """Group `ps -eo comm=,rss=,time=` lines by program: rss is kB, time is [DD-]HH:MM:SS."""
+    grouped: dict = {}
+    for line in ps_output.splitlines():
+        parts = line.split()
+        if len(parts) < 3 or not parts[-2].isdigit():
+            continue
+        name, rss, clock = " ".join(parts[:-2]), int(parts[-2]), parts[-1]
+        days, _, hms = clock.rpartition("-")
+        try:
+            h, m, sec = (int(x) for x in hms.split(":"))
+        except ValueError:
+            continue
+        g = grouped.setdefault(name, {"name": name, "memory_mb": 0.0, "cpu_seconds": 0, "copies": 0})
+        g["memory_mb"] += rss / 1024
+        g["cpu_seconds"] += int(days or 0) * 86400 + h * 3600 + m * 60 + sec
+        g["copies"] += 1
+    return [{**g, "memory_mb": round(g["memory_mb"])} for g in grouped.values()]
+
+
 @mcp.tool(annotations=READ_ONLY)
 def get_top_processes(by: str = "memory", limit: int = 8) -> dict:
     """List the programs currently using the most memory or processor time on this computer: program name,
@@ -323,9 +376,15 @@ def get_top_processes(by: str = "memory", limit: int = 8) -> dict:
     """
     if by not in ("memory", "cpu"):
         fail("validation", False, "`by` must be \"memory\" or \"cpu\".")
-    if platform.system() != "Windows":
-        fail("configuration", False, "This tool is written for Windows.")
     limit = max(1, min(int(limit or 8), 20))
+    if platform.system() != "Windows":
+        try:
+            out = subprocess.run(["ps", "-eo", "comm=,rss=,time="], capture_output=True, text=True, timeout=8).stdout
+        except Exception as exc:
+            fail("transient", True, f"The process list could not be read ({type(exc).__name__}). Try again.")
+        rows = _ps_rows(out)
+        rows.sort(key=lambda r: r["memory_mb" if by == "memory" else "cpu_seconds"], reverse=True)
+        return {"sorted_by": by, "processes": rows[:limit], "programs_running": len(rows), "measured_at": _now()}
     rows = _powershell(
         "Get-Process | Group-Object ProcessName | ForEach-Object { [pscustomobject]@{ name = $_.Name; "
         "memory_mb = [math]::Round((($_.Group | Measure-Object WorkingSet64 -Sum).Sum) / 1MB, 0); "
@@ -355,7 +414,7 @@ def estimate_disk_runway(daily_growth_gb: float, drive: str = "C") -> dict:
         fail("validation", False, "`daily_growth_gb` must be a number, e.g. 0.5.")
     if growth <= 0:
         fail("validation", False, "`daily_growth_gb` must be above 0.")
-    root = (str(drive).strip()[:1] or "C").upper() + ":\\"
+    root = (str(drive).strip()[:1] or "C").upper() + ":\\" if platform.system() == "Windows" else "/"
     row = next((d for d in _drives() if d["drive"] == root and "error" not in d), None)
     if row is None:
         fail("validation", False, f"There is no readable drive '{root}'. Call get_storage to see the drives.")
@@ -485,7 +544,7 @@ def my_notes() -> str:
               description="Live figures for one drive: total, used and free space in GB. Put the drive letter in the "
                           "URI, e.g. laptop://drive/C. A resource TEMPLATE: one definition, many URIs.")
 def drive(letter: str) -> str:
-    root = f"{letter[:1].upper()}:\\"
+    root = f"{letter[:1].upper()}:\\" if platform.system() == "Windows" else "/"
     row = next((d for d in _drives() if d["drive"] == root), None)
     return json.dumps(row or {"drive": root, "error": "no such drive"}, indent=2)
 
