@@ -34,7 +34,7 @@ _table(["", "Meaning"], [[k, v] for k, v in vf.BASIS.items()])
 st.caption("No price appears on this page: none of the pages I read states one. Where a page did not say something, the "
            "table says “not stated”.")
 
-tabs = st.tabs(["📋 At a glance", "🔎 Vendor details and sources", "🧭 For an investment-banking agent", "⚠️ What I could not check"])
+tabs = st.tabs(["📋 At a glance", "🧰 Tools and APIs", "🔎 Vendor details and sources", "🧭 For an investment-banking agent", "⚠️ What I could not check"])
 
 with tabs[0]:
     _table(["#", "Vendor", "MCP server", "API", "What they sell (high level)", "How a client gets access", "Basis"],
@@ -44,6 +44,20 @@ with tabs[0]:
                "programs. “Not stated” means the vendor's page did not say.")
 
 with tabs[1]:
+    n_tools = len(vf.MCP_TOOLS)
+    st.markdown(f"**MCP tools listed by name on the vendors' pages: {n_tools} in total, from 3 vendors.**")
+    _table(["#", "Vendor", "Tools listed", "Page", "Note"],
+           [[str(i), v, n, f"[page]({u})" if u else "—", note] for i, (v, n, u, note) in enumerate(vf.TOOL_COUNTS, 1)])
+    st.markdown("**MCP tools** — inputs and outputs as the page states them")
+    _table(["#", "Vendor", "Tool", "Short description", "MCP inputs", "MCP outputs"],
+           [[str(i), *row] for i, row in enumerate(vf.MCP_TOOLS, 1)])
+    st.markdown("**REST and library APIs** — the same columns, kept apart because the API calls are not one-to-one with the MCP tools")
+    _table(["#", "Vendor", "API or endpoint", "Short description", "REST inputs", "REST outputs"],
+           [[str(i), *row] for i, row in enumerate(vf.REST_APIS, 1)])
+    st.caption("“not stated” = the page I read did not say. Parameter names are the vendors' own. Vendors absent from the tool "
+               "table publish no tool list on the pages I could read; I did not guess one.")
+
+with tabs[2]:
     st.markdown("One section per vendor: the details behind the table, and the pages each row was read from.")
     for vendor, facts, sources in vf.DETAILS:
         with st.expander(vendor):
@@ -51,7 +65,7 @@ with tabs[1]:
             if sources:
                 st.markdown("**Pages read:** " + " · ".join(f"[{label}]({url})" for label, url in sources))
 
-with tabs[2]:
+with tabs[3]:
     st.markdown("**Which source answers which question** — my reading of the table, not a claim by any vendor.")
     _table(["#", "A question the agent asks", "Sources that cover it"],
            [[str(i), q, a] for i, (q, a) in enumerate(vf.AGENT_MAP, 1)])
@@ -61,6 +75,6 @@ with tabs[2]:
                 "(Streamable HTTP) or by command (stdio). A vendor server that signs the user in with OAuth is the same "
                 "client with a different URL and a sign-in step; this workbench's client does not do that sign-in yet.")
 
-with tabs[3]:
+with tabs[4]:
     st.markdown("Things I could not verify, so you can decide what to chase before building on this table:")
     st.markdown("\n".join(f"- {g}" for g in vf.GAPS))

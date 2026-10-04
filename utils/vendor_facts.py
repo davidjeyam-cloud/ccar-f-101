@@ -33,7 +33,7 @@ GLANCE = (
      "MCP: sign in with your Crunchbase account. MCP is bought per workspace and assigned to each user as a seat; ask Crunchbase sales. API: an API key",
      "✅"),
     ("ZoomInfo", "Contacts and accounts",
-     "`https://mcp.zoominfo.com/mcp` · 6 tools: find, enrich and research accounts; find, enrich and research contacts",
+     "`https://mcp.zoominfo.com/mcp` · 19 tools listed on docs.gtm.ai: search, enrich and research companies and contacts; intent, scoops, news; audiences",
      "REST groups Search, Enrich, Lookup, Usage · OAuth 2.0 · base URL not on the page I read",
      "B2B company and contact data: firmographics, technographics, funding, business signals, contact details",
      "A ZoomInfo licence (self-serve or enterprise); OAuth sign-in; plan limits and credits apply; a free trial is offered",
@@ -223,4 +223,76 @@ GAPS = (
     "No page states a price, a contract term or a licence tier for any vendor.",
     "“DealInfo” and “Contexa” could not be identified as financial-data vendors.",
     "Vendor pages change. Re-read a vendor's page before building on a row.",
+)
+
+# ── Tool and API tables (added 2026-10-04) ───────────────────────────────────────────────────────────────────
+# Read on the vendor pages named in TOOL_COUNTS. "not stated" = the page did not say. Only vendors whose pages list
+# tools by name appear: FactSet, S&P/Kensho, Bloomberg, LSEG and Fitch publish no tool list I could read.
+NS = "not stated"
+
+# (vendor, tools listed on the page, page, note)
+TOOL_COUNTS = (
+    ("Crunchbase", "14", "https://data.crunchbase.com/docs/tool-reference", "Page: “Tool Reference”"),
+    ("ZoomInfo", "19 (16 data tools + 3 agentic tools)", "https://docs.gtm.ai/docs/available-mcp-tools",
+     "The ZoomInfo solution page I read earlier names 6 capabilities; the docs page lists 19. This table uses the docs page"),
+    ("Moody's", "5", "https://www.moodys.com/web/en/us/genai/model-context-protocol.html", "Page: “Model Context Protocol”"),
+    ("FactSet", "no tool list read", "", "A search summary says 24 tools; not confirmed on FactSet's page"),
+    ("S&P Global (Kensho)", "no tool list read", "", "Tool names not stated on the pages read"),
+    ("Fitch", "no tool list read", "", "Tool names not stated in the press release"),
+    ("Bloomberg", "no tool list read", "", "Enterprise MCP described by size only (securities, fields)"),
+    ("LSEG", "no tool list read", "", "Tool names not stated on the pages read"),
+)
+
+# (vendor, tool, short description, inputs, outputs)
+MCP_TOOLS = (
+    ("Crunchbase", "cb_expert_query_answer", "Answers a natural-language question using live Crunchbase data", "A natural-language question (string)", "An answer with supporting results and a request_id"),
+    ("Crunchbase", "cb_expert_build_search", "Turns a plain-language description of entities into a compiled structured search", "A natural-language description (string)", "Compiled predicates for structured queries"),
+    ("Crunchbase", "cb_expert_query_domain", "Answers questions about the shape of the Crunchbase data itself", "intent, question (strings); focus (array); max_suggestions (integer)", "A domain map, analytical paths, or answerability diagnostics"),
+    ("Crunchbase", "cb_expert_resolve_entity", "Disambiguates an entity name against the Crunchbase catalogue", "name (required); collection_id, domains, context, cb_entity_get (optional)", "One match, or a ranked candidate list with optional full profiles"),
+    ("Crunchbase", "cb_expert_submit_feedback", "Records feedback on an earlier query result", "subject_request_id, sentiment (required); feedback (optional)", "A confirmation; may include corrected results after negative feedback"),
+    ("Crunchbase", "cb_reference", "The schema reference for the other tools", "path (string, defaults to the index)", "Markdown documentation for that schema path"),
+    ("Crunchbase", "cb_entity_autocomplete", "Searches entities by name and returns matching identifiers", "query (required); collection_ids, limit (optional)", "Matching identifiers with brief descriptions"),
+    ("Crunchbase", "cb_entity_get", "Gets the complete profile of an identified entity", "entity_id (required); entity_def_id, field_ids, card_ids, related_entity_limit, after_id (optional)", "The entity profile: fields and relationship cards"),
+    ("Crunchbase", "cb_search_query", "Runs a structured search and returns matching entities", "collection_id (required); predicates or query, field_ids, order, limit, after_id", "Filtered entities with the requested fields and URLs"),
+    ("Crunchbase", "cb_list_query", "Returns all saved lists owned by the caller", NS, "List names, entity counts, timestamps"),
+    ("Crunchbase", "cb_list_create", "Creates a new empty list", "name (string)", NS),
+    ("Crunchbase", "cb_list_add_entities", "Adds entities to an existing list", "list_id; an array of entity ids", NS),
+    ("Crunchbase", "cb_list_get", "Returns the entity identifiers in a list", "list_id; after_id (pagination)", "Entity identifiers, paginated"),
+    ("Crunchbase", "cb_metering_get_state", "Returns the usage limits visible to the current user", "None", "Applicable limits and quota impact per tool"),
+    ("ZoomInfo", "Search Companies", "Find companies by firmographic criteria", NS, NS),
+    ("ZoomInfo", "Search Contacts", "Find contacts by role, company or signal", NS, NS),
+    ("ZoomInfo", "Enrich Companies", "Full firmographic details for up to 25 companies", NS, "Firmographic details"),
+    ("ZoomInfo", "Enrich Contacts", "Full contact details for up to 25 contacts", NS, "Contact details"),
+    ("ZoomInfo", "Lookup", "Returns valid filter values (industries, regions, job functions)", NS, "Filter values"),
+    ("ZoomInfo", "Find Similar Companies", "Finds companies resembling a given company", NS, "Similar companies"),
+    ("ZoomInfo", "Find Similar Contacts", "Finds contacts resembling a given contact", NS, "Similar contacts"),
+    ("ZoomInfo", "Find Recommended Contacts", "Outreach-ready contacts for a specific account", "An account identifier", "Contacts"),
+    ("ZoomInfo", "Search Intent", "Companies showing buyer-intent signals", NS, "Companies with intent signals"),
+    ("ZoomInfo", "Enrich Intent", "Intent signals for one company", "A company identifier", "Intent signals"),
+    ("ZoomInfo", "Search Scoops", "Companies based on real-world business events", NS, "Companies"),
+    ("ZoomInfo", "Enrich Scoops", "Business-event scoops for one company", "A company identifier", "Business events"),
+    ("ZoomInfo", "Enrich News", "Categorised news coverage for one company", "A company identifier", "News articles"),
+    ("ZoomInfo", "Browse Audiences", "Lists and searches your GTM Studio audiences", NS, "Audiences"),
+    ("ZoomInfo", "Get Audience", "An audience's columns and a preview of its rows", "An audience identifier", "Columns and preview rows"),
+    ("ZoomInfo", "GTM Context", "The user's role and go-to-market context for the organisation", NS, "Role and context"),
+    ("ZoomInfo", "Account Research", "A comprehensive intelligence briefing on a company", "A company identifier", "An intelligence briefing"),
+    ("ZoomInfo", "Contact Research", "A comprehensive intelligence briefing on a contact", "A contact identifier", "An intelligence briefing"),
+    ("ZoomInfo", "Update GTM Context", "Sets or changes the GTM context from unstructured content", "Unstructured content", "The updated configuration"),
+    ("Moody's", "findEntity", "Finds entities Moody's covers, by identifier, name or related metadata", NS, "Moody's unique entity ID for deeper queries"),
+    ("Moody's", "searchEntityDocuments", "Searches Moody's research library for an entity or topic", NS, NS),
+    ("Moody's", "getEntityRatings", "Current credit rating and outlook for an entity", NS, "Rating, outlook, rating date and rating details"),
+    ("Moody's", "getEntityRatingDrivers", "Main drivers behind a rating upgrade or downgrade", NS, "The drivers, with context"),
+    ("Moody's", "getEntityScorecard", "The Moody's rating scorecard for an entity", NS, "Factor weights, scoring components and rating rationale"),
+)
+
+# (vendor, API or endpoint, short description, inputs, outputs)
+REST_APIS = (
+    ("Crunchbase", "REST `GET /v4/data/entities/organizations/{entity_name}` (the one example the page shows)", "Entity lookup; the page names three families: entity lookup, search, autocomplete", "API key as `user_key` (or the `X-cb-user-key` header)", "JSON implied; the page does not describe the fields. The full list is on the API Reference page, which I did not read"),
+    ("ZoomInfo", "REST groups Search, Enrich, Lookup, Usage", "Same families as the MCP tools (search and enrich contacts and companies, intent, news, scoops)", "OAuth 2.0; per-endpoint parameters not read", "Not stated; the base URL was not on the pages read"),
+    ("LSEG", "Datastream Web Service (DSWS)", "Low-frequency economic and financial time series", "Credentials (username and password); instrument identifiers; field names", "Time series. Endpoints not stated"),
+    ("LSEG", "LSEG Data Library (Python, .NET, TypeScript)", "Most LSEG datasets beyond Datastream", "An app key; user login and password for a platform session; the Workspace app running for a desktop session", "Structured financial data such as pricing and fundamentals"),
+    ("LSEG", "Eikon Data API", "Niche datasets the two above do not cover; the page calls it unlikely to be needed", NS, NS),
+    ("SEC EDGAR", "REST on `data.sec.gov` and files on `www.sec.gov` (page D2.3.1)", "Filings and XBRL facts", "A User-Agent header; no key", "JSON and filing files"),
+    ("Bloomberg", "BLPAPI, Server API, B-PIPE, Data License (REST, SFTP)", "Reference, pricing, fundamentals and more", NS, NS),
+    ("Moody's, FactSet, S&P, Fitch", "Named, not described", "Moody's “Smart APIs”; FactSet content APIs; S&P XpressAPI and Capital IQ API (search summary)", NS, NS),
 )

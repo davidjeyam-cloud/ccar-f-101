@@ -684,3 +684,5 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 **Built:** `utils/vendor_facts.py` (the facts, with a basis label per row), `pages/c233_data_vendors.py` (tabs: At a glance · Vendor details and sources · For an investment-banking agent · What I could not check), `app.py` (sidebar entry after D2.3.2). The page makes no network call and works without keys, so it also works on the hosted copy.
 
 **Checks:** page test (13 rows, 4 basis labels, 11 detail sections, no e-mail or price strings), `app.py` start: 0 exceptions. **Uncommitted.**
+
+**D2.3.3 tools and APIs tab (user request, 2026-10-04):** new tab "Tools and APIs" with a count table, an MCP tools table (vendor, tool, description, MCP inputs, MCP outputs) and a separate REST/library API table. Read for this: Crunchbase tool reference (14 tools), ZoomInfo docs.gtm.ai available tools (19, which corrects the 6 shown earlier), Moody's MCP page (5), Crunchbase using-the-api, LSEG common-APIs summary. FactSet, S&P, Fitch, Bloomberg, LSEG publish no readable tool list; inputs/outputs the pages omit say "not stated". Uncommitted.
