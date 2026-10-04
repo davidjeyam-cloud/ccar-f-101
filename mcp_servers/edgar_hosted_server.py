@@ -6,7 +6,7 @@ It runs as its OWN service over Streamable HTTP; an MCP client reaches it by URL
 
 What is whose:
 - The 21 TOOLS are the community `sec-edgar-mcp` package's, registered unchanged (AGPL-3.0, not written
-  or endorsed by the SEC; the SEC itself hosts no MCP server). They fetch from sec.gov.
+  or endorsed by the SEC, per its README). They fetch from sec.gov.
 - The RESOURCES and PROMPTS below were added by this workbench, so the hosted page can show every MCP
   server feature. The upstream package ships none.
 

@@ -21,7 +21,7 @@ import re
 
 import streamlit as st
 
-from utils import mcp_charts, mcp_live, mcp_seq
+from utils import mcp_charts, mcp_edgar_facts, mcp_live, mcp_seq
 
 MAX_ROWS = 25
 # Plumbing fields that add nothing for a reader (still visible in Details → Raw JSON).
@@ -523,6 +523,135 @@ def _parse_blanks(text: str) -> dict:
     return out
 
 
+@st.cache_data(show_spinner=False)
+def _schematic_img(kind: str, on_windows: bool) -> bytes:
+    return mcp_seq.schematic_png(kind, on_windows)
+
+
+@st.cache_data(show_spinner=False)
+def _canonical_img(kind: str, title: str) -> bytes:
+    return mcp_seq.sequence_png(mcp_seq.canonical_events(kind), title, kind)
+
+
+def _where_table(kind: str, on_windows: bool) -> None:
+    """Every part of the setup, the machine it runs on, and the address or evidence — facts only."""
+    system = platform.system()
+    here = ("your laptop (this app is running on Windows right now)" if on_windows else
+            f"the machine running this app ({system} right now). On the hosted copy that is Streamlit's server")
+    if kind == "hosted":
+        up = mcp_live.service_running()
+        rows = [
+            ["Your browser tab", "Your laptop", "`http://localhost:8501` when you run the app on your PC"],
+            ["Streamlit app: the agent and the MCP client", here, "The app you are looking at"],
+            ["**The MCP server** (the sec-edgar tools)",
+             "**A separate process on that same machine.** You host it; nobody else does",
+             f"`{mcp_live.SEC_URL}` — started by the “Start the service” button, which runs `edgar_hosted_server.py`. "
+             "It is bound to `127.0.0.1` (loopback), so only this machine can connect. "
+             + ("Right now: 🟢 running." if up else "Right now: 🔴 not running.")],
+            ["The Gemini model", "Google's servers, across the internet", "`generativelanguage.googleapis.com` (the google-genai SDK's default address)"],
+            ["The SEC's data", "The SEC's servers, across the internet", "`data.sec.gov` and `www.sec.gov` (the hosts in the MCP server's request log)"],
+        ]
+    else:
+        rows = [
+            ["Your browser tab", "Your laptop", "`http://localhost:8501` when you run the app on your PC"],
+            ["Streamlit app: the agent and the MCP client", here, "The app you are looking at"],
+            ["**The MCP server** (your own tools)", "**A child process of the app, on that same machine**",
+             "Started by the client with `python mcp_servers/laptop_server.py`; it ends when the client closes the pipes. "
+             "It has no network address at all: the connection is its stdin and stdout"],
+            ["This computer's own data", "That same machine", "Read directly by the server: no request is made"],
+            ["The Gemini model", "Google's servers, across the internet", "`generativelanguage.googleapis.com`"],
+            ["A search engine and three websites", "Other people's servers, across the internet",
+             "Contacted only by `web_search` and `check_internet`"],
+        ]
+    _table(["#", "Part", "Runs on", "Address or evidence"], [[str(i)] + r for i, r in enumerate(rows, 1)])
+
+
+def _tab_where(kind: str) -> None:
+    on_windows = platform.system() == "Windows"
+    st.image(_schematic_img(kind, on_windows), width="stretch")
+    st.caption("🟩 green = the machine running this app · 🟦 blue dashed = `localhost`, the machine talking to itself · "
+               "🟧 amber = somewhere else: anything that crosses from the green box into the amber box leaves this machine.")
+    _where_table(kind, on_windows)
+    if kind == "hosted":
+        st.markdown("**Is the MCP server hosted somewhere else?** No. Here it is a process on the same machine as the "
+                    "app, reached through `localhost`. If someone else hosted it, the URL would point at their machine and "
+                    "the client would change in one place (the URL). Nothing in this setup is hosted by a third party. "
+                    "The `sec-edgar-mcp` project says it is not affiliated with or endorsed by the SEC, and the SEC pages "
+                    "I read list data APIs and files — none mentions an MCP server.")
+
+
+def _tab_sec() -> None:
+    facts = mcp_edgar_facts
+    st.markdown(f"**What the SEC puts on the internet, and how this server uses it.** Each row says how I know: "
+                f"📘 the SEC's own pages (read {facts.READ_ON}) · 📦 the server's source code ({facts.VERSIONS}) · "
+                "👁 observed in the MCP server's request log.")
+    st.markdown("**Addresses**")
+    _table(["#", "Host", "Address", "What comes back", "How I know", "Used by this server?"],
+           [[str(i), f"`{h}`", f"`{path}`", what, how, used] for i, (h, path, what, how, used) in enumerate(facts.ENDPOINTS, 1)])
+    st.markdown("**Rules**")
+    _table(["#", "Topic", "Fact", "Source"], [[str(i), t, f, src] for i, (t, f, src) in enumerate(facts.RULES, 1)])
+    st.caption("Sources: " + " · ".join(f"[{name}]({url})" for name, url in facts.SEC_SOURCES))
+
+
+def _tab_translate() -> None:
+    facts = mcp_edgar_facts
+    st.markdown("**How a sentence becomes a request to the SEC.** There is no SQL and no query language on the way: the "
+                "model picks a tool and its arguments, and the tool is ordinary Python that builds web addresses and reads what "
+                "comes back.")
+    _table(["#", "What happens", "Over what", "What is sent"], [list(h) for h in facts.HOPS])
+
+    st.markdown("**Pick a tool and see the whole path**")
+    names = [t["tool"] for t in facts.TOOLS]
+    pick = st.selectbox("Tool", names, key="mcp_explain_tool", label_visibility="collapsed")
+    t = next(x for x in facts.TOOLS if x["tool"] == pick)
+    left, right = st.columns(2)
+    with left:
+        st.markdown(f'**① You ask:** *{t["question"]}*')
+        st.markdown("**② Gemini answers with a function call** — a tool and its arguments, not a query")
+        st.code(json.dumps({"name": t["tool"], "args": t["args"]}, indent=2), language="json")
+    with right:
+        st.markdown("**③ The client sends it to the server** — HTTP POST to the server's address (rebuilt from the call, not captured)")
+        st.code(json.dumps({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+                            "params": {"name": t["tool"], "arguments": t["args"]}}, indent=2), language="json")
+    st.markdown("**④ The tool runs on the server** — pseudo code, simplified from the package source "
+                f"({facts.VERSIONS}). Lines starting with `GET` are requests to the SEC.")
+    st.code(t["code"], language="text")
+
+    st.markdown(f"**The requests it made** — 👁 observed {facts.READ_ON} for Apple, on a freshly started service")
+    rows = [[str(i), "GET", f"`{u}`", "200"] for i, u in enumerate(t["first"], 1)]
+    _table(["#", "Method", "Address", "Answered"], rows)
+    st.caption(f'First call: {len(t["first"])} request{"s" if len(t["first"]) != 1 else ""}. '
+               f'Called again straight after: {len(t["second"])}. {t["note"]}')
+
+    st.markdown("**Run it yourself**")
+    if not mcp_live.service_running():
+        st.info("Start the service (below) and this button runs the tool with the arguments you choose, then lists the "
+                "requests the server really made.")
+        return
+    with st.form("mcp_explain_run"):
+        raw = st.text_area("Arguments (JSON) — change the ticker if you like", json.dumps(t["args"], indent=2),
+                           key=f'mcp_explain_args_{t["tool"]}', height=120)
+        go = st.form_submit_button(f'Call {t["tool"]} now')
+    if go:
+        try:
+            args = json.loads(raw or "{}")
+            with st.spinner("Calling the server…"):
+                st.session_state["mcp_explain_live"] = mcp_live.call_tool("sec", t["tool"], args)
+        except ValueError as exc:
+            st.error(f"The arguments are not valid JSON: {exc}")
+        except Exception as exc:                                   # show it — never hide a failure
+            st.session_state.pop("mcp_explain_live", None)
+            st.error(f"{type(exc).__name__}: {exc}")
+    live = st.session_state.get("mcp_explain_live")
+    if live and live["tool"] == t["tool"]:
+        st.markdown(f'**Result of `{live["tool"]}` — {live["status"]} · {live["ms"]} ms · {len(live["http"])} request'
+                    f'{"s" if len(live["http"]) != 1 else ""} to the SEC**')
+        _table(["#", "Method", "Address", "Answered"],
+               [[str(i), h["method"], f'`{h["url"]}`', str(h["status"])] for i, h in enumerate(live["http"], 1)] or
+               [["—", "—", "no request: answered from memory", "—"]])
+        _result(live)
+
+
 def _setup(kind: str) -> bool:
     """Show only what is missing. Returns False when the page cannot run."""
     status = mcp_live.setup_status()
@@ -559,8 +688,8 @@ def _service_box() -> bool:
             else:
                 st.markdown(f"🔴 **Nothing is running** at `{mcp_live.SEC_URL}`. A client cannot start a server that "
                             "someone else hosts — start the service first.")
-            st.caption("The SEC does not host an MCP server. This is the community `sec-edgar-mcp` program, run as "
-                       "its own service on this PC (reachable only from this PC) to stand in for a provider's "
+            st.caption("This is the community `sec-edgar-mcp` program (it says it is not affiliated with the SEC), run as "
+                       "its own service on this PC and reachable only from this PC, to stand in for a provider's "
                        "hosting. The client code is the same as for a real remote URL.")
         with right:
             if running:
@@ -595,17 +724,24 @@ def render(kind: str) -> None:
 
     # ── the setup: schematic + sequence diagram + the difference ──
     st.subheader("How this setup works")
-    left, right = st.columns([2, 3])
-    with left:
-        st.markdown("**Schematic — where each part runs**")
-        st.graphviz_chart(SCHEMATIC[kind])
-    with right:
-        st.markdown("**Sequence — who talks to whom, in order**")
-        st.image(mcp_seq.sequence_png(mcp_seq.canonical_events(kind), cfg["seq_title"], kind), width="stretch")
+    labels = ["🗺️ Where each part runs", "🔀 Sequence"]
+    if kind == "hosted":
+        labels += ["🌐 What sec.gov exposes", "🧮 From a question to an SEC request"]
+    labels.append("⚖️ Hosted vs local")
+    tabs = st.tabs(labels)
+    with tabs[0]:
+        _tab_where(kind)
+    with tabs[1]:
+        st.image(_canonical_img(kind, cfg["seq_title"]), width="stretch")
+    if kind == "hosted":
+        with tabs[2]:
+            _tab_sec()
+        with tabs[3]:
+            _tab_translate()
     mine, theirs = ("Hosted separately — this page", "Local, my own — the other page") if kind == "hosted" else \
                    ("Local, my own — this page", "Hosted separately — the other page")
     order = (1, 2) if kind == "hosted" else (2, 1)
-    with st.expander(f'What is different from {other["num"]} ({other["title"]})', expanded=True):
+    with tabs[-1]:
         _table(["#", "", mine, theirs],
                [[str(n), f"**{row[0]}**", row[order[0]], row[order[1]]] for n, row in enumerate(COMPARE, 1)])
         st.caption("*On the hosted page the stand-in service runs on your PC, so the page can read its log to show the "
@@ -694,8 +830,9 @@ def render(kind: str) -> None:
 """
         if kind == "hosted":
             st.markdown("""
-- **Is this server hosted by the SEC?** No. The SEC publishes data, not an MCP server. `sec-edgar-mcp` is a
-  community program; here it runs as a separate service on this PC, listening only on `127.0.0.1`.
+- **Is this server hosted by the SEC?** No. `sec-edgar-mcp` is a community program that says it is not affiliated
+  with the SEC; the SEC pages I read describe data APIs and files, not an MCP server. Here it runs as a separate
+  service on this PC, listening only on `127.0.0.1`.
 - **How do you know when sec.gov was contacted?** The page reads the stand-in service's log. That is only possible
   because the service runs on your PC.""" + common)
         else:

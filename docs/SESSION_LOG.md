@@ -649,3 +649,38 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 - AGENTS.md and docs/ARCHITECTURE.md stack tables updated.
 
 **Checks:** the Linux parsers were tested with sample `/proc` and `ps` text, and the tools with the platform faked as Linux. They were NOT run on a real Linux machine (no WSL or Docker here), so the hosted copy is the first real run. The secrets loader was tested with and without secrets. Both pages and the all-pages regression pass on Windows.
+
+**Hosted page made concrete (user request, 2026-10-04):** "in the sec-edgar page it is not clear where the MCP server is hosted and running… draw boundaries between my laptop, localhost, somewhere else and sec.gov… outline what sec.gov exposes — REST endpoints or what… it is too abstract how the tools translate a chat question into a query… a pseudo code snippet in the app… don't guess, make it factual and grounded."
+
+**Research (all of it read, not recalled):**
+- The SEC's *EDGAR APIs* and *Developer resources* pages: four REST endpoints on `data.sec.gov` (submissions, companyconcept, companyfacts, frames), bulk zips on `www.sec.gov`, no authentication or key, a limit of 10 requests per second, no CORS on `data.sec.gov`, and no SQL or query interface mentioned.
+- The installed source of `sec-edgar-mcp` 1.0.8 (the tools, the ticker cache) and `edgartools` 5.60.0 (sets the `User-Agent` header from the identity; throttles itself to 8 requests per second).
+- 8 tools called twice each on a freshly started service: 44 requests, every one a GET to `data.sec.gov` or `www.sec.gov`, answered 200, none with a query string. The first request in a fresh process is the ticker list; the ticker cache then lives in memory, so a second `get_cik_by_ticker` made no request.
+
+**Built:**
+- `utils/mcp_seq.py::schematic_png`: a matplotlib schematic with explicit zones — this machine (named "your laptop" only when the app is on Windows), `localhost` (loopback), "somewhere else across the internet", and the SEC's servers. Matplotlib because there is no Graphviz binary here to look at a layout. Both pages use it.
+- `utils/mcp_edgar_facts.py`: the sourced facts (endpoints, rules, the four hops, five tools with pseudo code and the requests observed).
+- `utils/mcp_page.py`: the setup section is now tabs. Hosted: Where each part runs · Sequence · What sec.gov exposes · From a question to an SEC request · Hosted vs local. Local: Where each part runs · Sequence · Hosted vs local. The explorer has a "Call this tool now" button (`mcp_live.call_tool`, no model) that lists the requests the server really makes.
+
+**Findings worth keeping (from reading the code and running it):**
+- `get_recent_filings` accepts a `days` argument and never uses it: it appears only in the function's signature.
+- `get_company_facts` and `get_key_metrics` fetch the companyfacts file (HTTP 200) but return `"metrics": {}` with `success: true`, because the tool reads `facts.data` and the installed edgartools returns an `EntityFacts` object that has no `.data`.
+- `get_financials` takes the later of the latest 10-K and the latest 10-Q, so "latest" can be a quarterly report.
+
+**Correction:** an earlier entry and some page text said "the SEC hosts no MCP server". What was actually checked: the project's README says it is not affiliated with the SEC, and the SEC pages read list data APIs and files, not an MCP server. The page text now says exactly that.
+
+**Checks:** both schematics (3 variants) rendered and looked at; both pages tested end to end (tabs, tables, each explorer tool, the live call with a changed ticker, invalid JSON, service stopped and running); local page unchanged apart from the new tabs. **Uncommitted.**
+
+**New page D2.3.3 — financial-data vendors (user request, 2026-10-04):** "a simple table, like the MCP server outline in 2.3.1, with Crunchbase, ZoomInfo, FactSet, SharkRepellent, rating agencies (Moody's, S&P, Fitch), DealInfo, Contexa… list the key MCP or API endpoints, what they commercially sell (high level), how a client accesses the service. Ground it in their official pages. I'm building an investment-banking agent. Add Bloomberg and LSEG."
+
+**Research (vendor pages fetched and read, 2026-10-04):**
+- MCP servers found with a published endpoint: Crunchbase (`https://mcp.crunchbase.com`, 14 tools), ZoomInfo (`https://mcp.zoominfo.com/mcp`, 6 tools), Moody's (`https://api.moodys.com/genai-ready-data/m1/mcp`, 5 tools). Described without a URL: FactSet (8 content APIs behind it), S&P/Kensho (remote MCP server for the LLM-ready API), Bloomberg (Enterprise MCP in Data License Plus, 100M+ securities and 30,000+ fields), LSEG (managed MCP server with Microsoft Copilot Studio and in Databricks Marketplace, phased), Fitch (Fitch Nexus).
+- REST or library APIs: Crunchbase (`api.crunchbase.com/v4/data/`, 200 calls per minute), ZoomInfo (Search, Enrich, Lookup, Usage; OAuth 2.0), Bloomberg (BLPAPI, Server API, B-PIPE, Data License over REST/SFTP/cloud), LSEG (Data Library, Datastream Web Service).
+- SharkRepellent is a FactSet product (takeover-defence and governance data). No MCP server or API for it was found on the pages read.
+- "DealInfo": no vendor found. "Contexa": matched a WooCommerce search product, a document-extraction API and an MCP developer platform, none a financial-data vendor. Both are shown as unidentified; the user was asked for the exact names.
+- Blocked or unreadable to my tools: Fitch's own domains and the business-wire copy of its release (so Fitch rests on a republished press release); S&P RatingsDirect, S&P's AI-for-developers page and S&P marketplace API page; FactSet's developer-portal pages (script-built, title only); ZoomInfo's REST base URL and rate-limit values.
+- No page states a price. No e-mail address is copied into the repo.
+
+**Built:** `utils/vendor_facts.py` (the facts, with a basis label per row), `pages/c233_data_vendors.py` (tabs: At a glance · Vendor details and sources · For an investment-banking agent · What I could not check), `app.py` (sidebar entry after D2.3.2). The page makes no network call and works without keys, so it also works on the hosted copy.
+
+**Checks:** page test (13 rows, 4 basis labels, 11 detail sections, no e-mail or price strings), `app.py` start: 0 exceptions. **Uncommitted.**

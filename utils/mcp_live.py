@@ -7,7 +7,7 @@ Unlike utils/mcp_lab.py (SIMULATED), everything here is real:
     "laptop"  LOCAL, stdio: mcp_servers/laptop_server.py, the workbench's own server (hardware, storage,
               web search). The client starts it as a child process and talks over its stdin/stdout.
     "sec"     HOSTED SEPARATELY, Streamable HTTP: the community `sec-edgar-mcp` package (not
-              SEC-affiliated; the SEC hosts no MCP server). It runs as its own service and the client
+              SEC-affiliated, by its own README). It runs as its own service and the client
               only knows its URL. Here the service runs on this PC (bound to 127.0.0.1) to stand in for
               a provider's hosting — start_service() / stop_service() play the provider's role;
 - real models — Gemini (utils/llm.MODEL). A research agent chooses tools from the descriptions the
@@ -414,6 +414,17 @@ def read_resource(key: str, uri: str) -> dict:
         c = res.contents[0]
         return {"uri": uri, "mime": c.mimeType or "", "text": getattr(c, "text", "") or "", "ms": int((time.time() - t) * 1000)}
     return asyncio.run(_with_sessions([key], work, log))
+
+
+def call_tool(key: str, name: str, args: dict) -> dict:
+    """tools/call with arguments YOU chose — no model in between. Returns the normalised call, including the
+    web requests the server logged while it ran. It lets the page show, for a tool and its arguments, exactly
+    which URLs the server fetched."""
+    log = Log()
+
+    async def work(sessions, tools):
+        return {"call": await _call_tool(sessions[key], key, name, args, log)}
+    return asyncio.run(_with_sessions([key], work, log))["call"]
 
 
 def get_prompt(key: str, name: str, arguments: dict) -> dict:
