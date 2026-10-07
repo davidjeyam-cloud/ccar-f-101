@@ -39,7 +39,7 @@ GLANCE = (
      "A ZoomInfo licence (self-serve or enterprise); OAuth sign-in; plan limits and credits apply; a free trial is offered",
      "✅"),
     ("FactSet", "Market and deal data",
-     "FactSet's own MCP server. Its article lists 8 content APIs behind it: Fundamentals, Estimates, Ownership, M&A, Pricing, People, Events, Supply Chain. Endpoint URL not verified",
+     "`https://mcp.factset.com/content/v1` (Streamable HTTP) and 11 tools named `factset_…`, per a search summary; FactSet's own pages could not be read. Its article lists 8 content APIs behind the server: Fundamentals, Estimates, Ownership, M&A, Pricing, People, Events, Supply Chain",
      "REST content APIs on `developer.factset.com` (the catalogue page is script-built; I could not read it)",
      "Financial data and analytics: fundamentals, estimates, ownership, M&A, prices, events, supply chain",
      "Through a FactSet relationship; a search summary says an MCP trial is requested from FactSet",
@@ -133,7 +133,7 @@ DETAILS = (
     ("FactSet", (
         ("What FactSet itself says", "Its “Enterprise MCP” article lists “eight content APIs”: Fundamentals, Estimates, Ownership, M&A, Pricing (FGP), People, Events and Supply Chain. "
                                      "The same article discusses OAuth and scoped access for MCP in general; it does not describe FactSet's own enforcement"),
-        ("Not verified", "The MCP endpoint URL appeared only in a third-party listing, so it is not shown. The developer-portal pages are script-built and returned only a title to my fetch. "
+        ("Not verified", "The endpoint URL and 11 tool names appear in a search summary (which also cites third-party listings), not on a FactSet page I could read, so they carry 🔎. The developer-portal pages are script-built and returned only a title to my fetch. "
                          "A search summary mentions 24 tools and a trial by contacting FactSet; I could not confirm either on FactSet's page"),
     ), (("FactSet developer portal — MCP", "https://developer.factset.com/mcp"),
         ("FactSet Enterprise MCP, part 3 (security and governance)", "https://insight.factset.com/enterprise-mcp-part-3-security-and-governance"))),
@@ -236,7 +236,7 @@ TOOL_COUNTS = (
     ("ZoomInfo", "19 (16 data tools + 3 agentic tools)", "https://docs.gtm.ai/docs/available-mcp-tools",
      "The ZoomInfo solution page I read earlier names 6 capabilities; the docs page lists 19. This table uses the docs page"),
     ("Moody's", "5", "https://www.moodys.com/web/en/us/genai/model-context-protocol.html", "Page: “Model Context Protocol”"),
-    ("FactSet", "no tool list read", "", "A search summary says 24 tools; not confirmed on FactSet's page"),
+    ("FactSet", "11 named in a search summary (🔎)", "https://developer.factset.com/mcp/factset-ai-ready-data-mcp", "FactSet's own pages are script-built and returned only a title; names come from a search summary. An earlier summary said 24 tools; neither is confirmed"),
     ("S&P Global (Kensho)", "no tool list read", "", "Tool names not stated on the pages read"),
     ("Fitch", "no tool list read", "", "Tool names not stated in the press release"),
     ("Bloomberg", "no tool list read", "", "Enterprise MCP described by size only (securities, fields)"),
@@ -283,6 +283,17 @@ MCP_TOOLS = (
     ("Moody's", "getEntityRatings", "Current credit rating and outlook for an entity", NS, "Rating, outlook, rating date and rating details"),
     ("Moody's", "getEntityRatingDrivers", "Main drivers behind a rating upgrade or downgrade", NS, "The drivers, with context"),
     ("Moody's", "getEntityScorecard", "The Moody's rating scorecard for an entity", NS, "Factor weights, scoring components and rating rationale"),
+    ("FactSet 🔎", "factset_fundamentals", "Dataset “Fundamentals”", NS, NS),
+    ("FactSet 🔎", "factset_estimatesconsensus", "Dataset “Consensus Estimates”", NS, NS),
+    ("FactSet 🔎", "factset_globalprices", "Dataset “Global Pricing”", NS, NS),
+    ("FactSet 🔎", "factset_ownership", "Dataset “Ownership”", NS, NS),
+    ("FactSet 🔎", "factset_mergersacquisitions", "Dataset “Global M&A intelligence”", NS, NS),
+    ("FactSet 🔎", "factset_people", "Dataset “People profiles”", NS, NS),
+    ("FactSet 🔎", "factset_calendarevents", "Dataset “Events (live and historical)”", NS, NS),
+    ("FactSet 🔎", "factset_supplychain", "Dataset “Supply Chain insights”", NS, NS),
+    ("FactSet 🔎", "factset_georev", "Dataset “Geographic Revenue Exposure”", NS, NS),
+    ("FactSet 🔎", "factset_entityreference", "Name only; the summary gives no description", NS, NS),
+    ("FactSet 🔎", "factset_metrics", "Name only; the summary gives no description", NS, NS),
 )
 
 # (vendor, API or endpoint, short description, inputs, outputs)
@@ -295,4 +306,46 @@ REST_APIS = (
     ("SEC EDGAR", "REST on `data.sec.gov` and files on `www.sec.gov` (page D2.3.1)", "Filings and XBRL facts", "A User-Agent header; no key", "JSON and filing files"),
     ("Bloomberg", "BLPAPI, Server API, B-PIPE, Data License (REST, SFTP)", "Reference, pricing, fundamentals and more", NS, NS),
     ("Moody's, FactSet, S&P, Fitch", "Named, not described", "Moody's “Smart APIs”; FactSet content APIs; S&P XpressAPI and Capital IQ API (search summary)", NS, NS),
+)
+
+# ── Databricks Marketplace (read 2026-10-04) ─────────────────────────────────────────────────────────────────
+# The live catalogue (marketplace.databricks.com) is script-built: my fetch returned only its title, so the catalogue
+# itself could NOT be listed. What follows is what Databricks' own pages say is on it.
+DBX_SOURCES = (
+    ("Databricks — Marketplace product page", "https://www.databricks.com/product/marketplace"),
+    ("Databricks blog — MCP Marketplace brings real-time intelligence to agentic applications", "https://www.databricks.com/blog/mcp-marketplace-brings-real-time-intelligence-agentic-applications"),
+    ("Databricks blog — MCP-powered financial AI workflows", "https://www.databricks.com/blog/mcp-powered-financial-ai-workflows-databricks"),
+    ("LSEG — MCP in Databricks Marketplace", "https://www.lseg.com/en/solutions/ai-finance-solutions/updates/lseg-launches-mcp-server-databricks-marketplace-ai-ready-access"),
+)
+
+# (type of listing, note)
+DBX_TYPES = (
+    ("Datasets", "Named on the product page"),
+    ("ML models", "Named on the product page"),
+    ("Notebooks", "Named on the product page; the page also mentions prebuilt notebooks and sample data to evaluate products"),
+    ("Applications", "Named on the product page"),
+    ("Dashboards", "Named on the product page"),
+    ("Solution accelerators", "Named on the product page"),
+    ("MCP servers", "Named on the two blog posts below; governed through Unity Catalog"),
+)
+
+# (provider, product, what it offers per Databricks' blog, access method per the blog, basis)
+DBX_MCP = (
+    ("LSEG", "LSEG MCP", "Live market data, pricing analytics and curve calculations, for trading workflows. LSEG's own page names a first phase: LSEG Financial Analytics, Lipper Fund Data and Analytics, Historical Analytics", "MCP integration", "✅"),
+    ("FactSet", "FactSet MCP", "Live fundamentals, earnings estimates and management call transcripts, for research", "MCP integration", "✅"),
+    ("Nasdaq", "Data Link MCP Server", "Time-series and tabular inputs, earnings trends, holdings, sector flows and alternative signals", "MCP server through Unity Catalog / Genie", "✅"),
+    ("Moody's", "Moody's MCP Server", "Current rating outlooks, credit opinions and related research, for credit analysis", "Secure access through Genie Spaces", "✅"),
+    ("S&P Global", "Market Intelligence MCP Server", "Not stated on the page", "MCP integration", "✅"),
+    ("S&P Global", "Commodity Insights MCP Server", "Live commodity curves and supply forecasts, for deal modelling", "MCP server", "✅"),
+    ("Dun & Bradstreet", "D&B.AI MCP agent-ready data", "Firmographic profiles, ownership hierarchies and payment behaviours, for underwriting", "Agent-ready data format", "✅"),
+    ("Cotality", "CLIP MCP", "Property, valuation and risk data; property resolution and AI-ready datasets, for mortgage and collateral assessment", "MCP agent connection", "✅"),
+    ("You.com", "You.com MCP (web search API)", "Real-time web intelligence and market sentiment: live market news, competitor pricing, regulatory changes", "Not stated", "✅"),
+    ("Arcesium", "Not stated", "Not stated", "Listed as an MCP partner only", "✅"),
+)
+
+DBX_GAPS = (
+    "The live catalogue at marketplace.databricks.com is built with scripts; my fetch returned only the title. This is the list Databricks' own blog posts name, not the full catalogue, and it will have grown.",
+    "None of the pages I read states prices, free or paid terms, or how a listing is requested. Marketplace listings are normally set by each provider; I did not verify that.",
+    "Fitch, Bloomberg, Crunchbase and ZoomInfo are not named on the Databricks pages I read, so I do not show them as available there.",
+    "Vendor pages change. Re-read Databricks' pages before building on this list.",
 )

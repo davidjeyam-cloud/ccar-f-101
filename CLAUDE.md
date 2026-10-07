@@ -562,3 +562,14 @@ The timed mock draws 4 random scenarios and pulls tagged questions. Target 60 it
 
 ## Deferred Work
 *(empty)*
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- **This repo's safety rules (added 2026-10-05):** rebuild with `graphify extract . --code-only` then `graphify cluster-only . --no-label` — no model calls, nothing leaves the machine (this is how the current graph was built: 116 code files, docs skipped). Never pass `--no-gitignore` (it would pull in `docs/source/` — the copyrighted guide PDF — and `.env`). Don't run `/graphify .` semantic extraction or `graphify label` here without asking: they send docs to a model and can pick up the Gemini key from the environment. `graphify-out/` is gitignored; the PreToolUse hooks live in the gitignored `.claude/settings.json` (local only). Undo everything with `graphify uninstall --project`.

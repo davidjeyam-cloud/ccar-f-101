@@ -686,3 +686,17 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 **Checks:** page test (13 rows, 4 basis labels, 11 detail sections, no e-mail or price strings), `app.py` start: 0 exceptions. **Uncommitted.**
 
 **D2.3.3 tools and APIs tab (user request, 2026-10-04):** new tab "Tools and APIs" with a count table, an MCP tools table (vendor, tool, description, MCP inputs, MCP outputs) and a separate REST/library API table. Read for this: Crunchbase tool reference (14 tools), ZoomInfo docs.gtm.ai available tools (19, which corrects the 6 shown earlier), Moody's MCP page (5), Crunchbase using-the-api, LSEG common-APIs summary. FactSet, S&P, Fitch, Bloomberg, LSEG publish no readable tool list; inputs/outputs the pages omit say "not stated". Uncommitted.
+
+---
+
+## 2026-10-05 — Graphify integrated (knowledge graph of this repo)
+
+**Request:** questions on how Devin works, codebase indexing, and Graphify; then "integrate graphify" with Claude Code.
+
+**Done:**
+- Installed the Graphify CLI globally: `uv tool install graphifyy` (v0.9.77; PyPI name has two y's; repo Graphify-Labs/graphify, Apache-2.0/MIT).
+- Read `install.py` before use: `graphify install --project` writes `.claude/skills/graphify/`, `.claude/CLAUDE.md`, a `## graphify` section in the root `CLAUDE.md`, and two PreToolUse hooks (Bash|Grep, Read|Glob → `graphify hook-guard`) in `.claude/settings.json`. That project install had already been run (outside this session) by the time I checked; not re-run.
+- Built the graph with no model calls: `graphify extract . --code-only` (116 code files, 18 docs + 1 image skipped; 1,317 nodes, 3,101 edges, 79 communities, 13 s), then `graphify cluster-only . --no-label` (`--no-label` because labelling can call an LLM and `.env` holds a Gemini key). Tested `graphify query` (works) and `graphify path`.
+- Added a safety bullet to the CLAUDE.md `## graphify` section: rebuild code-only, never `--no-gitignore` (guide PDF, `.env`), ask before `/graphify .` semantic extraction or `graphify label`, undo with `graphify uninstall --project`.
+
+**Not done / open:** no git hooks installed (`graphify hook install` not run). SQL Server use discussed only (README does not document T-SQL; suggest testing on ~20 scripted objects against `sys.sql_expression_dependencies`). **Uncommitted** (also mixed with the earlier uncommitted D2.3.3 vendor work).
