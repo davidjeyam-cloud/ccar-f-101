@@ -73,65 +73,132 @@ ANSWER = ("Your top 5 customers by 2025 spend were Customer A (48,210.00), Custo
           "Customer C (39,002.25), Customer D (35,560.00) and Customer E (31,944.80).")
 WIRE_SQL_SHORT = "SELECT c.name, SUM(…) … FETCH FIRST 5 ROWS ONLY"
 
-# ── ZOOM 1: to write a three-table join the LLM must know the table and column names. Three ways it can learn them.
-ZOOM_SCHEMA = """\
-flowchart TB
-    subgraph W["Where do the table and column names come from?"]
-        direction LR
-        A["📄 <b>A resource</b><br/>the app attaches schema notes<br/>before the question<br/><i>📘 MCP docs name database<br/>schemas as a resource example</i>"]
-        B["🛠 <b>A tool</b><br/>returns the schema<br/>when the LLM asks<br/><i>❓ Oracle's server: not stated</i>"]
-        C["🔎 <b>A catalogue query</b><br/>LLM runs run-sql on<br/>USER_TAB_COLUMNS first<br/><i>🏛 the view exists<br/>🧪 using it this way is my example</i>"]
+# ── ZOOM 1: to write a three-table join the LLM must know the table and column names. Three ways it can learn them (A/B/C).
+# Same layers and colours as the main diagram. A and B are starred: examples of what a server can offer, not claims about
+# Oracle's server (its pages list tools only, and do not say whether one returns the schema).
+ZOOM_SCHEMA = """flowchart TB
+    subgraph L2["② APP"]
+        LLM["🧠 LLM<br/>needs the table + column names<br/>to write the join"]
     end
-    LLM["🧠 LLM now knows the tables<br/>and how they join"]
-    SQL["writes: SELECT … FROM customers<br/>JOIN orders JOIN order_items …"]
-    A --> LLM
-    B --> LLM
-    C --> LLM
-    LLM --> SQL
+    subgraph L3["③ MCP CLIENT"]
+        CL["🔌 MCP client"]
+    end
+    subgraph L4["④ MCP SERVER — Oracle"]
+        A["📄 <b>A · resource*</b><br/>schema notes"]
+        B["🛠 <b>B · tool*</b><br/>describe-schema<br/>❓ not stated for Oracle"]
+        C["🛠 <b>C · tool</b><br/>run-sql on the<br/>catalogue views"]
+    end
+    subgraph L5["⑤ ORACLE DATABASE"]
+        DB[("🗄 Catalogue view<br/>USER_TAB_COLUMNS")]
+    end
 
-    style W fill:#f3fbf5,stroke:#2f9e57,stroke-width:2px
-    classDef src fill:#e3f6e8,stroke:#2f9e57,color:#0e4a26
-    classDef host fill:#fff3d6,stroke:#c98a00,color:#5a3d00
-    classDef out fill:#eeeeee,stroke:#777,color:#222
-    class A,B,C src
-    class LLM host
-    class SQL out
+    LLM -->|"0 asks for the schema"| CL
+    CL -->|"A resources/read"| A
+    CL -->|"B tools/call"| B
+    CL -->|"C tools/call"| C
+    C -->|"C query"| DB
+    DB -.->|"C rows"| C
+    A -.-> CL
+    B -.-> CL
+    C -.-> CL
+    CL -.->|"schema in hand"| LLM
+
+    style L2 fill:#fffaf0,stroke:#c98a00,stroke-width:2px
+    style L3 fill:#fff4e0,stroke:#d9822b,stroke-width:2px
+    style L4 fill:#f3fbf5,stroke:#2f9e57,stroke-width:2px
+    style L5 fill:#fff5f5,stroke:#c0392b,stroke-width:2px
+    classDef app fill:#fff3d6,stroke:#c98a00,color:#5a3d00
+    classDef client fill:#ffe9c7,stroke:#d9822b,color:#5a2f00
+    classDef server fill:#e3f6e8,stroke:#2f9e57,color:#0e4a26
+    classDef db fill:#fde8e8,stroke:#c0392b,color:#5e1510
+    class LLM app
+    class CL client
+    class A,B,C server
+    class DB db
 """
 
-# ── ZOOM 2: one host, two servers. Server B (web search) is an invented second server, drawn dashed.
-ZOOM_SERVERS = """\
-flowchart TB
-    LLM["🧠 LLM — shown the tools of BOTH servers<br/>and picks which to call"]
-    subgraph H["MCP HOST — one client per server"]
-        direction LR
+# ── ZOOM 2: one app, two servers. Server B (web search) is an invented second server, drawn dashed.
+ZOOM_SERVERS = """flowchart TB
+    subgraph L1["① YOU"]
+        U["💬 Chat box"]
+    end
+    subgraph L2["② APP"]
+        LLM["🧠 LLM<br/>shown the tools of BOTH servers<br/>and picks which to call"]
+    end
+    subgraph L3["③ MCP CLIENTS — one per server"]
         CA["🔌 client A"]
         CB["🔌 client B"]
     end
-    subgraph SA["SERVER A — Oracle"]
-        TA["🛠 run-sql · connect …"]
+    subgraph SA["④ SERVER A"]
+        TA["🛠 Oracle<br/>run-sql · connect …"]
     end
-    subgraph SB["SERVER B — web (example)"]
-        TB["🛠 search"]
+    subgraph SB["④ SERVER B (example)"]
+        TB["🛠 web search<br/>search"]
     end
-    DB[("🗄 Oracle Database")]
-    WEB[("🌐 public web")]
-    LLM -->|"question needs the data"| CA
-    LLM -->|"question needs the web"| CB
-    CA --> TA --> DB
-    CB --> TB --> WEB
+    subgraph L5["⑤ DATA"]
+        DB[("🗄 Oracle<br/>Database")]
+        WEB[("🌐 public<br/>web")]
+    end
 
-    style H fill:#fffaf0,stroke:#c98a00,stroke-width:2px
+    U -->|"1 question"| LLM
+    LLM -->|"2 needs the data"| CA
+    LLM -->|"3 needs the web"| CB
+    CA --> TA
+    TA --> DB
+    CB --> TB
+    TB --> WEB
+    DB -.-> TA
+    TA -.-> CA
+    CA -.-> LLM
+    WEB -.-> TB
+    TB -.-> CB
+    CB -.-> LLM
+    LLM -.->|"4 one answer"| U
+
+    style L1 fill:#f4f8ff,stroke:#3b6fd4,stroke-width:2px
+    style L2 fill:#fffaf0,stroke:#c98a00,stroke-width:2px
+    style L3 fill:#fff4e0,stroke:#d9822b,stroke-width:2px
     style SA fill:#f3fbf5,stroke:#2f9e57,stroke-width:2px
     style SB fill:#f1f5fb,stroke:#5b7db1,stroke-width:2px,stroke-dasharray:5 4
-    classDef host fill:#fff3d6,stroke:#c98a00,color:#5a3d00
+    style L5 fill:#fff5f5,stroke:#c0392b,stroke-width:2px
+    classDef user fill:#e8f1ff,stroke:#3b6fd4,color:#12305e
+    classDef app fill:#fff3d6,stroke:#c98a00,color:#5a3d00
+    classDef client fill:#ffe9c7,stroke:#d9822b,color:#5a2f00
     classDef server fill:#e3f6e8,stroke:#2f9e57,color:#0e4a26
     classDef serverb fill:#e4ecf8,stroke:#5b7db1,color:#1d3557
     classDef db fill:#fde8e8,stroke:#c0392b,color:#5e1510
-    class LLM,CA,CB host
+    class U user
+    class LLM app
+    class CA,CB client
     class TA server
     class TB serverb
     class DB,WEB db
 """
+
+# ── Cards for the zooms. All invented (🧪) unless marked; nothing was run.
+SCHEMA_NOTES_URI = "oracle://schema/notes"
+SCHEMA_NOTES = """CUSTOMERS   (id, name)
+ORDERS      (id, customer_id -> CUSTOMERS.id, order_date)
+ORDER_ITEMS (id, order_id -> ORDERS.id, product_id, quantity, unit_price)"""
+SCHEMA_TOOL_CALL = {"name": "describe-schema", "arguments": {"table": "ORDERS"}}   # B: my invented tool
+CATALOGUE_SQL = """SELECT table_name, column_name
+FROM   user_tab_columns
+WHERE  table_name IN ('CUSTOMERS', 'ORDERS', 'ORDER_ITEMS')
+ORDER  BY table_name, column_id"""
+CATALOGUE_ROWS = (
+    ("CUSTOMERS", "ID"), ("CUSTOMERS", "NAME"),
+    ("ORDERS", "ID"), ("ORDERS", "CUSTOMER_ID"), ("ORDERS", "ORDER_DATE"),
+    ("ORDER_ITEMS", "ID"), ("ORDER_ITEMS", "ORDER_ID"), ("ORDER_ITEMS", "PRODUCT_ID"),
+    ("ORDER_ITEMS", "QUANTITY"), ("ORDER_ITEMS", "UNIT_PRICE"),
+)
+TOOLS_SEEN = (
+    ("Server A (Oracle) 🏛", "run-sql, connect, list-connections …"),
+    ("Server B (web, invented) 🧪", "search"),
+)
+TWO_SERVER_QUESTION = "Who was our top customer in 2025, and is there any recent news about them?"
+SEARCH_CALL = {"name": "search", "arguments": {"query": "Customer A recent news"}}   # invented tool and argument
+TWO_SERVER_ANSWER = ("Customer A was the top customer in 2025 (48,210.00). The web search returned a few items about them, "
+                     "summarised here. (Invented example.)")
 
 KEY_IDEA = ("MCP does not turn English into SQL. The **LLM** writes the SQL and passes it as a tool argument; "
             "the **MCP server** only carries it to the database and the rows back. The database user's privileges "

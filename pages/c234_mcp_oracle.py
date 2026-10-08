@@ -1,8 +1,9 @@
 """
 D2.3.4 — Chat question → SQL on an Oracle database, through MCP  (➕ extra — not on the CCAR-F exam)
 
-One top-down, layered Mermaid diagram carries the whole path; two small "zoom" diagrams expand one part each (how the
-LLM learns the table names, and a second server). No tabs, no big tables. Facts and diagram sources:
+One top-down, layered Mermaid diagram carries the whole path; two "zoom" sections expand one part each (how the
+LLM learns the table names, and a second server), each laid out like the main one: diagram left, example cards right.
+No tabs. Facts and diagram sources:
 utils/mcp_oracle_facts.py. No model call, no key; diagrams are drawn in the browser by mermaid.js (loaded from a CDN),
 so they need internet access to draw. The source is shown if they cannot load.
 """
@@ -12,7 +13,11 @@ import json
 import streamlit as st
 import streamlit.components.v1 as components
 
+import importlib
+
 from utils import mcp_oracle_facts as of
+
+importlib.reload(of)   # Streamlit keeps imported modules in memory: reload so edits to the facts file show without a restart
 
 st.set_page_config(page_title="D2.3.4 — Chat to SQL on Oracle", page_icon="🗄️", layout="wide")
 
@@ -78,14 +83,53 @@ with right:
                "`run-sql`'s inputs. The SQL is shortened in step 3.")
 
 st.markdown("---")
-z1, z2 = st.columns(2, gap="large")
-with z1:
-    st.markdown("**Zoom 1 — how does the LLM know the table names?**")
-    _mermaid(of.ZOOM_SCHEMA, height=500)
-with z2:
-    st.markdown("**Zoom 2 — a second server**")
-    _mermaid(of.ZOOM_SERVERS, height=500)
-    st.caption(of.TWO_SERVERS)
+st.subheader("Zoom 1 — how does the LLM know the table names?")
+st.caption("To write the three-table join it must know which tables and columns exist. Three routes, A, B and C.")
+zl, zr = st.columns([6, 5], gap="large")
+with zl:
+    _mermaid(of.ZOOM_SCHEMA, height=900)
+with zr:
+    with st.container(border=True):
+        st.markdown(f"**A · a resource** — `{of.SCHEMA_NOTES_URI}` 🧪")
+        st.code(of.SCHEMA_NOTES, language="text")
+        st.caption("The app reads it and puts it in the LLM's context before the question. 📘 MCP's docs name "
+                   "database schemas as a resource example.")
+    with st.container(border=True):
+        st.markdown("**B · a tool** — `describe-schema` 🧪")
+        st.code(json.dumps({"method": "tools/call", "params": of.SCHEMA_TOOL_CALL}, indent=2), language="json")
+        st.caption("An invented tool. Whether Oracle's server has one: not stated. ❓")
+    with st.container(border=True):
+        st.markdown("**C · a catalogue query** — through `run-sql`")
+        st.code(of.CATALOGUE_SQL, language="sql")
+        st.table({"table_name": [r[0] for r in of.CATALOGUE_ROWS], "column_name": [r[1] for r in of.CATALOGUE_ROWS]})
+        st.caption("🏛 Oracle: `USER_TAB_COLUMNS` describes the columns of the tables you own. That the LLM queries it "
+                   "through `run-sql` is my example. 🧪")
+
+st.markdown("---")
+st.subheader("Zoom 2 — a second server")
+st.caption(of.TWO_SERVERS)
+sl, sr = st.columns([6, 5], gap="large")
+with sl:
+    _mermaid(of.ZOOM_SERVERS, height=960)
+with sr:
+    with st.container(border=True):
+        st.markdown("**1 · You ask** — ① chat")
+        with st.chat_message("user"):
+            st.write(of.TWO_SERVER_QUESTION)
+    with st.container(border=True):
+        st.markdown("**What the LLM is shown** — ② app")
+        st.table({"Server": [r[0] for r in of.TOOLS_SEEN], "Tools": [r[1] for r in of.TOOLS_SEEN]})
+    with st.container(border=True):
+        st.markdown("**2 · Needs the data** — ③ client A → ④ server A")
+        st.caption("`run-sql` with the SQL from the main example. Result: Customer A, 48,210.00 🧪")
+    with st.container(border=True):
+        st.markdown("**3 · Needs the web** — ③ client B → ④ server B")
+        st.code(json.dumps({"method": "tools/call", "params": of.SEARCH_CALL}, indent=2), language="json")
+        st.caption("An invented tool and argument. 🧪")
+    with st.container(border=True):
+        st.markdown("**4 · One answer** — ② app → ① you")
+        with st.chat_message("assistant"):
+            st.write(of.TWO_SERVER_ANSWER)
 
 st.markdown("---")
 st.markdown("**Oracle's own server** 🏛 — " + of.ORACLE_LINE)

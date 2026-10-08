@@ -9,7 +9,11 @@ This page makes no network call and needs no key, so it works on the hosted copy
 
 import streamlit as st
 
+import importlib
+
 from utils import vendor_facts as vf
+
+importlib.reload(vf)   # Streamlit keeps imported modules in memory: reload so edits to the facts file show without a restart
 
 st.set_page_config(page_title="D2.3.3 — Financial-data vendors", page_icon="🏦", layout="wide")
 st.markdown("<style>table { font-size:0.9rem; } td, th { vertical-align: top; }</style>", unsafe_allow_html=True)
