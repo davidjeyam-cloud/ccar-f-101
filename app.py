@@ -88,6 +88,7 @@ mcp_live_pages = {
     "hosted": st.Page("pages/c231_mcp_hosted.py", title="D2.3.1 MCP client → hosted server  ➕🌐", url_path="concept-mcp-hosted"),
     "local": st.Page("pages/c232_mcp_local.py", title="D2.3.2 My own MCP server (local)  ➕🏠", url_path="concept-mcp-local"),
     "vendors": st.Page("pages/c233_data_vendors.py", title="D2.3.3 Financial-data vendors  ➕🏦", url_path="concept-mcp-vendors"),
+    "oracle": st.Page("pages/c234_mcp_oracle.py", title="D2.3.4 Chat to SQL on Oracle  ➕🗄️", url_path="concept-mcp-oracle"),
 }
 st.session_state["_mcp_pages"] = mcp_live_pages
 for domain, short in cm.DOMAIN_SHORT.items():
