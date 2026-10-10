@@ -100,5 +100,12 @@ for domain, short in cm.DOMAIN_SHORT.items():
     concepts_nav[f"CONCEPTS · D{domain} {short}"] = group
 nav = {**concepts_nav, **nav}
 
+# Section 10 · MCQs (user request, 2026-10-10): own sidebar group at the end; original MCP and Skills questions with evidence.
+nav["10 · MCQs"] = [
+    st.Page("pages/m100_mcq_sources.py", title="10.0 Study sources  ➕📚", url_path="mcq-sources"),
+    st.Page("pages/m101_mcqs_mcp.py", title="10.1 MCQs · MCP  ➕📝", url_path="mcq-mcp"),
+    st.Page("pages/m102_mcqs_skills.py", title="10.2 MCQs · Claude Skills  ➕📝", url_path="mcq-skills"),
+]
+
 pg = st.navigation(nav)
 pg.run()
