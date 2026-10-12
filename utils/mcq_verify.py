@@ -45,8 +45,10 @@ def structure_report() -> list:
     rows, ids = [], collections.Counter()
     for key, qs in SETS.items():
         pos = collections.Counter("ABCD"[q.ans] for q in qs)
-        rows.append((f"{key}: {len(qs)} questions", len(qs) == 10, f"correct positions {dict(sorted(pos.items()))}"))
-        rows.append((f"{key}: positions spread (each of A–D used 2–3 times)", all(2 <= pos[c] <= 3 for c in "ABCD"), ""))
+        n = len(qs)
+        lo, hi = n // 4, n // 4 + (1 if n % 4 else 0)
+        rows.append((f"{key}: {n} questions", n in (10, 20), f"correct positions {dict(sorted(pos.items()))}"))
+        rows.append((f"{key}: positions spread (each of A–D used {lo}–{hi} times)", all(lo <= pos[c] <= hi for c in "ABCD"), ""))
         for q in qs:
             ids[q.id] += 1
             lens = [len(o) for o in q.opts]

@@ -724,3 +724,11 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 - Built: utils/mcq_sets.py (20 MCQs, each with guide points, scenarios, verbatim evidence, community cross-check, live note), utils/mcq_page.py, utils/mcq_verify.py, utils/study_repos.py, pages m100/m101/m102, app.py group "10 · MCQs".
 - Back-test: `python -m utils.mcq_verify` -> ALL CHECKS PASSED (structure, 51 evidence quotes found word for word on the official pages, 22 community claims matched raw GitHub files). Negative control: a corrupted quote and a false claim are rejected. First attempt had 10 items where the correct option was the longest; fixed by trimming those options and adding real detail to the wrong ones, then re-checked.
 - Not done / limits: the questions are not in the exam bank; the live Streamlit page was checked with AppTest only (no screenshot); websites were not opened; GitLab search covers public projects only; 8 of the 15 repos were not read beyond their tree or description. Uncommitted.
+
+## 2026-10-12 - Section 10.3 MCQs: Domain 2 (Tool Design & MCP Integration)
+- Request: same approach for all exam topics in D2, grounded on the guide PDF. Read D2 task statements 2.1-2.5 in the PDF (43 bullets).
+- Built: utils/mcq_d2.py (20 MCQs D2-01..20: 2.1 x4, 2.2 x5, 2.3 x5, 2.4 user scope x1, 2.5 x5), pages/m103_mcqs_d2.py, nav entry in app.py; mcq_page.py groups by task statement for key d2; mcq_verify.py spread rule now scales (5 each of A-D for 20).
+- New official sources downloaded and quoted word for word: platform.claude.com define-tools, handle-tool-calls, tool-use overview, tool-search-tool; code.claude.com tools-reference, sub-agents.
+- Coverage check: all 43 D2 bullets are pinned by D2-01..20 plus MCP-01..10 (script run; 0 missing).
+- Back-test: `python -m utils.mcq_verify` -> ALL CHECKS PASSED; negative control (one word changed in a quote) rejected. AppTest: page renders, 20 radios, right and wrong answers show, no exception.
+- Limits: no live CLI observations for these 20 (they concern API/tool design, not CLI behaviour); the guide's errorCategory / isRetryable / retriable:false and the load_document / verify_fact examples have no official page, so their quotes support the principle only (stated on each item); not shown on a real screen; not in utils/question_bank.py; not committed.

@@ -105,6 +105,7 @@ nav["10 · MCQs"] = [
     st.Page("pages/m100_mcq_sources.py", title="10.0 Study sources  ➕📚", url_path="mcq-sources"),
     st.Page("pages/m101_mcqs_mcp.py", title="10.1 MCQs · MCP  ➕📝", url_path="mcq-mcp"),
     st.Page("pages/m102_mcqs_skills.py", title="10.2 MCQs · Claude Skills  ➕📝", url_path="mcq-skills"),
+    st.Page("pages/m103_mcqs_d2.py", title="10.3 MCQs · D2 Tool Design & MCP  ➕📝", url_path="mcq-d2"),
 ]
 
 pg = st.navigation(nav)

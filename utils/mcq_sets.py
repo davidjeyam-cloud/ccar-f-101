@@ -33,6 +33,18 @@ SOURCES = {
                      "https://modelcontextprotocol.io/docs/learn/server-concepts.md"),
     "mcp_tools_spec": ("MCP specification (2026-07-28): Tools", "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
                        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools.md"),
+    "api_define_tools": ("Claude API: Define tools", "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+                         "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools.md"),
+    "api_handle_calls": ("Claude API: Handle tool calls", "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls",
+                         "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls.md"),
+    "api_tool_use_overview": ("Claude API: Tool use overview", "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview",
+                              "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview.md"),
+    "api_tool_search": ("Claude API: Tool search tool", "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+                        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool.md"),
+    "cc_tools": ("Claude Code: Tools reference", "https://code.claude.com/docs/en/tools-reference",
+                 "https://code.claude.com/docs/en/tools-reference.md"),
+    "cc_subagents": ("Claude Code: Create custom subagents", "https://code.claude.com/docs/en/sub-agents",
+                     "https://code.claude.com/docs/en/sub-agents.md"),
 }
 
 
@@ -514,5 +526,7 @@ SKILLS = (
     ),
 )
 
-SETS = {"mcp": MCP, "skills": SKILLS}
-TITLES = {"mcp": "MCP", "skills": "Claude Skills"}
+from utils.mcq_d2 import D2  # noqa: E402  (defined after MCQ/Evidence because it imports them)
+
+SETS = {"mcp": MCP, "skills": SKILLS, "d2": D2}
+TITLES = {"mcp": "MCP", "skills": "Claude Skills", "d2": "Domain 2 · Tool Design & MCP Integration"}

@@ -8,7 +8,7 @@ quote from the official page, the community cross-check, and any live CLI observ
 
 import streamlit as st
 
-from utils.guide_index import SCENARIO_NAME, point_ref
+from utils.guide_index import SCENARIO_NAME, point_ref, ts_ref
 from utils.mcq_sets import CHECKED_ON, SETS, SOURCES, TITLES
 
 
@@ -66,7 +66,11 @@ def render(key: str) -> None:
         st.caption("📘 = the behaviour comes from the official docs and goes beyond the guide's wording. Where the guide and the docs "
                    "word something differently, the explanation says so.")
 
+    last_ts = None
     for n, q in enumerate(qs, 1):
+        if key == "d2" and q.points[0].split(":")[0] != last_ts:      # a heading per task statement
+            last_ts = q.points[0].split(":")[0]
+            st.subheader(ts_ref(last_ts))
         with st.container(border=True):
             s = q.scenarios[0]
             st.markdown(f"**{q.id}** · 📋 Scenario {s}: {SCENARIO_NAME[s]}" + ("  ·  📘 docs-based" if q.basis == "docs" else ""))
