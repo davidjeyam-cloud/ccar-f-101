@@ -139,6 +139,8 @@ class ConceptContent:
     playground_intro: str = ""
     scenarios: tuple = ()       # scenario ids for the code lab (empty = the D1.1 single-agent scenarios)
     show_ledger: bool = True    # the fake support backend's refund ledger tab (D1.1); off for other labs
+    flow_mermaid: str = ""      # optional: the static "How it works" flowchart as a Mermaid diagram (replaces the Graphviz one there)
+    flow_mermaid_key: str = ""  # colour key shown under it
 
 
 @dataclass(frozen=True)

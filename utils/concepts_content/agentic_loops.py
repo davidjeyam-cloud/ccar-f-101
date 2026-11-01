@@ -139,6 +139,54 @@ _OK = "#BBF7D0"
 _BAD = "#FECACA"
 
 
+# ── The same flowchart as a Mermaid diagram (shown in "How it works"; the lab's traced chart stays Graphviz because it
+# colours nodes by what a run did). Drawn with the mermaid-diagram-specialist skill; colours match _CONCEPT above. ──
+FLOW_MERMAID = """flowchart TD
+    START(["Build messages<br/>(the user's request)"]) --> SEND["Send request<br/>messages.create(messages, tools)"]
+    SEND --> INSPECT{"Read<br/>stop_reason"}
+
+    INSPECT -->|"⭐ tool_use"| EXEC["Run every tool"]
+    EXEC --> APPEND["Append assistant turn +<br/>ONE user message of tool_results"]
+    APPEND --> LOOP(["↺ next turn"])
+
+    INSPECT -->|max_tokens| TRUNC["Truncated<br/>raise max_tokens"]
+    INSPECT -->|refusal| REFUSAL["HTTP 200<br/>retry on a DIFFERENT model"]
+    INSPECT -->|pause_turn| PAUSE["Send the response<br/>back as-is"]
+    TRUNC --> LOOP
+    REFUSAL --> LOOP
+    PAUSE --> LOOP
+
+    INSPECT -->|"⭐ end_turn"| DONE(["The final answer"])
+    INSPECT -->|"stop_sequence / other"| HANDLE["Handle explicitly"]
+
+    LOOP --> SEND
+    LOOP -.->|limit| BACKSTOP["turn > MAX_TURNS<br/>fail loudly (SDK: error_max_turns)"]
+
+    BACKSTOP ~~~ ABANDON
+    subgraph BUGS ["Bugs the exam tempts you with"]
+        ABANDON["✗ stop while the model<br/>still wants to continue"]
+        NOMODEL["✗ hard-code the tool order<br/>(no model call)"]
+        ABANDON ~~~ NOMODEL
+    end
+
+    classDef round fill:#DBEAFE,stroke:#0066CC,color:#111
+    classDef decide fill:#EDE9FE,stroke:#7C3AED,color:#111
+    classDef finish fill:#D1FAE5,stroke:#059669,color:#111
+    classDef recover fill:#FEF3C7,stroke:#D97706,color:#111
+    classDef guard fill:#E5E7EB,stroke:#6B7280,color:#111
+    classDef bug fill:#FFFFFF,stroke:#DC2626,color:#111,stroke-dasharray:5 4
+    class START,SEND,EXEC,APPEND,LOOP round
+    class INSPECT decide
+    class DONE finish
+    class TRUNC,REFUSAL,PAUSE recover
+    class HANDLE,BACKSTOP guard
+    class ABANDON,NOMODEL bug
+"""
+
+FLOW_MERMAID_KEY = ("🟦 tool round · 🟪 decision · 🟩 finish · 🟨 recover, then loop again · ⬜ guard / other · "
+                    "red dashed = a bug (an exam distractor) · ⭐ named by the exam guide (TS 1.1, p.5)")
+
+
 def _key(highlighted: bool) -> str:
     rows = "".join(
         f'<TR><TD BGCOLOR="{fill}" WIDTH="18" FIXEDSIZE="TRUE" HEIGHT="14"></TD>'
@@ -1078,6 +1126,8 @@ CONTENT = ConceptContent(
     docs_verified_on=DOCS_VERIFIED_ON,
     grounding=GROUNDING,
     flow_dot=flow_dot,
+    flow_mermaid=FLOW_MERMAID,
+    flow_mermaid_key=FLOW_MERMAID_KEY,
     node_states=node_states,
     lab_intro=LAB_INTRO,
     variants=VARIANTS,

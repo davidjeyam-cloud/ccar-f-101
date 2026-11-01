@@ -21,6 +21,7 @@ import re
 import streamlit as st
 
 from utils import concepts_map as cm
+from utils import mermaid_view
 from utils.concept_types import CLAIM_KINDS, AwarenessContent, ConceptContent
 from utils.course_map import DOMAINS
 from utils.guide_index import SCENARIO_NAME, point_ref, resolve_source, scenario_ref, ts_ref
@@ -312,8 +313,13 @@ def _render_full(concept: cm.Concept, content: ConceptContent) -> None:
 
     st.subheader("How it works")
     st.markdown(content.how_it_works)
-    st.graphviz_chart(content.flow_dot({}))
-    st.caption("The same flowchart lights up along the path your own run takes in the code lab below.")
+    if content.flow_mermaid:
+        mermaid_view.show(content.flow_mermaid, height=1040)
+        st.caption(content.flow_mermaid_key + " · The code lab below draws the same steps and lights them up along the path "
+                   "your own run takes.")
+    else:
+        st.graphviz_chart(content.flow_dot({}))
+        st.caption("The same flowchart lights up along the path your own run takes in the code lab below.")
 
     st.subheader("Where you'll see it")
     st.markdown(content.where_seen)

@@ -732,3 +732,14 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 - Coverage check: all 43 D2 bullets are pinned by D2-01..20 plus MCP-01..10 (script run; 0 missing).
 - Back-test: `python -m utils.mcq_verify` -> ALL CHECKS PASSED; negative control (one word changed in a quote) rejected. AppTest: page renders, 20 radios, right and wrong answers show, no exception.
 - Limits: no live CLI observations for these 20 (they concern API/tool design, not CLI behaviour); the guide's errorCategory / isRetryable / retriable:false and the load_document / verify_fact examples have no official page, so their quotes support the principle only (stated on each item); not shown on a real screen; not in utils/question_bank.py; not committed.
+
+## 2026-11-01 - Mermaid diagram skill added
+- Copied the mermaid-diagram-specialist skill (single SKILL.md, MIT) from davila7/claude-code-templates into .claude/skills/mermaid-diagram-specialist/ unchanged (verified identical to the download), with SOURCE.md for attribution. Read in full first: documentation only, no scripts or commands.
+- CLAUDE.md: new 'Mermaid diagrams' section (this project's rules win over the skill: top-down, little text, zoom diagrams) and a Structure line.
+- Not done: not committed; the skill is not yet shown in this session's skill list (Claude Code lists skills at session start), so test it in a new session.
+
+## 2026-11-01 - Agentic Loops flowchart redrawn in Mermaid (mermaid-diagram-specialist skill)
+- Request: redraw the diagram on /concept-agentic-loops with the new skill. Replaced the static 'How it works' Graphviz chart with a top-down Mermaid flowchart (11 nodes + 2 bug nodes, same steps, colours and stars as before; stop_reason branches in one row, loop-back to Send, MAX_TURNS backstop dotted). Code: FLOW_MERMAID in utils/concepts_content/agentic_loops.py, optional flow_mermaid/flow_mermaid_key fields in utils/concept_types.py, utils/mermaid_view.py (shared renderer), concept_page.py uses it when set.
+- Kept as Graphviz on purpose: the lab's run-traced chart (nodes coloured by what the run did) and the decision tree.
+- Checked: diagram rendered in headless Edge through the same page code (viewed the screenshot); AppTest of the concept page: 0 exceptions. NOT checked: a screenshot of the live Streamlit page (headless capture only got the loading skeleton).
+- Not committed. App on port 8502 restarted (8501 belongs to the German quiz).
