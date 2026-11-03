@@ -90,6 +90,36 @@ def render(key: str) -> None:
                 _how_checked(q)
 
 
+def render_scenario(n: int, mods: dict) -> None:
+    """Every bank question whose first scenario is guide scenario n, grouped by domain (used by the Phase 6 capstone pages)."""
+    from utils.course_map import DOMAINS
+    from utils.mcq_bank.principles import PRINCIPLES
+    qs = [q for mod in mods.values() for q in mod.QUESTIONS if q.scenarios[0] == n]
+    key = f"scen{n}"
+    picks = {q.id: st.session_state.get(f"mcq_{key}_{q.id}_label") for q in qs}
+    done = [q for q in qs if picks[q.id] is not None]
+    right = sum(1 for q in done if "ABCD".index(picks[q.id][0]) == q.ans)
+    st.subheader(f"📝 Scenario {n} questions · {SCENARIO_NAME[n]}")
+    st.caption(f"{len(qs)} original exam-style questions set in this scenario, grouped by domain. Not real exam questions.")
+    st.markdown(f"**Score: {right} / {len(done)} answered** (of {len(qs)})")
+    for d in sorted({int(q.points[0].split('.')[0]) for q in qs}):
+        group = [q for q in qs if int(q.points[0].split('.')[0]) == d]
+        st.markdown(f"#### Domain {d}: {DOMAINS[d][0]} ({len(group)})")
+        for q in group:
+            with st.container(border=True):
+                st.markdown(f"**{q.id}** · {ts_ref(q.points[0].split(':')[0])}")
+                st.markdown(esc(q.q))
+                labels = [f"{'ABCD'[i]})  {esc(o)}" for i, o in enumerate(q.opts)]
+                choice = st.radio("Your answer", labels, index=None, key=f"mcq_{key}_{q.id}_label", label_visibility="collapsed")
+                if choice is not None:
+                    if labels.index(choice) == q.ans:
+                        st.success("Correct. " + esc(q.explain))
+                    else:
+                        st.error(f"Not quite. The best answer is **{'ABCD'[q.ans]}**. " + esc(q.explain))
+                    st.info("🎯 **Principle tested:** " + PRINCIPLES[q.principle])
+                    _how_checked(q)
+
+
 def render_ts(ts: str, mod) -> None:
     """The exam bank for one task statement, grouped by guide bullet (used by the Phase 1 to 5 pages)."""
     from utils.mcq_bank.principles import PRINCIPLES

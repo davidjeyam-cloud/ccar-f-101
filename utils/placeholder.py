@@ -16,7 +16,7 @@ disagrees with CLAUDE.md's Phase Status table.
 import streamlit as st
 from utils import mcq_bank, mcq_page
 from utils.styles import phase_header, ACCENT_COMING
-from utils.course_map import PageEntry
+from utils.course_map import PageEntry, SCENARIOS
 
 
 def render_placeholder(entry: PageEntry, phase_group: str) -> None:
@@ -56,3 +56,8 @@ def render_placeholder(entry: PageEntry, phase_group: str) -> None:
         if entry.task_statement in mods:
             st.divider()
             mcq_page.render_ts(entry.task_statement, mods[entry.task_statement])
+
+    # Capstone pages (Phase 6): until the build exercise exists, show the bank's questions for that guide scenario.
+    if entry.slug in SCENARIOS:
+        st.divider()
+        mcq_page.render_scenario(SCENARIOS[entry.slug][0], mcq_bank.load())

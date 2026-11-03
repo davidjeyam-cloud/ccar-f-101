@@ -2,7 +2,7 @@
 
 > Auto-generated from `utils/course_map.py` — do not hand-edit; regenerate instead (see that file's `render_guide_map_markdown()` docstring). This is the same data the sidebar and each placeholder page show; this file is the durable, off-app copy.
 
-Ground truth: `docs/source/*.pdf` — Claude Certified Architect – Foundations Exam Guide, v1.0, effective July 2026. **5 of 46 pages built.**
+Ground truth: `docs/source/*.pdf` — Claude Certified Architect – Foundations Exam Guide, v1.0, effective July 2026. **6 of 46 pages built.**
 
 ## Domains (guide §4 Exam Content Outline, §6 Detailed Objectives)
 
@@ -82,4 +82,4 @@ Ground truth: `docs/source/*.pdf` — Claude Certified Architect – Foundations
 | **Phase 7 — Exam Readiness** | | |
 | 07a_Timed_Mock — Timed Mock | — (no single guide section — foundational/meta page) | ✅ built |
 | 07b_Error_Log — Error Log | — (no single guide section — foundational/meta page) | ✅ built |
-| 07c_Exam_Day — Exam Day | — (no single guide section — foundational/meta page) | 🔜 |
+| 07c_Exam_Day — Exam Day | — (no single guide section — foundational/meta page) | ✅ built |
