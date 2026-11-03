@@ -38,6 +38,7 @@ _REAL_PAGES = {
     "00a_Home": "pages/00a_Home.py",
     "00b_Exam_Blueprint": "pages/00b_Exam_Blueprint.py",
     "07a_Timed_Mock": "pages/07a_Timed_Mock.py",
+    "07b_Error_Log": "pages/07b_Error_Log.py",
 }
 
 nav: dict[str, list] = {}

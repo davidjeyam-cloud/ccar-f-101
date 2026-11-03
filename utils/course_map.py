@@ -132,7 +132,7 @@ PHASES: dict[str, list[PageEntry]] = {
     ],
     "Phase 7 — Exam Readiness": [
         PageEntry("07a_Timed_Mock", "Timed Mock", built=True),
-        PageEntry("07b_Error_Log", "Error Log"),
+        PageEntry("07b_Error_Log", "Error Log", built=True),
         PageEntry("07c_Exam_Day", "Exam Day"),
     ],
 }
