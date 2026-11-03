@@ -753,3 +753,8 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 - Each TS: written, verified, blind-tested, independently fact-audited; arithmetic audit fixed Q4.4-20, Q5.1-21, Q5.1-29, Q5.3-20 and Q5.5-16.
 - 284 questions are guide-only (honestly labelled). Not owner-reviewed; not in utils/question_bank.py.
 - Not done: blind re-test of rewritten 5.4-5.6 items; Phase 6 capstone view; Phase 7 timed mock.
+
+## 2026-11-03 - Course review + /concepts Course map tab
+- Reviewed course structure: 71 concepts, 26 labs + 1 awareness page built, 37 exam-kind (11 cross-cutting exam concepts unbuilt), 734-question bank over 30 TS.
+- Gaps: no concept lab for TS 3.6, 5.3, 5.5, 5.6 (TS 5.3 and 5.6 have no concept in the taxonomy at all).
+- pages/concepts_index.py: new "Course map" tab (30 TS -> labs, unbuilt exam concepts, bank questions, gaps, other course parts); "Labs built" stat now excludes the awareness page. Not committed.

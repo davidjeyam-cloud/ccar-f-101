@@ -13,12 +13,18 @@ automatically instead of risking its own copy drifting out of sync.
 
 import streamlit as st
 from utils.styles import C, phase_header, ACCENT_CURRENT, apply_dashboard_css
-from utils.course_map import PHASES, DOMAINS, SCENARIOS, counts
+from utils import concepts_map as cm, mcq_bank
+from utils.course_map import PHASES, DOMAINS, SCENARIOS
 
 st.set_page_config(page_title="CCAR-F Study Workbench — Home", page_icon="🎓", layout="wide")
 
-built, total = counts()
-pct = round(built / total * 100)
+# Progress is measured on the real learning surfaces: concept labs and the exam question bank.
+# (The 46 phase pages are mostly placeholders that only show bank questions - counting them said "13% built".)
+bank = mcq_bank.load()
+all_q = [q for m in bank.values() for q in m.QUESTIONS]
+labs = [c for c in cm.CONCEPTS if cm.is_built(c.slug) and cm.kind(c) == "exam"]
+ts_with_lab = {t for c in labs for t in c.guide_refs}
+ts_all = [e.task_statement for entries in PHASES.values() for e in entries if e.task_statement]
 
 apply_dashboard_css()
 
@@ -51,14 +57,12 @@ st.markdown(phase_header(
 # ── Stats ────────────────────────────────────────────────────────────────────
 st.markdown(f"""
 <div class="wb-stats">
-  <div class="wb-stat"><div class="wb-stat-num" style="color:{C['green']}">{built}</div>
-    <div class="wb-stat-label">Pages built</div></div>
-  <div class="wb-stat"><div class="wb-stat-num" style="color:{C['text_muted']}">{total - built}</div>
-    <div class="wb-stat-label">Pages remaining</div></div>
-  <div class="wb-stat"><div class="wb-stat-num" style="color:{C['blue']}">{pct}%</div>
-    <div class="wb-stat-label">Course built</div></div>
-  <div class="wb-stat"><div class="wb-stat-num" style="color:{C['purple']}">30</div>
-    <div class="wb-stat-label">Task statements</div></div>
+  <div class="wb-stat"><div class="wb-stat-num" style="color:{C['green']}">{len(labs)}</div>
+    <div class="wb-stat-label">Exam concept labs built</div></div>
+  <div class="wb-stat"><div class="wb-stat-num" style="color:{C['blue']}">{len(ts_with_lab & set(ts_all))} / {len(ts_all)}</div>
+    <div class="wb-stat-label">Task statements with a lab</div></div>
+  <div class="wb-stat"><div class="wb-stat-num" style="color:{C['purple']}">{len(all_q)}</div>
+    <div class="wb-stat-label">Exam-style questions (all 30 task statements)</div></div>
   <div class="wb-stat"><div class="wb-stat-num" style="color:{C['orange']}">4 of 6</div>
     <div class="wb-stat-label">Scenarios drawn per sitting</div></div>
 </div>
@@ -95,10 +99,9 @@ and a Gemini demo alone can't honestly stand in for that.</p>
 # ── Blueprint — the visual coverage map ─────────────────────────────────────
 st.markdown("#### The exam blueprint — 30 task statements across 5 domains")
 st.caption(
-    "Every cell below is one guide task statement. Green = built. ★ = this workbench gives it "
-    "a real interactive demo. 🔑 = that demo uses the real Claude API. Source: guide §4 Exam "
-    "Content Outline, §6 Detailed Objectives by Domain — see `docs/GUIDE_MAP.md` for the full "
-    "page-by-page citation."
+    "Every cell is one guide task statement. Green = at least one concept lab covers it. Hover for the "
+    "title and question count. Labs, gaps and questions per task statement: **Concepts → 🗺️ Course map**. "
+    "Source: guide §4 Exam Content Outline, §6 Detailed Objectives by Domain."
 )
 
 rows = []
@@ -108,9 +111,9 @@ for d, (name, weight, _section) in DOMAINS.items():
     for e in PHASES[group]:
         if not e.task_statement:
             continue
-        marker = ("★" if e.interactive else "") + ("🔑" if e.needs_claude_key else "")
-        cls = "cf-cell built" if e.built else "cf-cell"
-        cells += f'<span class="{cls}" title="{e.title}">{e.task_statement}{marker}</span>'
+        nq = len(bank[e.task_statement].QUESTIONS) if e.task_statement in bank else 0
+        cls = "cf-cell built" if e.task_statement in ts_with_lab else "cf-cell"
+        cells += f'<span class="{cls}" title="{e.title} · {nq} questions">{e.task_statement}</span>'
     rows.append(f"""
     <tr>
       <td style="width:26%">
@@ -131,13 +134,14 @@ st.markdown(f"""
 
 # ── Scenarios ────────────────────────────────────────────────────────────────
 st.markdown("#### The 6 exam scenarios — 4 drawn at random per sitting")
-st.caption("Source: guide §5 Exam Scenarios. All six are built as capstones (Phase 6) regardless of which 4 the real exam draws.")
+st.caption("Source: guide §5 Exam Scenarios. Each has a question drill (Phase 6 page); the build-and-break exercises are not built yet.")
 
 scen_rows = ""
 for slug, (num, title, domains) in sorted(SCENARIOS.items(), key=lambda kv: kv[1][0]):
     entry = next(e for e in PHASES["Phase 6 — Capstones"] if e.slug == slug)
-    status = "✅ built" if entry.built else "🔜"
-    key_flag = " 🔑" if entry.needs_claude_key else ""
+    nq = sum(1 for q in all_q if q.scenarios[0] == num)
+    status = f"📝 {nq} questions · exercise 🔜"
+    key_flag = ""
     dom_str = ", ".join(f"D{d}" for d in domains)
     scen_rows += (
         f'<tr><td>{num}</td><td>{title}{key_flag}</td>'
@@ -153,8 +157,8 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("### What's next → Hello Claude, then build in order down the sidebar")
+st.markdown("### What's next → Concepts, then the Timed Mock")
 st.markdown(
-    "Full traceability for every page: `docs/GUIDE_MAP.md`. Full build rules: `CLAUDE.md`. "
-    "To build the next page, type `/next-page` in the Claude Code panel."
+    "Learn a topic in **Concepts** (labs + the 🗺️ Course map), drill it with the questions on its phase page, "
+    "then sit a 60-item **Timed Mock** in Phase 7. Traceability: `docs/GUIDE_MAP.md`. Build rules: `CLAUDE.md`."
 )
