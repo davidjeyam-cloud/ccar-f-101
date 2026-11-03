@@ -10,7 +10,7 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from utils.styles import phase_header, ACCENT_CURRENT
-from utils.diagrams import diagram_00_hello
+from utils.mermaid_view import show as show_mermaid
 from utils.trace import render_trace
 from utils.progress import render_progress_ticks
 from utils import llm
@@ -18,6 +18,28 @@ from utils import llm
 load_dotenv()
 
 PAGE_SLUG = "00_Hello_Claude"  # see utils/progress.py naming note — never name this *_KEY
+
+# Drawn with the mermaid-diagram-specialist skill (replaces the matplotlib diagram_00_hello PNG, which stays in
+# utils/diagrams.py). Colours match utils/diagrams.py::C.
+HELLO_MERMAID = """flowchart TD
+    YOU(["You<br/>(learner)"]) -->|"your subscription<br/>no key"| CC["Claude Code<br/>(VS Code panel)"]
+    CC -->|"builds this repo +<br/>sandbox_project/"| APP["This Streamlit app<br/>(app.py → pages/)"]
+    APP -->|"pattern demos<br/>every page"| GEM["Gemini 2.5 Flash<br/>GEMINI_API_KEY"]
+    APP -.->|"KEY pages only<br/>exact exam mechanics"| CL["Claude API<br/>ANTHROPIC_API_KEY"]
+    GEM ~~~ NOW["ACTIVE NOW<br/>free tier, cheap"]
+    CL ~~~ LATER["BUY BEFORE DAY 1<br/>see KEY pages"]
+
+    classDef person fill:#1A202C,stroke:#1A202C,color:#fff
+    classDef claude fill:#D97706,stroke:#B45309,color:#fff
+    classDef gemini fill:#0066CC,stroke:#004C99,color:#fff
+    classDef active fill:#059669,stroke:#047857,color:#fff
+    classDef future fill:#DC2626,stroke:#B91C1C,color:#fff
+    class YOU,APP person
+    class CC,CL claude
+    class GEM gemini
+    class NOW active
+    class LATER future
+"""
 
 st.set_page_config(page_title="Phase 0 — Hello Claude", page_icon="👋", layout="wide")
 
@@ -31,7 +53,9 @@ st.markdown(phase_header(
 ), unsafe_allow_html=True)
 
 # ── Diagram ──────────────────────────────────────────────────────────────────
-st.image(diagram_00_hello(), width="stretch")
+st.markdown("#### Three keys, three jobs — CCAR-F study workbench")
+st.caption("You learn Claude Code and the Claude API; this app's own demos run on Gemini")
+show_mermaid(HELLO_MERMAID, height=760)
 
 # ── Concept ──────────────────────────────────────────────────────────────────
 with st.expander("📖 What is CCAR-F, and why does this workbench run on Gemini?"):

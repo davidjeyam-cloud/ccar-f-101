@@ -48,6 +48,22 @@ SOURCES = {
 }
 
 
+def source_info(key: str) -> tuple:
+    """(title, display URL, fetch URL) for a key in SOURCES, or a path key: "code:agent-sdk/hooks", "api:build-with-claude/batch-processing",
+    "mcp:specification/2026-07-28/server/tools". "guide" = the exam guide itself (local PDF, never quoted, so no fetch URL)."""
+    if key in SOURCES:
+        return SOURCES[key]
+    if key == "guide":
+        return ("Official exam guide (local PDF)", "", "")
+    base = {"code": "https://code.claude.com/docs/en/", "api": "https://platform.claude.com/docs/en/",
+            "mcp": "https://modelcontextprotocol.io/"}
+    site, _, path = key.partition(":")
+    if site not in base or not path:
+        raise ValueError(f"unknown evidence source {key}")
+    label = {"code": "Claude Code docs", "api": "Claude API docs", "mcp": "MCP"}[site]
+    return (f"{label}: {path}", base[site] + path, base[site] + path + ".md")
+
+
 @dataclass(frozen=True)
 class Evidence:
     src: str        # key in SOURCES
@@ -67,6 +83,12 @@ class MCQ:
     basis: str = "guide"        # "guide" = inside the guide's scope; "docs" = the behaviour is from the docs, beyond the guide's wording
     community: str = ""         # what the community repositories I read say about the same point
     live: str = ""              # what I observed on the real CLI, if anything
+    # used by the exam bank (utils/mcq_bank), empty in sections 10.1 to 10.3
+    qtype: str = ""             # diagnose | fix | choose | configure | evaluate
+    level: str = ""             # easy | medium | hard (the writer's judgment)
+    principle: str = ""         # key in utils/mcq_bank/principles.py: the judgment the exam is really testing
+    situation: str = ""         # no-repeat ledger: the concrete situation, one short phrase
+    trap: str = ""              # no-repeat ledger: the tempting wrong move, one short phrase
 
     def __post_init__(self):
         if len(self.opts) != 4 or not 0 <= self.ans < 4:
@@ -79,8 +101,7 @@ class MCQ:
         if not all(1 <= s <= 6 for s in self.scenarios):
             raise ValueError(f"{self.id}: scenario must be 1-6")
         for e in self.evidence:
-            if e.src not in SOURCES:
-                raise ValueError(f"{self.id}: unknown evidence source {e.src}")
+            source_info(e.src)                       # raises on an unknown source
 
 
 # ══ MCP ══════════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -202,21 +223,23 @@ MCP = (
     MCQ(
         id="MCP-06",
         q=("Your MCP server's `search_issues` tool supports field filters and returns ranked results with owners, yet traces show the "
-           "agent reaching for the built-in Grep on exported JSON in 70% of runs. The tool's description is 3,100 characters: 2,400 "
+           "agent reaching for the built-in Grep on exported JSON in 70% of runs. The tool's description is 5,300 characters: 4,500 "
            "characters of changelog and licence notes come first, and what the tool can do and return is at the end. Which change "
            "is most likely to fix the behaviour?"),
         opts=("Add “ALWAYS use this tool instead of Grep” as the final line of the existing description.",
               "Deny the built-in Grep tool in the permission settings so that it is unavailable in every session.",
-              "Rewrite the description to open with what the tool searches and returns, within 2,048 characters.",
+              "Rewrite the description to open with what the tool searches and returns, within the length limit.",
               "Raise `MAX_MCP_OUTPUT_TOKENS` so that larger results from the tool are not cut off before the agent reads them."),
         ans=2,
         explain=("The guide asks for descriptions that explain capabilities and outputs so the agent does not prefer built-in tools "
-                 "(TS 2.4, skill 3). Claude Code truncates each tool description at 2,048 characters, and here the capabilities sit "
-                 "after the cut, so the agent never sees them. Put the critical details first. A adds emphasis to the part that is "
+                 "(TS 2.4, skill 3). Claude Code cuts a tool description that loads upfront at 4,096 characters (2,048 before v2.1.296), and here the "
+                 "capabilities sit after the cut, so the agent never sees them. Put the critical details first. A adds emphasis to the part that is "
                  "truncated; B removes a built-in tool that other work needs; D concerns the size of results, not the description."),
         scenarios=(4,), points=("2.4:S3",), basis="docs",
-        evidence=(Evidence("cc_mcp", "Claude Code truncates each tool description and each server's instructions at 2,048 characters by default. Keep them concise, and put critical details near the start."),),
-        community=("dnacenta §2.4 mentions the 2,048-character truncation. paullarionov §4.2 says descriptions determine how the model "
+        evidence=(Evidence("cc_mcp", "Claude Code cuts a tool description or server instructions that run past these default limits, and Claude sees only the text before the cut:"),
+                  Evidence("cc_mcp", "Server instructions, and the description of a tool that loads upfront: 4,096 characters"),
+                  Evidence("cc_mcp", "Keep descriptions and instructions concise, and put critical details near the start."),),
+        community=("dnacenta §2.4 now gives 4,096 characters (2,048 before v2.1.296); when first read on 2026-10-10 it gave 2,048, which is why this item was rebuilt on 2026-11-02. paullarionov §4.2 says descriptions determine how the model "
                    "uses a tool, and does not mention the limit."),
     ),
     MCQ(
@@ -281,7 +304,7 @@ MCP = (
                  "run. `--strict-mcp-config` makes Claude Code use only the servers passed with `--mcp-config`. A assumes the "
                  "opposite behaviour; C and D describe mechanisms that do not exist."),
         scenarios=(5,), points=("2.4:K1", "2.4:S1"), basis="docs",
-        evidence=(Evidence("cc_mcp", "In `claude -p` runs, [Agent SDK](/docs/en/headless) sessions, and [cloud sessions](/docs/en/claude-code-on-the-web), Claude Code can't show that prompt: it loads project-scoped servers without asking."),
+        evidence=(Evidence("cc_mcp", "In `claude -p` runs, Agent SDK sessions, and cloud sessions outside a project's threads, Claude Code can't show that prompt: it loads project-scoped servers without asking."),
                   Evidence("cc_mcp", "Start the session with [`--strict-mcp-config`](/docs/en/cli-reference#cli-flags). Claude Code then uses only the MCP servers you pass with `--mcp-config`.")),
         community=("dnacenta §2.4 states the same behaviour and names `disabledMcpjsonServers` and `--setting-sources` as ways to keep a "
                    "server out of headless runs; the docs add `--strict-mcp-config`."),
@@ -331,7 +354,7 @@ SKILLS = (
                  "but drifts and needs manual repetition; B puts a multi-step procedure in memory that loads every session; D is not a "
                  "command location, and local settings are not committed."),
         scenarios=(2,), points=("3.2:K1", "3.2:S1"),
-        evidence=(Evidence("cc_skills", "Sessions in this repository. Commit it so your team gets it too"),
+        evidence=(Evidence("cc_skills", "Commit it so your team gets it too"),
                   Evidence("cc_skills", "All your projects on this machine, but not [Cowork or cloud sessions](#skills-in-cowork-and-cloud-sessions)"),
                   Evidence("cc_skills", "Prefer a skill for new work, since skills also support [supporting files](#add-supporting-files).")),
         community=("paullarionov §5.4 and dnacenta §3.2 both say commands and skills are merged and that project versions are shared "
@@ -413,13 +436,13 @@ SKILLS = (
         ans=2,
         explain=("CLAUDE.md is for facts Claude should hold in every session; a multi-step procedure that matters occasionally belongs "
                  "in a skill, whose full content loads only when it is invoked (TS 3.2, skill 5). A fails because imported files are "
-                 "expanded and loaded into context at launch, so nothing is saved; B moves always-needed standards to on-demand "
+                 "expanded and loaded into context alongside the CLAUDE.md, so nothing is saved; B moves always-needed standards to on-demand "
                  "loading, so they would be missing when needed; D treats longer files as a capacity problem, but the docs say longer "
                  "files consume more context and reduce adherence."),
         scenarios=(2,), points=("3.2:S5",),
         evidence=(Evidence("cc_memory", "If an entry is a multi-step procedure or only matters for one part of the codebase, move it to a [skill](/docs/en/skills)"),
                   Evidence("cc_memory", "Longer files consume more context and reduce adherence."),
-                  Evidence("cc_memory", "Imported files are expanded and loaded into context at launch alongside the CLAUDE.md that references them."),
+                  Evidence("cc_memory", "Imported files are expanded and loaded into context alongside the CLAUDE.md that references them."),
                   Evidence("cc_skills", "In a regular session, skill descriptions are loaded into context so Claude knows what's available, but full skill content only loads when invoked.")),
         community=("paullarionov §5.5 states the same split (skill for on-demand tasks, CLAUDE.md for always-loaded standards)."),
     ),
@@ -438,7 +461,7 @@ SKILLS = (
                  "engineers get: A edits the shared file, C adds a shared skill, and D changes how the shared skill behaves for "
                  "everyone."),
         scenarios=(2,), points=("3.2:K4",),
-        evidence=(Evidence("cc_skills", "Sessions in this repository. Commit it so your team gets it too"),
+        evidence=(Evidence("cc_skills", "Commit it so your team gets it too"),
                   Evidence("cc_skills", "All your projects on this machine, but not [Cowork or cloud sessions](#skills-in-cowork-and-cloud-sessions)")),
         community=("paullarionov §5.5 advises personal variants under different names so teammates are not affected, matching the guide."),
     ),

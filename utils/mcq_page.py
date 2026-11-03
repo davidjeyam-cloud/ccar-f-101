@@ -9,7 +9,7 @@ quote from the official page, the community cross-check, and any live CLI observ
 import streamlit as st
 
 from utils.guide_index import SCENARIO_NAME, point_ref, ts_ref
-from utils.mcq_sets import CHECKED_ON, SETS, SOURCES, TITLES
+from utils.mcq_sets import CHECKED_ON, SETS, TITLES, source_info
 
 
 def esc(text: str) -> str:
@@ -27,9 +27,13 @@ def _table(headers, rows) -> None:
 
 def _how_checked(q) -> None:
     with st.expander("How this answer was checked"):
-        st.markdown("**Official wording** (word for word; re-checked by `python -m utils.mcq_verify`)")
-        for e in q.evidence:
-            title, url, _ = SOURCES[e.src]
+        real = [e for e in q.evidence if e.src != "guide"]
+        if real:
+            st.markdown("**Official wording** (word for word; re-checked by the back-test)")
+        else:
+            st.markdown("**Exam guide only:** no official docs page covers this judgment, so the guide's task statement is the basis.")
+        for e in real:
+            title, url, _ = source_info(e.src)
             st.markdown(f"> {esc(e.quote)}  \n> — [{title}]({url})")
         if q.live:
             st.markdown("**Seen on the real CLI**")
@@ -84,3 +88,36 @@ def render(key: str) -> None:
                 else:
                     st.error(f"Not quite. The best answer is **{'ABCD'[q.ans]}**. " + esc(q.explain))
                 _how_checked(q)
+
+
+def render_ts(ts: str, mod) -> None:
+    """The exam bank for one task statement, grouped by guide bullet (used by the Phase 1 to 5 pages)."""
+    from utils.mcq_bank.principles import PRINCIPLES
+    qs = mod.QUESTIONS
+    key = f"bank{ts}"
+    picks = {q.id: st.session_state.get(f"mcq_{key}_{q.id}_label") for q in qs}
+    done = [q for q in qs if picks[q.id] is not None]
+    right = sum(1 for q in done if "ABCD".index(picks[q.id][0]) == q.ans)
+    st.subheader(f"📝 Question bank · TS {ts}")
+    st.caption(f"{len(qs)} original exam-style questions, grouped by guide bullet. Not real exam questions.")
+    st.markdown(f"**Score: {right} / {len(done)} answered** (of {len(qs)})")
+    groups = {}
+    for q in qs:
+        groups.setdefault(q.points[0].split(":")[1], []).append(q)
+    for bullet in sorted(groups, key=lambda b: (b[0] != "K", int(b[1:]))):
+        name = ("Knowledge " if bullet[0] == "K" else "Skill ") + bullet[1:]
+        st.markdown(f"#### {name}: {mod.BULLETS.get(bullet, '')}")
+        for q in groups[bullet]:
+            with st.container(border=True):
+                s = q.scenarios[0]
+                st.markdown(f"**{q.id}** · 📋 Scenario {s}: {SCENARIO_NAME[s]}" + ("  ·  📘 docs-based" if q.basis == "docs" else ""))
+                st.markdown(esc(q.q))
+                labels = [f"{'ABCD'[i]})  {esc(o)}" for i, o in enumerate(q.opts)]
+                choice = st.radio("Your answer", labels, index=None, key=f"mcq_{key}_{q.id}_label", label_visibility="collapsed")
+                if choice is not None:
+                    if labels.index(choice) == q.ans:
+                        st.success("Correct. " + esc(q.explain))
+                    else:
+                        st.error(f"Not quite. The best answer is **{'ABCD'[q.ans]}**. " + esc(q.explain))
+                    st.info("🎯 **Principle tested:** " + PRINCIPLES[q.principle])
+                    _how_checked(q)

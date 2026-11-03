@@ -131,7 +131,7 @@ D2 = (
                  "knowledge 3 and 4; skill 1). A and B also cut off the retries that do help; C is long and unstructured, and "
                  "leaks internals."),
         scenarios=(1,), points=("2.2:K3", "2.2:K4", "2.2:S1"),
-        evidence=(Evidence("api_handle_calls", "Instead of generic errors like"),
+        evidence=(Evidence("api_handle_calls", "Instead of generic errors such as"),
                   Evidence("api_handle_calls", "include what went wrong and what Claude should try next")),
         community="`errorCategory` and `isRetryable` are the guide's wording; community repos repeat them. No official page names these fields.",
     ),
@@ -280,7 +280,7 @@ D2 = (
                  "C turns tools off. (With `any` or a forced tool the model writes no text before the tool call.)"),
         scenarios=(6,), points=("2.3:K4", "2.3:S5"),
         evidence=(Evidence("api_define_tools", "`any` tells Claude that it must use one of the provided tools, but doesn't force a particular tool."),
-                  Evidence("api_define_tools", "`auto` allows Claude to determine whether to call any provided tools or not.")),
+                  Evidence("api_define_tools", "`auto` allows Claude to determine whether to call any provided tools.")),
         community="OlivierAlter and paullarionov test auto/any/forced; the unknown document type setting here is original.",
     ),
     # ── TS 2.4 · MCP servers (user scope; the other 2.4 bullets are MCP-01..10) ─────────────────────────────────

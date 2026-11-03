@@ -743,3 +743,13 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 - Kept as Graphviz on purpose: the lab's run-traced chart (nodes coloured by what the run did) and the decision tree.
 - Checked: diagram rendered in headless Edge through the same page code (viewed the screenshot); AppTest of the concept page: 0 exceptions. NOT checked: a screenshot of the live Streamlit page (headless capture only got the loading skeleton).
 - Not committed. App on port 8502 restarted (8501 belongs to the German quiz).
+
+## 2026-11-01 - Hello Claude 'three keys' diagram converted to Mermaid
+- Request: convert the pictured diagram (Three keys, three jobs) with the mermaid-diagram-specialist skill. It is pages/00_Hello_Claude.py's diagram_00_hello() PNG. Replaced by HELLO_MERMAID (top-down flowchart; same 6 boxes, labels and colours, dashed edge to the Claude API) drawn via utils/mermaid_view.py; title and subtitle are now page text above it. diagram_00_hello() stays in utils/diagrams.py unused.
+- Checked: rendered standalone in headless Edge and compared with the original; AppTest of the page: 0 exceptions. Not checked: the live page in a browser. Not committed.
+
+## 2026-11-03 — exam MCQ bank (734 questions)
+- Built utils/mcq_bank/ts_1_1..ts_5_6.py (30 task statements, 734 single-answer questions), verifier utils/mcq_bank_verify.py, blind-test tool utils/mcq_bank_blind.py, render_ts in utils/mcq_page.py wired into utils/placeholder.py.
+- Each TS: written, verified, blind-tested, independently fact-audited; arithmetic audit fixed Q4.4-20, Q5.1-21, Q5.1-29, Q5.3-20 and Q5.5-16.
+- 284 questions are guide-only (honestly labelled). Not owner-reviewed; not in utils/question_bank.py.
+- Not done: blind re-test of rewritten 5.4-5.6 items; Phase 6 capstone view; Phase 7 timed mock.
