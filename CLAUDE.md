@@ -515,7 +515,7 @@ All pages are 🔜 (Stage A: docs and config only). 🔑 = the Claude API key gi
 ### Phase 7 — Exam Readiness  (weight n/a)
 | Page file | Module | Status |
 |---|---|---|
-| `07a_Timed_Mock.py` | Timed Mock — 4 random scenarios | 🔜 |
+| `07a_Timed_Mock.py` | Timed Mock — 60 items drawn from the exam bank (`utils/mock_exam.py`: 4 of 6 scenarios at random, domain weights 27/18/20/20/15 = 16/11/12/12/9 items, 120-minute clock, per-domain result vs the 80% gate; the scaled score is a labelled straight-line estimate because the guide gives the 720 pass mark but not the conversion; history in the gitignored `progress.json`) | ✅ |
 | `07b_Error_Log.py` | Error Log + readiness gates | 🔜 |
 | `07c_Exam_Day.py` | Exam Day — logistics, rules of conduct | 🔜 |
 
