@@ -480,8 +480,8 @@ QUESTIONS = (
                  "C does the same and keeps a fourth tool. D relocates the same distinction into a parameter and does not "
                  "touch the cause of the timeouts."),
         scenarios=(3,), points=("2.1:S3",),
-        evidence=(Evidence("guide", ""),),
-        community="Guide-only: TS 2.1 Skill 3 (split generic tools by purpose and contract); splitting by input type with an unchanged contract is a judgment case the official pages do not address.",
+        evidence=(Evidence(DEFINE, "Fewer, more capable tools reduce selection ambiguity and make your tool surface easier for Claude to navigate."),),
+        community="Docs support the point that narrower, more numerous tools do not by themselves improve selection (option B); the timeout diagnosis is judgment.",
         qtype="evaluate", level="medium", principle="proportionate",
         situation="split by file type proposed to fix timeouts on long documents",
         trap="split a tool whose contract is the same for every input",

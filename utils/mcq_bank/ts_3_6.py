@@ -241,8 +241,8 @@ QUESTIONS = (
                  "reviewer still reviewed, just toward the same gaps. C is false: each `claude -p` call starts a new session unless "
                  "it is told to continue one."),
         scenarios=(5,), points=("3.6:K4",),
-        evidence=(Evidence("guide", ""),),
-        community="guide-only: the anchoring mechanism is a guide judgment, no official page speaks to it",
+        evidence=(Evidence("code:best-practices", "reviews the diff in a fresh subagent that never saw your conversation. It isn't swayed by the reasoning that produced the code."),),
+        community="Docs support the independence principle (a reviewer that never saw the author's reasoning); the specific anchoring effect of a summary is a guide judgment.",
         qtype="diagnose", level="medium", principle="independent_check",
         situation="reviewer given the generator's summary finds 3 of 10 planted bugs instead of 7",
         trap="blame context size or shared sessions rather than anchoring",

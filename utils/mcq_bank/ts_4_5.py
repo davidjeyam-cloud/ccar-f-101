@@ -150,7 +150,7 @@ QUESTIONS = (
               "No step inside a batch request runs the tool and returns its result for Claude to continue.",
               "The custom_id values were not attached to the tool calls, so the results were never matched."),
         ans=2,
-        explain=("A request in a batch is processed on its own, so a tool call cannot be executed and answered inside it. The "
+        explain=("A request in a batch is processed on its own, so a client-side tool call cannot be executed and answered inside it. The "
                  "result ends at the tool request, which is why the field is empty. A is false, since the tool definition was "
                  "accepted. B would give a schema problem, not a clean tool_use result. D confuses matching results with running tools."),
         scenarios=(6,), points=("4.5:K3",),
@@ -170,7 +170,7 @@ QUESTIONS = (
               "Submit a Message Batch and tell Claude to mentally run each test and fix it before it answers.",
               "Submit a Message Batch with extended thinking on, so that Claude checks every test before it answers."),
         ans=0,
-        explain=("The loop needs a tool executed and its output returned to the model, which a batch request cannot do, so the loop "
+        explain=("The loop needs a tool executed and its output returned to the model, which a batch request cannot do for a client-side tool, so the loop"
                  "belongs on the synchronous API even if it runs overnight. B expects the batch to run the tool. C and D ask the "
                  "model to imagine a result that only a real test run can give."),
         scenarios=(5,), points=("4.5:K3",),
@@ -192,7 +192,7 @@ QUESTIONS = (
               "Job 1 only, as it has by far the most requests."),
         ans=1,
         explain=("Requests answered in one turn from supplied text fit a batch. Job 2 depends on tool results coming back to the "
-                 "model mid-request, which a batch cannot do. A is false: the API does not run tool calls inside a batch. "
+                 "model mid-request, which a batch cannot do. A is false: the API does not run client-side tools such as git_blame and read_file inside a batch."
                  "C picks the one job that cannot work. D leaves out job 3, which has the same shape as job 1."),
         scenarios=(5,), points=("4.5:K3",),
         evidence=(Evidence("guide", ""),),

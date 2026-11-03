@@ -317,8 +317,8 @@ QUESTIONS = (
                  "out both before anything is built. A and C commit to one design before operations has agreed to its infrastructure. "
                  "D cannot work, because Explore is a read-only subagent that does not edit files."),
         scenarios=(4,), points=("3.4:S1",),
-        evidence=(Evidence("guide", ""),),
-        community="Guide-only: TS 3.4 Skill 1 names choosing between integration approaches with different infrastructure requirements as a plan-mode task.",
+        evidence=(Evidence("code:sub-agents", "read-only tools; Write and Edit are denied"),),
+        community="Docs support the Explore read-only fact (option D); choosing plan mode for two designs with different infrastructure needs is TS 3.4 Skill 1, a guide judgment.",
         qtype="choose", level="medium", principle="fit_for_purpose",
         situation="webhook push versus nightly file drop for a logistics partner",
         trap="build one design directly and revisit it later",

@@ -405,7 +405,7 @@ QUESTIONS = (
         ans=3,
         explain=('Routing through the coordinator controls what each subagent receives, so the drafter cannot quote a score it never gets. A adds more of a prompt approach that has already fallen short. B catches one word, not the many ways to express a score. C also takes the score away from the coordinator, which needs it to decide on escalation.'),
         scenarios=(1,), points=("1.2:S4",),
-        evidence=(Evidence("guide", ""),),
+        evidence=(Evidence("code:agent-sdk/subagents", "The only content you pass from parent to subagent is the Agent tool's prompt string, so include any file paths, error messages, or decisions the subagent needs directly in that prompt."),),
         qtype="fix", level="hard", principle="least_privilege",
         situation="reply drafter shares the fraud results feed and quotes an internal risk score",
         trap="stronger prompt rule or word scan",

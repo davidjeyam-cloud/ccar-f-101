@@ -73,8 +73,8 @@ QUESTIONS = (
                  "A treats fluency as proof. C stays in the same session, and a quoted clause can be misread just as confidently. "
                  "D checks that the explanation has the right shape, not that it is true."),
         scenarios=(6,), points=("4.6:K1",),
-        evidence=(Evidence("guide", ""),),
-        community="Guide-only: that a self-generated rationale is weak evidence follows from the guide's self-review limitation; no official page tests it.",
+        evidence=(Evidence("code:best-practices", "A second session is also the easiest independent reviewer you can get."),),
+        community="Docs support the independent second reviewer (best-practices); that a self-generated rationale is weak evidence follows from the guide's self-review limitation, which no official page tests.",
         qtype="evaluate", level="hard", principle="independent_check",
         situation="coherent same-session justifications for contract fields that audit shows are 12% wrong",
         trap="treat a fluent rationale as verification",
