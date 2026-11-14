@@ -769,3 +769,6 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 
 ## 2026-11-14 - Streamlit sunset decided
 - User decision: retire Streamlit, React (web/) takes over, no code or information left behind, future changes in React only. Streamlit frozen; docs/SUNSET_STREAMLIT.md holds the parity checklist (20 rows); CLAUDE.md has a SUNSET section. Nothing deleted.
+
+## 2026-11-14 - Source of truth switched to web/
+- web/public/data is the source for questions, course map and concept pages; lab Python copied to web/pylab (88 modules) and packed by web/scripts/build-pylab.mjs; legacy exporters guarded (--overwrite-from-python); deploy_web.ps1 and push.ps1 no longer regenerate from Python. Pyodide 937/937 identical with the new archive.

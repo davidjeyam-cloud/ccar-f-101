@@ -5,6 +5,13 @@ import json
 import sys
 from pathlib import Path
 
+# LEGACY BRIDGE, frozen 2026-11-14. The files in web/public/data/ are now the SOURCE of the questions, the course map and the
+# concept pages: edit them there. Running this script regenerates them from the old Python modules and OVERWRITES every edit made
+# since. It exists only so the one-off migration can be repeated or audited from the `streamlit-final` tag.
+if "--overwrite-from-python" not in sys.argv:
+    sys.exit("LEGACY: web/public/data/ is now the source of truth. This script would overwrite it from the old Python modules.\n"
+             "Run it only if you really mean that: python scripts/export_web_data.py --overwrite-from-python")
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 

@@ -12,7 +12,7 @@ Inventory taken 2026-11-14: 15 Streamlit pages, 90 `utils/` modules, 28 concept 
 |---|---|---|---|---|
 | 1 | Home dashboard | ✅ | done | |
 | 2 | Concepts index, course map | ✅ | done | |
-| 3 | 28 concept pages: reading content, flowcharts, exam box, distractors, FAQ, practice | ✅ | done (generated from the Python content modules) | |
+| 3 | 28 concept pages: reading content, flowcharts, exam box, distractors, FAQ, practice | ✅ | done; the JSON in `web/public/data/concepts/` is now the source | |
 | 4 | Concept code labs: the **Run** button, editable Python, flowchart lit up by the run | ❌ | The lab runtime is pure standard-library Python (checked). It could run unchanged in the browser via Pyodide (untested here), or be rewritten in TypeScript, or dropped | **Yes** |
 | 5 | Agent playground: message box and knobs per sub-concept (47 engine modules) | ❌ | Same choice as row 4 | **Yes** |
 | 6 | Timed Mock | ✅ | done | |
@@ -45,7 +45,7 @@ Inventory taken 2026-11-14: 15 Streamlit pages, 90 `utils/` modules, 28 concept 
 1. **Freeze** (done): no new features or fixes in Streamlit; `CLAUDE.md` says so.
 2. **Prove Pyodide** on real labs (a spike; result below).
 3. **Tag `streamlit-final`**, which needs the pending work committed first.
-4. **Flip the source of truth:** commit the exported JSON as the source, copy the lab Python into `web/` as assets, and remove the export step from `scripts/deploy_web.ps1` and `push.ps1` so it can never overwrite hand edits.
+4. **Flip the source of truth** (done 2026-11-14): `web/public/data/` is the source; the lab Python (88 modules, the closure the labs need) was copied to `web/pylab/` and is packed by `web/scripts/build-pylab.mjs` at build time; the export step is gone from `scripts/deploy_web.ps1` and `push.ps1`; the old exporters refuse to run without `--overwrite-from-python`. The final comparison with the archive built from `web/pylab` was again 937 of 937 identical.
 5. **Port the static pieces:** Exam Blueprint, Exam Day, section 10 MCQs and sources, vendors, Oracle, plus write-ups for the dropped live pages and Hello Claude.
 6. **Run buttons and playgrounds in the browser** (Pyodide, in a Web Worker with a 10-second timeout, as the Streamlit runner has).
 7. **D1 sync** for the error log, mock history and gates, once the Access lock is on.
@@ -58,7 +58,7 @@ Question: can the existing lab Python run unchanged in the browser? Method: ever
 | Step | Result |
 |---|---|
 | First run | 896 of 937 identical. The 41 differences were two causes, not a general problem |
-| Cause 1 | The evaluation lab imports a concept module that was not in the archive. Fixed: `scripts/build_pylab.py` now also packs `utils/concepts_content/` |
+| Cause 1 | The evaluation lab imports a concept module that was not in the archive. Fixed: the archive now also packs `concepts_content/` |
 | Cause 2 | The hooks lab calls `asyncio.run`, which cannot block in Pyodide's synchronous entry point. Fixed: the runner drives simple `async def` callbacks to the end directly; it fails with a clear message if a program really waits on a timer or the network |
 | Final run | **937 of 937 identical.** Pyodide reports Python 3.14.2, the same as the native runner. No run was slower than 2 s; the average was about 0.4 s |
 

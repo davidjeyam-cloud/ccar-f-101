@@ -24,3 +24,4 @@ graphify-out/
 # React app (web/): dependencies and build output
 web/node_modules/
 web/dist/
+web/public/pylab/utils.zip

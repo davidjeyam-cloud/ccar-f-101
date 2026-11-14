@@ -30,7 +30,6 @@ The mock grades in the browser, so a sleeping backend can never interrupt a 120-
 ## Local commands
 
 ```powershell
-python scripts/export_web_data.py      # regenerate web/public/data/*.json from the Python sources
 cd web
 npm install                            # first time
 npm run dev                            # http://localhost:5173
@@ -49,12 +48,11 @@ This is a Worker serving the built files, not a Pages project. Wrangler 4.162 au
 Redeploy after any change (from your PC, while logged in):
 
 ```powershell
-python scripts/export_web_data.py      # only if the Python question bank or course map changed
 cd web
 npm run deploy                         # builds, then wrangler deploy
 ```
 
-Since 2026-11-14 `push.ps1` runs `scripts\deploy_web.ps1` after every push (export, build, deploy, then a check that the live course.json matches), and Claude Code does the same after its own pushes. There is no GitHub-side auto-deploy. Connecting one is optional (dashboard, Workers & Pages, the Worker, Settings, Builds).
+Since 2026-11-14 `push.ps1` runs `scripts\deploy_web.ps1` after every push (build, deploy, then a check that the live course.json matches), and Claude Code does the same after its own pushes. There is no GitHub-side auto-deploy. Connecting one is optional (dashboard, Workers & Pages, the Worker, Settings, Builds).
 
 ### Still to do by hand: lock it with Cloudflare Access (about 3 minutes)
 
@@ -71,7 +69,7 @@ In (2026-11-14): Home, the Concepts tab with the course map, a full page for eve
 
 Not in (needs Python): the **Run** button of each code lab, and the agent playground's message boxes. Those stay in Streamlit. The only way to run them on the phone without a server would be Pyodide (Python in the browser); that is untested here. The 44 concepts that are not built (cross-cutting and out-of-scope stubs) are cards only. Next candidates: the error log and readiness gates, a Tool-Use Primer page.
 
-Concept pages are generated: `scripts/export_concepts.py` (called by `scripts/export_web_data.py`) writes `web/public/data/concepts/<slug>.json` from the Python content modules. Never edit those JSON files by hand.
+The content is edited in place: `web/public/data/` (questions, course map, one JSON file per concept) is the source of truth, and the lab Python is in `web/pylab/`. The old exporters in `scripts/` are a frozen legacy bridge and refuse to run without `--overwrite-from-python`.
 
 ## Sources
 

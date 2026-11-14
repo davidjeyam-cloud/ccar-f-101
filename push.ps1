@@ -2,6 +2,7 @@
 # Runs a secret scan, stages the tracked folders, commits, and pushes to GitHub.
 # Aborts (and unstages) if a secret is found or anything under docs/source/ is staged.
 # After a successful push it refreshes the React app on Cloudflare (scripts\deploy_web.ps1) and checks the live site.
+# web/public/data is the source of truth for the content; nothing is regenerated from Python any more.
 # Works for the very first push to a new, empty GitHub repo and tells you before it does anything unusual.
 # NOTE: ASCII only on purpose - Windows PowerShell 5.1 misreads UTF-8 without a BOM.
 param([string]$msg = "")
@@ -22,15 +23,6 @@ if (-not $remote) {
 }
 $branch = (git symbolic-ref --short HEAD 2>$null)
 if (-not $branch) { Write-Host "ABORT: detached HEAD - check out a branch first." -ForegroundColor Red; exit 1 }
-
-# --- 0b. Regenerate the React app's data so the committed JSON matches the Python sources -------------------
-$py = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
-if (-not (Test-Path $py)) { $py = "python" }
-if (Test-Path "scripts\export_web_data.py") {
-    $env:PYTHONIOENCODING = "utf-8"
-    & $py scripts\export_web_data.py
-    if ($LASTEXITCODE -ne 0) { Write-Host "ABORT: export_web_data.py failed - nothing was committed or pushed." -ForegroundColor Red; exit 1 }
-}
 
 # --- 1. Stage only the tracked folders/files that exist -----------------------
 # The build prompt's list, plus config files added at the owner's request (2026-09-21) so everything is committed.
