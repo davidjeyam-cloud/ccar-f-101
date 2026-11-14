@@ -253,7 +253,7 @@ _NODES = {
     "FORCE":  ("⭐ tool — must call THIS tool\\n(first step), then release", "box", "choice"),
     "NONE":   ("none — no tools", "box", "docs"),
     "NOSUP":  ("Model rejects forcing (400)?\\n→ auto + strict + instruction", "box", "docs"),
-    "STRICT": ("⭐ strict schema: types guaranteed;\\nnullable where data may be missing;\\n“other” + detail, “unclear”", "box", "schema"),
+    "STRICTSCH": ("⭐ strict schema: types guaranteed;\\nnullable where data may be missing;\\n“other” + detail, “unclear”", "box", "schema"),
     "SCOPE":  ("⭐ each agent: 4–5 role tools\\n+ scoped cross-role tool", "box", "dist"),
     "OUT":    ("Right tool, schema-valid input,\\nnothing invented", "box", "q"),
     "AUTOBUG": ("✗ auto when a tool\\ncall must happen", "box", "bug"),
@@ -267,7 +267,7 @@ _NODES = {
 }
 _BUGS = ["AUTOBUG", "WRONGFORCE", "STUCK", "NOFORCE", "SCHEMA", "NOSTRICT", "TOOMANY", "FORCEREJECT"]
 _BUGMAP = {"AUTO": "AUTOBUG"}
-_EXP = {"must_extract": ["ANY", "STRICT"], "unknown_type": ["ANY"], "missing_fields": ["STRICT"], "metadata_first": ["FORCE"],
+_EXP = {"must_extract": ["ANY", "STRICTSCH"], "unknown_type": ["ANY"], "missing_fields": ["STRICTSCH"], "metadata_first": ["FORCE"],
         "scoped_tools": ["SCOPE"], "model_rejects_forcing": ["NOSUP"]}
 
 
@@ -302,7 +302,7 @@ def flow_dot(states):
         lines.append(f'  {node} [label="{text}", shape={shape}, style="{style}", fillcolor="{fill}", color="{line}"];')
     lines += ['  Q -> AUTO [label="nothing"]; Q -> ANY [label="a tool call"]; Q -> FORCE [label="this tool first"]; Q -> NONE [label="no tools"];',
               "  { rank=same; AUTO; ANY; FORCE; NONE; }", "  ANY -> NOSUP [style=dashed]; FORCE -> NOSUP [style=dashed];",
-              "  ANY -> STRICT; FORCE -> STRICT; AUTO -> STRICT; STRICT -> OUT; SCOPE -> Q;",
+              "  ANY -> STRICTSCH; FORCE -> STRICTSCH; AUTO -> STRICTSCH; STRICTSCH -> OUT; SCOPE -> Q;",
               "  { rank=same; " + "; ".join(_BUGS[:4]) + "; }", "  { rank=same; " + "; ".join(_BUGS[4:]) + "; }",
               "  OUT -> AUTOBUG [style=invis]; AUTOBUG -> SCHEMA [style=invis];", _key(hl), "  SCHEMA -> KEY [style=invis];", "}"]
     return readable("\n".join(lines))   # FLOWCHART RULE: 18pt, max 2 nodes per row

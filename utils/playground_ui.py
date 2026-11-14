@@ -23,6 +23,7 @@ from utils.toolchoice_play import ToolChoiceConfig, run_toolchoice
 from utils.mcp_play import McpConfig, run_mcp
 from utils.hooks_play import HooksConfig, run_hooks
 from utils.casefacts_play import CaseFactsConfig, run_casefacts
+from utils.errprop_play import ErrPropConfig, run_errprop
 from utils.ctxwin_play import CtxWinConfig, run_ctxwin
 from utils.mpreview_play import MPReviewConfig, run_mpreview
 from utils.fewshot_play import FewshotConfig, run_fewshot
@@ -178,6 +179,12 @@ _KNOBS = {
     "cf_format": ("Block format", "choice", {"options": {"json": "structured (JSON)", "prose": "a prose note"}}),
     "cf_per_issue": ("One record per issue?", "choice", {"options": {"yes": "yes, keyed by order id", "flat": "no, one flat record"}}),
     "cf_updates": ("When a newer value arrives", "choice", {"options": {"overwrite": "overwrite (newest wins)", "set_once": "keep the first value"}}),
+    "ep_context": ("What the subagent sends the coordinator", "choice", {"options": {"full": "structured: type, attempted, partial, alternatives", "generic": "a generic status: “search unavailable”"}}),
+    "ep_partial": ("Partial results", "choice", {"options": {"keep": "keep what was found", "drop": "drop them"}}),
+    "ep_empty": ("A search that finds nothing", "choice", {"options": {"valid": "a distinct empty result", "error": "reported as an error"}}),
+    "ep_local": ("A transient failure", "choice", {"options": {"retry": "retry locally first", "none": "propagate at once"}}),
+    "ep_failure": ("When the subagent cannot resolve a failure", "choice", {"options": {"structured": "propagate structured context", "suppress": "return an empty success", "terminate": "let the exception end the workflow"}}),
+    "ep_coverage": ("Synthesis", "choice", {"options": {"annotate": "with coverage annotations", "none": "claims only"}}),
     "cf_customer": ("Capture customer-stated facts?", "choice", {"options": {"yes": "yes (deadlines, needs)", "tools_only": "no, tool data only"}}),
     "quality": ("Tool descriptions", "choice", {"options": {"detailed": "detailed (the docs' checklist)", "minimal": "one line each"}}),
     "web_tool": ("The web-results tool", "choice", {"options": {
@@ -595,7 +602,7 @@ def _render_tab(slug: str, spec) -> None:
                 fallback = {"research": ResearchConfig, "stop": StopConfig, "session": SessionConfig, "escalation": EscalationConfig, "handoff": HandoffConfig,
                  "memory": MemoryConfig, "decomp": DecompConfig, "toolsel": ToolSelConfig,
                  "toolchoice": ToolChoiceConfig, "mcp": McpConfig,
-                 "hooks": HooksConfig, "evaltools": EvalConfig, "builtin": BuiltinConfig, "rules": RulesConfig, "plan": PlanConfig, "skills": SkillsConfig, "checkpoint": CheckpointConfig, "review": ReviewConfig, "batch": BatchConfig, "extract": ExtractConfig, "attention": AttentionConfig, "fewshot": FewshotConfig, "mpreview": MPReviewConfig, "ctxwin": CtxWinConfig, "casefacts": CaseFactsConfig}.get(
+                 "hooks": HooksConfig, "evaltools": EvalConfig, "builtin": BuiltinConfig, "rules": RulesConfig, "plan": PlanConfig, "skills": SkillsConfig, "checkpoint": CheckpointConfig, "review": ReviewConfig, "batch": BatchConfig, "extract": ExtractConfig, "attention": AttentionConfig, "fewshot": FewshotConfig, "mpreview": MPReviewConfig, "ctxwin": CtxWinConfig, "casefacts": CaseFactsConfig, "errprop": ErrPropConfig}.get(
                     spec.engine, PlayConfig).__dataclass_fields__.get(knob)
                 values[knob] = _knob_widget(base, knob, spec.defaults.get(knob, fallback.default if fallback else 0))
     else:
@@ -617,11 +624,11 @@ def _render_tab(slug: str, spec) -> None:
                 if spec.engine == "research":
                     cfg = ResearchConfig(**values)
                     run = run_research(msg.strip(), cfg)
-                elif spec.engine in ("handoff", "memory", "decomp", "toolsel", "toolchoice", "mcp", "hooks", "builtin", "evaltools", "rules", "plan", "skills", "checkpoint", "review", "batch", "extract", "attention", "fewshot", "mpreview", "ctxwin", "casefacts"):
+                elif spec.engine in ("handoff", "memory", "decomp", "toolsel", "toolchoice", "mcp", "hooks", "builtin", "evaltools", "rules", "plan", "skills", "checkpoint", "review", "batch", "extract", "attention", "fewshot", "mpreview", "ctxwin", "casefacts", "errprop"):
                     cls, fn = {"handoff": (HandoffConfig, run_handoff), "memory": (MemoryConfig, run_memory),
                                "decomp": (DecompConfig, run_decomp), "toolsel": (ToolSelConfig, run_toolsel),
                                "toolchoice": (ToolChoiceConfig, run_toolchoice), "mcp": (McpConfig, run_mcp),
-                               "hooks": (HooksConfig, run_hooks), "evaltools": (EvalConfig, run_eval), "builtin": (BuiltinConfig, run_builtin), "rules": (RulesConfig, run_rules), "plan": (PlanConfig, run_plan), "skills": (SkillsConfig, run_skills), "checkpoint": (CheckpointConfig, run_checkpoint), "review": (ReviewConfig, run_review), "batch": (BatchConfig, run_batch), "extract": (ExtractConfig, run_extract), "attention": (AttentionConfig, run_attention), "fewshot": (FewshotConfig, run_fewshot), "mpreview": (MPReviewConfig, run_mpreview), "ctxwin": (CtxWinConfig, run_ctxwin), "casefacts": (CaseFactsConfig, run_casefacts)}[spec.engine]
+                               "hooks": (HooksConfig, run_hooks), "evaltools": (EvalConfig, run_eval), "builtin": (BuiltinConfig, run_builtin), "rules": (RulesConfig, run_rules), "plan": (PlanConfig, run_plan), "skills": (SkillsConfig, run_skills), "checkpoint": (CheckpointConfig, run_checkpoint), "review": (ReviewConfig, run_review), "batch": (BatchConfig, run_batch), "extract": (ExtractConfig, run_extract), "attention": (AttentionConfig, run_attention), "fewshot": (FewshotConfig, run_fewshot), "mpreview": (MPReviewConfig, run_mpreview), "ctxwin": (CtxWinConfig, run_ctxwin), "casefacts": (CaseFactsConfig, run_casefacts), "errprop": (ErrPropConfig, run_errprop)}[spec.engine]
                     cfg = cls(mode=spec.condition, **values)
                     run = fn(msg.strip(), cfg)
                 elif spec.engine == "escalation":
@@ -651,7 +658,7 @@ def _render_tab(slug: str, spec) -> None:
                 st.markdown(f"*Earlier run #{i}*")
             {"research": _render_research, "stop": _render_stop, "session": _render_session, "escalation": _render_escalation,
              "handoff": _render_handoff, "memory": _render_memory, "decomp": _render_decomp,
-             "toolsel": _render_toolsel, "toolchoice": _render_toolchoice, "mcp": _render_mcp, "hooks": _render_hooks, "evaltools": _render_lines, "builtin": _render_lines, "rules": _render_lines, "plan": _render_lines, "skills": _render_lines, "checkpoint": _render_lines, "review": _render_lines, "batch": _render_lines, "extract": _render_lines, "attention": _render_lines, "fewshot": _render_lines, "mpreview": _render_lines, "ctxwin": _render_lines, "casefacts": _render_lines}.get(spec.engine, _render_run)(item["run"])
+             "toolsel": _render_toolsel, "toolchoice": _render_toolchoice, "mcp": _render_mcp, "hooks": _render_hooks, "evaltools": _render_lines, "builtin": _render_lines, "rules": _render_lines, "plan": _render_lines, "skills": _render_lines, "checkpoint": _render_lines, "review": _render_lines, "batch": _render_lines, "extract": _render_lines, "attention": _render_lines, "fewshot": _render_lines, "mpreview": _render_lines, "ctxwin": _render_lines, "casefacts": _render_lines, "errprop": _render_lines}.get(spec.engine, _render_run)(item["run"])
 
     if spec.try_this:
         with st.expander("Try this next"):

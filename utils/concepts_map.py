@@ -125,6 +125,9 @@ CONCEPTS: tuple = (
     # ── D5 · Context Management & Reliability ──────────────────────────────────
     _c("context-window", "D5.1", "Context Window Management", 5, "in_guide", ["5.1", "5.4"]),
     _c("case-facts-block", "D5.2", "Case Facts Block", 5, "in_guide", ["5.1"]),
+    # Added 2026-11-14 at the user's request: guide TS 5.3 has no concept in the community list this taxonomy mirrors.
+    _c("error-propagation", "D5.3", "Error Propagation", 5, "in_guide", ["5.3"],
+       "Not in the community concept list; added because the guide has TS 5.3 (p.21) and no other concept covers it."),
     # ── Cross-cutting (unnumbered on the community list) ───────────────────────
     _c("requirements-to-solution-design", None, "Translating Business Requirements into Claude Solutions", None,
        "not_in_guide", [], _NOT_FOUND),

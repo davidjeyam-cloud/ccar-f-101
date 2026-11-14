@@ -60,3 +60,7 @@ write("course.json", {
     "mock": {"items": mock_exam.ITEMS, "minutes": mock_exam.MINUTES, "weights": mock_exam.WEIGHTS,
              "passScaled": mock_exam.PASS_SCALED, "scaleNote": mock_exam.SCALE_NOTE},
 })
+
+
+from scripts import export_concepts   # noqa: E402  (the per-concept pages for the React app)
+export_concepts.export(OUT)

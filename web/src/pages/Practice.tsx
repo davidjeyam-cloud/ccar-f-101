@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Inline } from '../components/Md'
 import { store, save, useBank, useCourse, type Question } from '../lib/data'
 
 type Picks = Record<string, number>
@@ -36,20 +37,20 @@ export default function Practice() {
       {q && (
         <article className="qcard">
           <div className="small muted">{q.id} · Scenario {q.scenarios[0]}: {course.scenarios.find((s) => s.n === q.scenarios[0])?.name}</div>
-          <p className="stem">{q.q}</p>
+          <p className="stem"><Inline>{q.q}</Inline></p>
           <div className="opts" role="radiogroup" aria-label="Answers">
             {q.opts.map((o, n) => {
               const state = picked === undefined ? '' : n === q.ans ? ' right' : n === picked ? ' wrong' : ''
               return (
                 <button key={n} role="radio" aria-checked={picked === n} className={'opt' + state} onClick={() => choose(n)}>
-                  <b>{'ABCD'[n]}</b><span>{o}</span>
+                  <b>{'ABCD'[n]}</b><span><Inline>{o}</Inline></span>
                 </button>
               )
             })}
           </div>
           {picked !== undefined && (
             <div className="explain" role="status">
-              <p><b>{picked === q.ans ? 'Correct.' : `Not quite — the answer is ${'ABCD'[q.ans]}.`}</b> {q.explain}</p>
+              <p><b>{picked === q.ans ? 'Correct.' : `Not quite — the answer is ${'ABCD'[q.ans]}.`}</b> <Inline>{q.explain}</Inline></p>
               {q.principle && <p className="small"><b>Principle:</b> {q.principle}</p>}
               <p className="small muted">Tests: {q.tests.join(' · ')}</p>
             </div>

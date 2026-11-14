@@ -2,18 +2,18 @@
 
 Auto-generated from `utils/question_bank.py` (which collects each built concept page's practice items). Regenerate, don't hand-edit. Every bank question is set in one of the guide's six scenarios (§5, pp.3–4) and pinned to the exact Knowledge/Skill bullet(s) it tests (§6). A wrong pin fails at import (`Question.__post_init__` → `guide_index.point_ref`). Questions are original — never real exam items — and `reviewed_by_user: False` until the owner signs them off.
 
-**150 bank questions.** Guide bullets covered in the task statements built so far: **208 / 215**. Whole guide: 208 / 240 (task statements with no built concept yet are listed as gaps below).
+**155 bank questions.** Guide bullets covered in the task statements built so far: **216 / 223**. Whole guide: 216 / 240 (task statements with no built concept yet are listed as gaps below).
 
 | # | Scenario (primary) | Questions |
 |---|---|---|
 | 1 | Customer Support Resolution Agent | 40 |
 | 2 | Code Generation with Claude Code | 31 |
-| 3 | Multi-Agent Research System | 25 |
+| 3 | Multi-Agent Research System | 30 |
 | 4 | Developer Productivity with Claude | 23 |
 | 5 | Claude Code for Continuous Integration | 13 |
 | 6 | Structured Data Extraction | 18 |
 
-**Correct-answer position** (should be roughly even): A 34 · B 40 · C 42 · D 34
+**Correct-answer position** (should be roughly even): A 35 · B 41 · C 43 · D 36
 
 
 ## TS 1.1 — Agentic loops (6/6 bullets)
@@ -352,18 +352,18 @@ Auto-generated from `utils/question_bank.py` (which collects each built concept 
 | S4 | TS 5.2 · Skill 4 · pp.20–21 | escalation · S1 — A customer asks the agent to match a competitor's price that is £40 lower. Your refund pol… |
 | S5 | TS 5.2 · Skill 5 · pp.20–21 | escalation · S1 — get_customer returns two accounts for the name “Customer A”: one in Leeds and one in Leice… |
 
-## TS 5.3 — Error propagation (0/8 bullets) — *no built concept yet*
+## TS 5.3 — Error propagation (8/8 bullets)
 
 | Bullet | Guide reference | Questions (concept · scenario) |
 |---|---|---|
-| K1 | TS 5.3 · Knowledge 1 · p.21 | ⚠️ **gap** |
-| K2 | TS 5.3 · Knowledge 2 · p.21 | ⚠️ **gap** |
-| K3 | TS 5.3 · Knowledge 3 · p.21 | ⚠️ **gap** |
-| K4 | TS 5.3 · Knowledge 4 · p.21 | ⚠️ **gap** |
-| S1 | TS 5.3 · Skill 1 · p.21 | ⚠️ **gap** |
-| S2 | TS 5.3 · Skill 2 · p.21 | ⚠️ **gap** |
-| S3 | TS 5.3 · Skill 3 · p.21 | ⚠️ **gap** |
-| S4 | TS 5.3 · Skill 4 · p.21 | ⚠️ **gap** |
+| K1 | TS 5.3 · Knowledge 1 · p.21 | error-propagation · S3 — A research coordinator delegates five topics to web-search subagents. When a source times … |
+| K2 | TS 5.3 · Knowledge 2 · p.21 | error-propagation · S3 — A final research report shows “film: source unavailable” in 18% of runs. Engineers find th… |
+| K3 | TS 5.3 · Knowledge 3 · p.21 | error-propagation · S3 — A research coordinator delegates five topics to web-search subagents. When a source times … |
+| K4 | TS 5.3 · Knowledge 4 · p.21 | error-propagation · S3 — To keep runs from failing, a team makes each subagent catch every exception and return an … |
+| S1 | TS 5.3 · Skill 1 · p.21 | error-propagation · S3 — A research coordinator delegates five topics to web-search subagents. When a source times … |
+| S2 | TS 5.3 · Skill 2 · p.21 | error-propagation · S3 — A final research report shows “film: source unavailable” in 18% of runs. Engineers find th… |
+| S3 | TS 5.3 · Skill 3 · p.21 | error-propagation · S3 — Logs show the coordinator receives an error from 34% of searches, and about 80% of those s… |
+| S4 | TS 5.3 · Skill 4 · p.21 | error-propagation · S3 — A research report combines findings on five topics. Two topics rest on one source each, an… |
 
 ## TS 5.4 — Codebase exploration (9/9 bullets)
 

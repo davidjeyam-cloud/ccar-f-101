@@ -144,3 +144,14 @@ Fine-tuning / training models · API auth, billing, account management · langua
 | # | File | Purpose |
 |---|---|---|
 | 1 | `docs/reference/agents101_CLAUDE.md` | Copy of the agents101 `CLAUDE.md` — the structure and conventions this repo mirrors. Says nothing about the exam. |
+
+## D5.3 Error Propagation (read 2026-11-14)
+| # | Source | Used for | Note |
+|---|---|---|---|
+| 1 | Exam guide TS 5.3 (p.21) and sample question 8 (pp.30-31, local PDF) | The eight bullets, the anti-patterns | Official. Paraphrased. |
+| 2 | platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls | `is_error`, instructive error messages | Official docs. The empty-tool-result example does not say what an empty result means. |
+| 3 | code.claude.com/docs/en/agent-sdk/subagents | Only the final message returns to the parent; partial output at maxTurns | Official docs |
+| 4 | code.claude.com/docs/en/agent-sdk/agent-loop | Result subtypes; check the subtype before reading the result | Official docs |
+| 5 | modelcontextprotocol.io/specification/2025-11-25/server/tools | Protocol errors vs tool execution errors (`isError`) | Official specification |
+
+**Guide vs docs:** the guide distinguishes an access failure from a valid empty result. The docs never define that distinction, so the page labels it as guide-only. The docs list result subtypes and `is_error`; the guide names neither.

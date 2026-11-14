@@ -1,6 +1,7 @@
 # Usage: .\push.ps1 "your commit message"
 # Runs a secret scan, stages the tracked folders, commits, and pushes to GitHub.
 # Aborts (and unstages) if a secret is found or anything under docs/source/ is staged.
+# After a successful push it refreshes the React app on Cloudflare (scripts\deploy_web.ps1) and checks the live site.
 # Works for the very first push to a new, empty GitHub repo and tells you before it does anything unusual.
 # NOTE: ASCII only on purpose - Windows PowerShell 5.1 misreads UTF-8 without a BOM.
 param([string]$msg = "")
@@ -22,11 +23,21 @@ if (-not $remote) {
 $branch = (git symbolic-ref --short HEAD 2>$null)
 if (-not $branch) { Write-Host "ABORT: detached HEAD - check out a branch first." -ForegroundColor Red; exit 1 }
 
+# --- 0b. Regenerate the React app's data so the committed JSON matches the Python sources -------------------
+$py = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
+if (-not (Test-Path $py)) { $py = "python" }
+if (Test-Path "scripts\export_web_data.py") {
+    $env:PYTHONIOENCODING = "utf-8"
+    & $py scripts\export_web_data.py
+    if ($LASTEXITCODE -ne 0) { Write-Host "ABORT: export_web_data.py failed - nothing was committed or pushed." -ForegroundColor Red; exit 1 }
+}
+
 # --- 1. Stage only the tracked folders/files that exist -----------------------
 # The build prompt's list, plus config files added at the owner's request (2026-09-21) so everything is committed.
 # .env, .venv, docs/source/, progress.json and output/ are gitignored and never staged.
 $paths = @("app.py", "pages", "utils", "mcp_servers", "docs", "sandbox_project", "AGENTS.md", "CLAUDE.md",
-           ".gitignore", "requirements.txt", "requirements-mcp.txt", ".env.example", ".streamlit", ".claude", "push.ps1")
+           ".gitignore", "requirements.txt", "requirements-mcp.txt", ".env.example", ".streamlit", ".claude", "push.ps1",
+           "scripts", "web")
 $toAdd = $paths | Where-Object { Test-Path $_ }
 if (-not $toAdd) { Write-Host "Nothing to stage: none of the tracked paths exist yet." -ForegroundColor Yellow; exit 0 }
 git add -- $toAdd
@@ -159,4 +170,9 @@ else {
     git push
 }
 if ($LASTEXITCODE -ne 0) { Write-Host "Push failed - see the message above." -ForegroundColor Red; exit 1 }
+
+# --- 6. Refresh the React app on Cloudflare and verify the live site ----------
+Write-Host "Pushed. Refreshing the Cloudflare web app..." -ForegroundColor Cyan
+& (Join-Path $PSScriptRoot "scripts\deploy_web.ps1")
+if ($LASTEXITCODE -ne 0) { Write-Host "The push worked, but the Cloudflare refresh FAILED - see above." -ForegroundColor Red; exit 1 }
 Write-Host "Done." -ForegroundColor Green

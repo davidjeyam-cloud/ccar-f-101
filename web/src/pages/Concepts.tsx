@@ -45,7 +45,10 @@ export default function Concepts() {
                 {course.taskStatements.map((t) => (
                   <tr key={t.ts}>
                     <td><Link to={`/practice?ts=${t.ts}`}>{t.ts}</Link></td><td>{t.title}</td><td>D{t.domain}</td>
-                    <td>{t.labs.join(', ') || '—'}</td><td className="small">{t.pending.join('; ') || '—'}</td><td>{t.questions}</td>
+                    <td>{t.labs.length ? t.labs.map((code, i) => {
+                      const hit = course.concepts.find((c) => c.code === code)
+                      return <span key={code}>{i > 0 && ', '}{hit ? <Link to={`/concepts/${hit.slug}`}>{code}</Link> : code}</span>
+                    }) : '—'}</td><td className="small">{t.pending.join('; ') || '—'}</td><td>{t.questions}</td>
                   </tr>
                 ))}
               </tbody>
@@ -56,8 +59,8 @@ export default function Concepts() {
         <div className="grid">
           {list.map((c) => (
             <div className="card" key={c.slug}>
-              <div className="small muted">{c.code ?? 'Cross-cutting'} · {KIND[c.kind]}{c.built ? ' · lab built' : ''}</div>
-              <b>{c.title}</b>
+              <div className="small muted">{c.code ?? 'Cross-cutting'} · {KIND[c.kind]}{c.built ? ' · page built' : ''}</div>
+              <b>{c.built ? <Link to={`/concepts/${c.slug}`}>{c.title}</Link> : c.title}</b>
               <div className="small muted">{c.guide || 'No guide task statement'}</div>
             </div>
           ))}

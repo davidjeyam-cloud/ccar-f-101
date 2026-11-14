@@ -1,6 +1,7 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
 import Home from './pages/Home'
 import Concepts from './pages/Concepts'
+import Concept from './pages/Concept'
 import Practice from './pages/Practice'
 import Mock from './pages/Mock'
 
@@ -27,6 +28,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/concepts" element={<Concepts />} />
+          <Route path="/concepts/:slug" element={<Concept />} />
           <Route path="/practice" element={<Practice />} />
           <Route path="/mock" element={<Mock />} />
           <Route path="*" element={<p>Page not found.</p>} />

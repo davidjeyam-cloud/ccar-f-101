@@ -54,7 +54,7 @@ cd web
 npm run deploy                         # builds, then wrangler deploy
 ```
 
-There is no GitHub auto-deploy. Connecting one is optional (dashboard, Workers & Pages, the Worker, Settings, Builds).
+Since 2026-11-14 `push.ps1` runs `scripts\deploy_web.ps1` after every push (export, build, deploy, then a check that the live course.json matches), and Claude Code does the same after its own pushes. There is no GitHub-side auto-deploy. Connecting one is optional (dashboard, Workers & Pages, the Worker, Settings, Builds).
 
 ### Still to do by hand: lock it with Cloudflare Access (about 3 minutes)
 
@@ -65,9 +65,13 @@ The wrangler login cannot create Access rules, so this is a dashboard step. Unti
 3. Edit the policy it created: Allow, Include, Emails, `davidjeyam@gmail.com`. Login method: One-time PIN.
 4. Open the link on your phone, enter the email, type the PIN from your inbox, then add the page to the home screen.
 
-## What is not in the React app yet
+## What is in the React app, and what is not
 
-The runnable code labs, the Agent playground, the live MCP pages and the Gemini demos. Those need Python, so they remain in Streamlit. Next candidates for the React app: concept summary pages as static content, the error log and readiness gates.
+In (2026-11-14): Home, the Concepts tab with the course map, a full page for every built concept (28 of them: summary and mental model, the gold "what the exam demands" box, flowchart and decision tree drawn in the browser, the code variants shown read-only with what each does when run, the distractor table, side-by-side, interactive practice questions, FAQ, docs and claim sources), Practice by task statement, and the timed Mock exam.
+
+Not in (needs Python): the **Run** button of each code lab, and the agent playground's message boxes. Those stay in Streamlit. The only way to run them on the phone without a server would be Pyodide (Python in the browser); that is untested here. The 44 concepts that are not built (cross-cutting and out-of-scope stubs) are cards only. Next candidates: the error log and readiness gates, a Tool-Use Primer page.
+
+Concept pages are generated: `scripts/export_concepts.py` (called by `scripts/export_web_data.py`) writes `web/public/data/concepts/<slug>.json` from the Python content modules. Never edit those JSON files by hand.
 
 ## Sources
 

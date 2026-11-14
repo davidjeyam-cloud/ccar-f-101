@@ -1041,6 +1041,15 @@ MODULE_SCENARIOS: dict[str, Scenario] = {s.id: s for s in [
              "A refund goes from pending review to approved mid-conversation.", "DELIVERED", _chitchat),
     Scenario("customer_expectation", "A hard deadline",
              "A torn suit, and a wedding on Saturday 5 April.", "DELIVERED", _chitchat),
+    # D5.3 Error Propagation (utils/errprop_lab.py)
+    Scenario("timeout_alt", "A search that times out",
+             "The music search times out for good; a news-archive alternative exists.", "DELIVERED", _chitchat),
+    Scenario("empty_valid", "A search with no matches",
+             "The film search works and finds nothing: a valid empty result.", "DELIVERED", _chitchat),
+    Scenario("transient", "A one-off failure",
+             "The music search fails once, then works on a retry.", "DELIVERED", _chitchat),
+    Scenario("partial_gap", "A search that dies half-way",
+             "The music search returns two findings, then times out; no alternative works.", "DELIVERED", _chitchat),
 ]}
 SCENARIOS.update(MODULE_SCENARIOS)
 

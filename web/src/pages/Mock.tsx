@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Inline } from '../components/Md'
 import { store, save, useBank, useCourse, type Question } from '../lib/data'
 import { draw, grade, type Result } from '../lib/mock'
 
@@ -64,12 +65,12 @@ export default function Mock() {
         </div>
         <article className="qcard">
           <div className="small muted">Question {i + 1} of {run.qs.length} · Scenario {q.scenarios[0]}</div>
-          <p className="stem">{q.q}</p>
+          <p className="stem"><Inline>{q.q}</Inline></p>
           <div className="opts" role="radiogroup" aria-label="Answers">
             {q.opts.map((o, n) => (
               <button key={n} role="radio" aria-checked={answers[q.id] === n} className={'opt' + (answers[q.id] === n ? ' picked' : '')}
                 onClick={() => setAnswers({ ...answers, [q.id]: n })}>
-                <b>{'ABCD'[n]}</b><span>{o}</span>
+                <b>{'ABCD'[n]}</b><span><Inline>{o}</Inline></span>
               </button>
             ))}
           </div>
@@ -114,9 +115,9 @@ export default function Mock() {
         {missed.map((q) => (
           <details key={q.id} className="miss">
             <summary>{q.id} · TS {q.ts}</summary>
-            <p className="stem">{q.q}</p>
-            <p><b>Answer {'ABCD'[q.ans]}.</b> {q.opts[q.ans]}</p>
-            <p className="small">{q.explain}</p>
+            <p className="stem"><Inline>{q.q}</Inline></p>
+            <p><b>Answer {'ABCD'[q.ans]}.</b> <Inline>{q.opts[q.ans]}</Inline></p>
+            <p className="small"><Inline>{q.explain}</Inline></p>
           </details>
         ))}
         <div className="actions"><button className="btn" onClick={start}>Take another mock</button></div>

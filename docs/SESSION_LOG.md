@@ -758,3 +758,14 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 - Reviewed course structure: 71 concepts, 26 labs + 1 awareness page built, 37 exam-kind (11 cross-cutting exam concepts unbuilt), 734-question bank over 30 TS.
 - Gaps: no concept lab for TS 3.6, 5.3, 5.5, 5.6 (TS 5.3 and 5.6 have no concept in the taxonomy at all).
 - pages/concepts_index.py: new "Course map" tab (30 TS -> labs, unbuilt exam concepts, bank questions, gaps, other course parts); "Labs built" stat now excludes the awareness page. Not committed.
+
+## 2026-11-14 - D5.3 Error Propagation built
+- New concept D5.3 (guide TS 5.3, the only task statement with no concept at all): utils/errprop_lab.py, utils/errprop_play.py, utils/concepts_content/error_propagation.py; wired into mock_claude, lab_harness, playground_ui, concepts_map. 8 exam points, 6 distractors x 4 scenarios (every cell run through the real runner), 6 playground tabs, 5 bank questions + 2 docs questions.
+- Remaining gaps: TS 3.6, 5.5 (unnumbered concepts exist, unbuilt) and TS 5.6 (no concept).
+
+## 2026-11-14 - Every built concept moved to the React app
+- scripts/export_concepts.py writes 28 concept JSON files; web/src/pages/Concept.tsx renders them (markdown, Graphviz in the browser, gold exam box, read-only code variants, interactive practice). Run buttons and playground message boxes stay in Streamlit (need Python).
+- Found and fixed: tool-choice flowchart used a node named STRICT, a Graphviz reserved word that viz-js rejects (renamed STRICTSCH). All 54 diagrams now draw in viz-js.
+
+## 2026-11-14 - Streamlit sunset decided
+- User decision: retire Streamlit, React (web/) takes over, no code or information left behind, future changes in React only. Streamlit frozen; docs/SUNSET_STREAMLIT.md holds the parity checklist (20 rows); CLAUDE.md has a SUNSET section. Nothing deleted.
