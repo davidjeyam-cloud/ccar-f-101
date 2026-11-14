@@ -40,17 +40,30 @@ npx vite preview --port 9100           # serve the build locally
 
 Port 9000 stays with Streamlit.
 
-## Deploy to Cloudflare Pages (you do these steps; they need your login)
+## Deployed 2026-11-14: Cloudflare Worker with static assets
 
-Connecting the GitHub repo gives the same behaviour as Streamlit Cloud: a push to `master` redeploys.
+Live at https://ccar-f-web.ccar-f-web.workers.dev (checked: `/`, `/practice` and both data files return 200).
 
-1. Cloudflare dashboard, Workers & Pages, Create, Pages, Connect to Git, pick `ccar-f-101`.
-2. Build settings: framework Vite; build command `cd web && npm ci && npm run build`; output directory `web/dist`; root directory empty.
-3. Deploy once. You get `https://<project>.pages.dev`.
-4. Before sharing the link, protect it: Zero Trust, Access, Applications, Add an application, Self-hosted. Add the domain `<project>.pages.dev` and also `*.<project>.pages.dev` so preview deployments are covered. Policy: Allow, emails equal to your own address. Login method: One-time PIN.
-5. Open the link on your phone, enter your email, type the PIN. Add it to the home screen.
+This is a Worker serving the built files, not a Pages project. Wrangler 4.162 auto-configured it when `wrangler pages project create` ran: it added `web/wrangler.jsonc` (single-page-app fallback), the `@cloudflare/vite-plugin` and `wrangler` dev dependencies, and `deploy` and `preview` scripts. The Cloudflare account is `davidjeyam@gmail.com`, logged in with `npx wrangler login`.
 
-Until step 4 is done the site is public. It contains only original questions, no guide text and no keys, but do not skip the step.
+Redeploy after any change (from your PC, while logged in):
+
+```powershell
+python scripts/export_web_data.py      # only if the Python question bank or course map changed
+cd web
+npm run deploy                         # builds, then wrangler deploy
+```
+
+There is no GitHub auto-deploy. Connecting one is optional (dashboard, Workers & Pages, the Worker, Settings, Builds).
+
+### Still to do by hand: lock it with Cloudflare Access (about 3 minutes)
+
+The wrangler login cannot create Access rules, so this is a dashboard step. Until it is done the URL is public. The site holds only original questions: no guide text and no keys.
+
+1. Cloudflare dashboard, Zero Trust. Choose the Free plan if asked (it asks for a team name).
+2. Workers & Pages, the `ccar-f-web` Worker, Settings, Domains & Routes. Under `workers.dev`, turn on Cloudflare Access. This also covers the preview URLs.
+3. Edit the policy it created: Allow, Include, Emails, `davidjeyam@gmail.com`. Login method: One-time PIN.
+4. Open the link on your phone, enter the email, type the PIN from your inbox, then add the page to the home screen.
 
 ## What is not in the React app yet
 
