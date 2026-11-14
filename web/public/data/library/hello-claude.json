@@ -1,0 +1,116 @@
+{
+ "retired": "The live call on this page was retired together with Streamlit. The project no longer needs any API key to run. What remains here is the explanation, which can be reproduced from the git tag `streamlit-final`.",
+ "mermaid": "flowchart TD\n    YOU([\"You<br/>(learner)\"]) -->|\"your subscription<br/>no key\"| CC[\"Claude Code<br/>(VS Code panel)\"]\n    CC -->|\"builds this repo +<br/>sandbox_project/\"| APP[\"This Streamlit app<br/>(app.py → pages/)\"]\n    APP -->|\"pattern demos<br/>every page\"| GEM[\"Gemini 2.5 Flash<br/>GEMINI_API_KEY\"]\n    APP -.->|\"KEY pages only<br/>exact exam mechanics\"| CL[\"Claude API<br/>ANTHROPIC_API_KEY\"]\n    GEM ~~~ NOW[\"ACTIVE NOW<br/>free tier, cheap\"]\n    CL ~~~ LATER[\"BUY BEFORE DAY 1<br/>see KEY pages\"]\n\n    classDef person fill:#1A202C,stroke:#1A202C,color:#fff\n    classDef claude fill:#D97706,stroke:#B45309,color:#fff\n    classDef gemini fill:#0066CC,stroke:#004C99,color:#fff\n    classDef active fill:#059669,stroke:#047857,color:#fff\n    classDef future fill:#DC2626,stroke:#B91C1C,color:#fff\n    class YOU,APP person\n    class CC,CL claude\n    class GEM gemini\n    class NOW active\n    class LATER future",
+ "mermaidTitle": "Three keys, three jobs - CCAR-F study workbench",
+ "mermaidCaption": "You learn Claude Code and the Claude API; this app's own demos ran on Gemini. (Diagram as it was in the Streamlit app.)",
+ "whatIs": [
+  "**What the certification tests.** The official exam guide (v1.0, CCAR-F) says the Claude Certified Architect – Foundations exam validates that practitioners can make informed decisions about tradeoffs when implementing real-world solutions with Claude, across **Claude Code**, the **Claude Agent SDK**, the **Claude API**, and **MCP**. Questions are scenario-based, drawn from 4 of a published bank of 6 production contexts, and test judgment and architecture decisions, not trivia.",
+  "**Why the Streamlit app's demos ran on Gemini, not the Claude API.** The user chose Gemini for the live demos on cost grounds: it was the same setup as the earlier `agents101` project, and cheap enough to run every pattern demo freely while studying. That was a deliberate trade-off, with one consequence worth being honest about: **a Gemini demo shows the *pattern* the exam is testing, not Claude's exact fields.** Where Gemini says `function_call`, Claude says `tool_use`; where Gemini has a function-calling *mode*, Claude has `tool_choice`.",
+  "**Where the real Claude API came back in.** A handful of pages, flagged with a key icon in the phase tables, teach mechanics that only the real Claude API can show honestly (the exact `stop_reason` loop, the three `tool_choice` modes, structured output via `tool_use`, Message Batches). Those pages were to use the real Claude API and remind the learner to buy a small, capped key before reaching them. Everywhere else, Claude Code itself, the tool used in the VS Code panel, runs on the **subscription**, with no API key involved at all."
+ ],
+ "keys": {
+  "headers": [
+   "",
+   "Claude Code (VS Code panel)",
+   "GEMINI_API_KEY",
+   "ANTHROPIC_API_KEY"
+  ],
+  "rows": [
+   [
+    "Billing",
+    "Your Claude subscription",
+    "Google, pay-per-token, has a free tier",
+    "Anthropic Console, pay-per-token, no ongoing free tier"
+   ],
+   [
+    "Needed (in the Streamlit app)",
+    "Right now, to build every page",
+    "Right now, for every page's live demo",
+    "Only from page 1.1 onward (key-icon pages)"
+   ],
+   [
+    "Cost if unset (in the Streamlit app)",
+    "Nothing works: Claude Code is this session",
+    "Demos show a clear \"needs GEMINI_API_KEY\" message, page still loads",
+    "Key-icon pages flash a reminder banner; the Gemini pattern demo still runs"
+   ],
+   [
+    "Where it lived",
+    "Your Claude Code login, never a file in this repo",
+    "Local `.env`, gitignored, never committed",
+    "Local `.env`, gitignored, never committed"
+   ],
+   [
+    "Needed now?",
+    "Only for building with Claude Code in VS Code, separate from the app",
+    "No. Retired with Streamlit",
+    "No. Retired with Streamlit"
+   ]
+  ]
+ },
+ "keyNotes": [
+  "Claude Code runs on your subscription. There is no API key to find or protect for it, and it is separate from any app key.",
+  "`.env.example` documents the two app keys: `GEMINI_API_KEY` (\"needed ONLY for live demos that call Gemini from Python\"; key from Google AI Studio) and `ANTHROPIC_API_KEY` (\"needed for the flagged pages. BUY BEFORE DAY 1 of the study plan\"; bought in the Claude Console, with a low spend limit). Both were placeholders only (`your_api_key_here`); real values lived in the local, gitignored `.env`."
+ ],
+ "costFacts": [
+  "Dated fact from the project's CLAUDE.md (not updated): suggested cheapest model for the key-icon pages was Claude Haiku 4.5, $1 in / $5 out per million tokens, checked 2026-09-21.",
+  "The Gemini key was the same one the earlier agents101 project used; pricing and free-tier limits are Google's and were to be checked on the user's own account."
+ ],
+ "firstCall": {
+  "intro": "The page made one plain, single-turn call to Gemini 2.5 Flash with the question \"What does the CCAR-F exam test, in one sentence?\". Examples only: this code is not runnable here.",
+  "code1Label": "Example (not runnable here): the core pattern from the page",
+  "code1": "from google import genai\n\nclient   = genai.Client(api_key=GEMINI_API_KEY)\nresponse = client.models.generate_content(\n    model=\"gemini-2.5-flash\",\n    contents=\"What does CCAR-F test, in one sentence?\",\n)\nprint(response.text)",
+  "wrapper": "`utils/llm.py` wrapped this call: it loaded the key, built the client, retried on transient 503s (4 attempts, exponential backoff 3 to 20 seconds), and returned plain text. Every page imported the same `chat()` function; to swap the model you changed one line (`MODEL = \"gemini-2.5-flash\"`) in that one file. When the first key-icon page was to be built, a `CLAUDE_MODEL` constant was to be added right next to it using the real `anthropic` SDK, a second wrapper beside it, not a replacement. If the key was missing, `_client()` raised `GEMINI_API_KEY not set. Copy .env.example to .env and add your key.`",
+  "traceLabel": "Example (not runnable here): what the Execution Trace showed for that call",
+  "trace": "finish reason: text only, no function_call\n  -> Claude equivalent: stop_reason = end_turn\nfunction-calling mode used: none (no tools passed on this call)\n  -> Claude equivalent: tool_choice not applicable (no tools)\ntokens (usage_metadata): input=<n>, output=<n>",
+  "whatHappened": "That call went to **Gemini 2.5 Flash**, through `utils/llm.py`, the same wrapper every later page used. The Execution Trace showed the finish reason Gemini actually returned, with the Claude term it maps to written beside it. That side-by-side habit is how every starred page stayed honest about which product it was really demonstrating."
+ },
+ "principles": [
+  "**Works without a key.** No key must not break the app. Pure-Python demos and quizzes worked without one. A demo that called Gemini showed a clear \"needs GEMINI_API_KEY\" message when there was none.",
+  "**SIMULATED is always labelled.** If a page offered a simulated fallback, it was labelled SIMULATED on screen and in the trace. Simulated output was never presented as a real model response.",
+  "**Never hide an API failure.** Errors were shown, not swallowed behind a default value.",
+  "**Never show a key.** Real keys never appear in code, logs, traces or UI output (the page itself showed only a masked fragment of the Gemini key when loaded; the project later tightened that rule to forbid even partial display)."
+ ],
+ "traps": {
+  "headers": [
+   "#",
+   "Tempting assumption",
+   "Why it's wrong",
+   "What to do instead"
+  ],
+  "rows": [
+   [
+    "1",
+    "\"I need ANTHROPIC_API_KEY before I can start this course.\"",
+    "Only GEMINI_API_KEY was required to begin; it powered every pattern demo in Phases 0-7.",
+    "Set up GEMINI_API_KEY first; buy ANTHROPIC_API_KEY before Day 1 of the study plan, ahead of page 1.1."
+   ],
+   [
+    "2",
+    "\"Claude Code (this VS Code panel) must have its own API key somewhere.\"",
+    "Claude Code runs on your subscription. There is no API key to find or protect for it.",
+    "Never search for or add an API key for Claude Code itself; only the app's two keys went in `.env`."
+   ],
+   [
+    "3",
+    "\"A Gemini demo on this page is the Claude behaviour the exam asks about.\"",
+    "Gemini's `function_call`/mode system is a different product with different field names than Claude's `tool_use`/`stop_reason`/`tool_choice`.",
+    "Read the Claude-to-Gemini mapping before trusting a Gemini trace as exam ground truth; the key-icon pages were for the real thing."
+   ],
+   [
+    "4",
+    "\"I can skip buying the Claude API key and still be fully exam-ready.\"",
+    "A handful of task statements (loops, `tool_choice`, structured output, batching) can only be shown honestly against the real Claude API.",
+    "Budget the small cost and buy it before page 1.1. (Plan as it stood in the Streamlit app; see the study plan.)"
+   ]
+  ]
+ },
+ "build": {
+  "prompt": "Create a `sandbox_project/` folder here with a minimal `CLAUDE.md` inside it that says `# Sandbox Project — CCAR-F exercises` and one line: \"Fake data only. No real customer information ever.\" Then tell me how to confirm Claude Code has loaded it.",
+  "done": [
+   "`sandbox_project/CLAUDE.md` exists with that content",
+   "Running `/memory` (or opening a Claude Code session inside `sandbox_project/`) confirms the file is loaded",
+   "You understand this folder is where every later \"Build it\" step happens: it's never meant to hold real data, only exercises"
+  ]
+ }
+}

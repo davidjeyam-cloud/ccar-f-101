@@ -1,0 +1,66 @@
+{
+  "title": "Exam Day",
+  "caption": "Everything here is paraphrased from the official exam guide v1.0 (sections 11 to 14, PDF pp.33-35). Policies can change: re-read the current guide and the Pearson VUE pages before you book. Not legal or policy advice.",
+  "sections": [
+    {
+      "title": "Before the day",
+      "columns": ["What", "Guide says", "Where"],
+      "rows": [
+        ["Register", "Via the Anthropic Partner Academy; read the exam guide, the Certification Terms and Conditions and the Certification Exam Policy first", "§11 · p.33"],
+        ["Fee", "$125 USD; the checkout price reflects any discount for your partner tier", "§3 · p.2 and §11 · p.33"],
+        ["Schedule", "Create a Pearson VUE account, then pick a date and either online proctoring or a Pearson test center", "§11 · p.33"],
+        ["Cancel or move", "Allowed up to 24 hours before the appointment; later changes forfeit the fee", "§11 · p.33"],
+        ["ID", "Valid, unexpired, government-issued photo ID; the name must match your registration exactly", "§12 · p.34"],
+        ["Name wrong?", "Contact certifications-support@anthropic.com before you schedule", "§12 · p.34"],
+        ["Accommodations", "Must be approved by Pearson VUE before you schedule; do not book until approved", "§12 · p.34"],
+        ["No-show or late", "Forfeits the fee and you must re-register. The guide does not state the late-arrival window", "§12 · p.34"]
+      ]
+    },
+    {
+      "title": "During the exam",
+      "columns": ["Rule", "Where"],
+      "rows": [
+        ["Online: stay in view of the proctor and the webcam for the whole session", "§13 · p.35"],
+        ["Keep the workspace clear of notes, books, phones, second monitors and other materials", "§13 · p.35"],
+        ["No communicating with anyone else", "§13 · p.35"],
+        ["Never capture, copy, photograph or reproduce any exam content", "§13 · p.35"],
+        ["Prohibited: phones, smart watches, headphones, study materials, any recording device. Permitted items, such as proctor-provided scratch paper, are set by Pearson VUE", "§13 · p.35"],
+        ["You accept a confidentiality agreement before starting; if you decline, the session ends with no refund", "§14 · p.35"],
+        ["Misconduct can mean an invalidated result, a revoked credential and a ban from future exams", "§13 · p.35"]
+      ]
+    },
+    {
+      "title": "The exam itself",
+      "columns": ["Item", "Value", "Where"],
+      "rows": [
+        ["Items", "60, multiple-choice and multiple-response; each item says how many answers to select", "§3 · p.2"],
+        ["Structure", "4 scenarios drawn from a bank of 6", "§3 · p.2"],
+        ["Time", "120 minutes, about 2 minutes per item", "§3 · p.2"],
+        ["Pass", "Scaled 720 on 100 to 1,000", "§3 · p.2"],
+        ["Report", "Pass or fail, scaled score, percent correct by domain", "§3 · p.2"]
+      ],
+      "warning": "The real exam has multiple-response items. The question bank and the Timed Mock here are single-answer only, so practise reading each stem for how many answers it asks for."
+    },
+    {
+      "title": "After the exam",
+      "columns": ["Topic", "Guide says", "Where"],
+      "rows": [
+        ["Retake waits", "14 days after the first fail, 30 after the second, 90 after the third", "§12 · p.34"],
+        ["Retake limit", "Up to four attempts in a rolling twelve months, per exam; the fee applies each time", "§12 · p.34"],
+        ["Validity", "12 months from the award date", "§15 · p.35"],
+        ["Renewal", "On time: review what changed and pass a free, non-proctored assessment on the Partner Academy; lapsed: retake the full exam at the full fee", "§15 · pp.35-36"],
+        ["Appeals", "Within 14 days of being notified, or of the exam date for a result concern, through Pearson VUE support", "§16 · p.36"]
+      ]
+    }
+  ],
+  "checklist": [
+    "Read the guide, Terms and Conditions and Exam Policy",
+    "Name on my ID matches my registration exactly",
+    "Accommodations (if any) approved before booking",
+    "Booked, and I know the cancel-by time (24 hours before)",
+    "Testing space cleared; phone, watch and headphones out of reach",
+    "Passed a timed mock at or above the 720 estimate",
+    "All four readiness gates are green on the Error Log page"
+  ],
+  "contacts": "Contacts per the guide: name corrections to certifications-support@anthropic.com; everything else to Pearson VUE support (pearsonvue.com/us/en/anthropic.html)."
+}

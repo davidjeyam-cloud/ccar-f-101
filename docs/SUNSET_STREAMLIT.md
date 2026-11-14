@@ -18,15 +18,15 @@ Inventory taken 2026-11-14: 15 Streamlit pages, 90 `utils/` modules, 28 concept 
 | 6 | Timed Mock | ✅ | done | |
 | 7 | Practice by task statement (replaces the 46 phase placeholder pages) | ✅ | done | |
 | 8 | 07b Error Log and the four readiness gates | ❌ | Port. Needs storage: this device only (localStorage), or a Cloudflare D1 database to sync phone and laptop | Storage choice |
-| 9 | 07c Exam Day (paraphrased guide §11-16 plus a saved checklist) | ❌ | Port, static plus a checklist | |
-| 10 | 00b Exam Blueprint (format, timing, scoring, policies, out-of-scope list) | ❌ | Port, static | |
-| 11 | 00 Hello Claude (three keys, first live call) | ❌ | The setup text can be ported; the live Gemini/Claude call needs a server and a secret key | **Yes** |
-| 12 | Section 10 MCQs: 40 evidence-backed questions (10.1 MCP, 10.2 Skills, 10.3 D2) and 10.0 study sources | ❌ | Port, static JSON; the verifier script (`mcq_verify.py`) is Python | Where the verifier lives |
-| 13 | D2.3.3 financial-data vendors table | ❌ | Port, static | |
-| 14 | D2.3.4 Oracle chat-to-SQL Mermaid page | ❌ | Port, static | |
-| 15 | D2.3.1 / D2.3.2 **live MCP pages** (a real client talking to a hosted and a local MCP server) | ❌ | Cannot run on a static site. They need running servers and, for the local one, your own machine | **Yes** |
-| 16 | The two MCP servers (`mcp_servers/`) | ❌ | Same as row 15 | **Yes** |
-| 17 | Gemini demos and the LLM quiz generator (`utils/llm.py`, `utils/quiz.py`) | ❌ | Need a server holding `GEMINI_API_KEY`, e.g. a Cloudflare Worker proxy; or drop | **Yes** |
+| 9 | 07c Exam Day (paraphrased guide §11-16 plus a saved checklist) | ✅ | Ported 2026-11-14 to `/library/exam-day`; the checklist is saved per device | |
+| 10 | 00b Exam Blueprint (format, timing, scoring, policies, out-of-scope list) | ✅ | Ported 2026-11-14 to `/library/blueprint` | |
+| 11 | 00 Hello Claude (three keys, first live call) | ✅ write-up | Ported as a read-only write-up at `/library/hello-claude`; the live call is dropped (decision 2) | **Yes** |
+| 12 | Section 10 MCQs: 40 evidence-backed questions (10.1 MCP, 10.2 Skills, 10.3 D2) and 10.0 study sources | ✅ | Ported 2026-11-14: `/library/mcqs/{mcp,skills,d2}` (40 questions with word-for-word evidence) and `/library/mcq-sources`. The verifier script stays in git history only | Where the verifier lives |
+| 13 | D2.3.3 financial-data vendors table | ✅ | Ported 2026-11-14 to `/library/vendors` | |
+| 14 | D2.3.4 Oracle chat-to-SQL Mermaid page | ✅ | Ported 2026-11-14 to `/library/oracle` (Mermaid) | |
+| 15 | D2.3.1 / D2.3.2 **live MCP pages** (a real client talking to a hosted and a local MCP server) | ✅ write-up | Ported as a read-only write-up at `/library/live-mcp` (hosted and local); the live clients are dropped (decision 2) | **Yes** |
+| 16 | The two MCP servers (`mcp_servers/`) | dropped | The two servers stay in git history (`streamlit-final`); the write-up records what they offer | **Yes** |
+| 17 | Gemini demos and the LLM quiz generator (`utils/llm.py`, `utils/quiz.py`) | dropped | Gemini demos and the LLM quiz generator are dropped (decision 2); the project needs no API key any more | **Yes** |
 | 18 | Personal progress (`progress.json`): ticks, mock history, error log | partly | React keeps its own per-device copy; the old file holds only 2 concept entries | |
 | 19 | Python content modules as the **source of truth** for questions and concepts | ❌ | "Changes in React only" means moving the content into `web/` as the source of truth (JSON/TS), instead of generating it from Python | **Yes** |
 | 20 | The Streamlit Cloud app (https://ccar-f.streamlit.app/), `.streamlit/`, `requirements*.txt`, `push.ps1` Streamlit parts, port 9000 / Tailscale serve | n/a | Switch off after parity | |
@@ -46,7 +46,7 @@ Inventory taken 2026-11-14: 15 Streamlit pages, 90 `utils/` modules, 28 concept 
 2. **Prove Pyodide** on real labs (a spike; result below).
 3. **Tag `streamlit-final`**, which needs the pending work committed first.
 4. **Flip the source of truth** (done 2026-11-14): `web/public/data/` is the source; the lab Python (88 modules, the closure the labs need) was copied to `web/pylab/` and is packed by `web/scripts/build-pylab.mjs` at build time; the export step is gone from `scripts/deploy_web.ps1` and `push.ps1`; the old exporters refuse to run without `--overwrite-from-python`. The final comparison with the archive built from `web/pylab` was again 937 of 937 identical.
-5. **Port the static pieces:** Exam Blueprint, Exam Day, section 10 MCQs and sources, vendors, Oracle, plus write-ups for the dropped live pages and Hello Claude.
+5. **Port the static pieces** (done 2026-11-14, by eight parallel agents plus an integrated check): Exam Blueprint, Exam Day, section 10 MCQs and sources, vendors, Oracle, and read-only write-ups for the live MCP pages and Hello Claude, all under `/library/*` with a Library hub. Found and fixed in the phone-width check: the sources tables squeezed into unreadable columns (now cards), unreadable vendor labels (a background tint used as text colour), and diagrams wider than a phone (a swipe hint was added). Not checked: dark mode, and a real phone.
 6. **Run buttons and playgrounds in the browser** (Pyodide, in a Web Worker with a 10-second timeout, as the Streamlit runner has).
 7. **D1 sync** for the error log, mock history and gates, once the Access lock is on.
 8. **Remove:** delete the Streamlit code and Python content, switch off the Streamlit Cloud app and the local service, rewrite `CLAUDE.md` for a React-only project.

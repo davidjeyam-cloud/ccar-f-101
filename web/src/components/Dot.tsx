@@ -16,5 +16,10 @@ export default function Dot({ dot, label }: { dot: string; label: string }) {
   if (err) return <p className="err" role="alert">{err}</p>
   if (!svg) return <p className="muted small">Drawing diagram…</p>
   // The DOT comes from this project's own content modules, not from user input.
-  return <div className="diagram" role="img" aria-label={label} dangerouslySetInnerHTML={{ __html: svg }} />
+  return (
+    <>
+      <div className="diagram" role="img" aria-label={label} dangerouslySetInnerHTML={{ __html: svg }} />
+      <p className="small muted diagram-hint">Swipe sideways to see the whole diagram.</p>
+    </>
+  )
 }

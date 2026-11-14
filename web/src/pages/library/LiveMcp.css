@@ -1,0 +1,12 @@
+.lm-switch { display: flex; gap: 8px; margin: 12px 0 4px; flex-wrap: wrap; }
+.lm-switch .btn { min-height: 44px; flex: 1 1 140px; }
+.lm-sec { margin-top: 28px; }
+.lm-sec h2 { margin-bottom: 6px; }
+.lm-pre { white-space: pre-wrap; word-break: break-word; font-size: 0.85rem; background: var(--color-surface, transparent); border: 1px solid var(--color-border); border-radius: 8px; padding: 10px; overflow-x: auto; }
+.lm-select { min-height: 44px; width: 100%; max-width: 100%; font: inherit; padding: 6px 10px; margin: 6px 0 12px; }
+.lm-diagram { overflow-x: auto; }
+.lm-diagram svg { max-width: 100%; height: auto; }
+.lm-list { padding-left: 1.1rem; }
+.lm-list li { margin: 6px 0; }
+.lm-details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+.lm-tbl td, .lm-tbl th { vertical-align: top; }

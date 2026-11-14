@@ -1,0 +1,5 @@
+.orc-split { display: grid; grid-template-columns: 1fr; gap: 1rem; align-items: start; }
+@media (min-width: 900px) { .orc-split { grid-template-columns: 6fr 5fr; } }
+.orc-cards { display: flex; flex-direction: column; gap: .6rem; min-width: 0; }
+.orc-card pre { margin: .3rem 0; overflow-x: auto; max-width: 100%; }
+.orc-bubble { margin: .3rem 0; padding: .5rem .7rem; border: 1px solid var(--color-border); border-radius: var(--radius); }

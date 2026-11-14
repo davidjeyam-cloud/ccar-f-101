@@ -1,0 +1,120 @@
+{
+ "title": "Exam Blueprint",
+ "lead": "How the exam itself works: format, timing, scoring, policies, and what it deliberately does not test. For what topics are tested, see Home.",
+ "kicker": "Phase 0 · Foundations · Exam Mechanics",
+ "glance": {
+  "title": "Exam details at a glance",
+  "source": "Source: guide §3 \"Exam Details at a Glance\".",
+  "rows": [
+   [
+    "Credential",
+    "Claude Certified Architect – Foundations"
+   ],
+   [
+    "Exam code",
+    "CCAR-F"
+   ],
+   [
+    "Number of items",
+    "60 — multiple-choice and multiple-response; each item states how many responses to select"
+   ],
+   [
+    "Exam structure",
+    "4 scenarios drawn at random from a bank of 6"
+   ],
+   [
+    "Time limit",
+    "120 minutes"
+   ],
+   [
+    "Delivery",
+    "Proctored — online proctored and/or test center, per program policy"
+   ],
+   [
+    "Passing score",
+    "Scaled 720, on a 100–1,000 scale"
+   ],
+   [
+    "Exam fee",
+    "$125 USD (per attempt — a retake pays again)"
+   ],
+   [
+    "Validity period",
+    "12 months from the date the credential is awarded"
+   ],
+   [
+    "Result reporting",
+    "Pass/fail with scaled score, plus percent-correct by domain"
+   ]
+  ]
+ },
+ "scoring": {
+  "title": "How it's scored",
+  "paragraphs": [
+   "The exam is **criterion-referenced**: you're measured against a fixed performance standard set by a formal standard-setting study, not ranked against other candidates. Passing means demonstrating the blueprint's knowledge and skills at or above that standard — not outperforming a percentage of peers.",
+   "Your result is pass/fail with a scaled score (100–1,000, cut score 720). The domain percent-correct breakdown on your score report is diagnostic only — it helps you see where you were weak, but your pass/fail is decided by the total scaled score, not by any single domain's percentage."
+  ],
+  "source": "Source: guide §10 \"How the Exam Is Scored\"."
+ },
+ "policies": {
+  "title": "Policies worth planning around",
+  "source": "Source: guide §12 \"Exam Policies\", §13 \"Exam-Day Experience and Rules of Conduct\", §15 \"Credential Maintenance and Recertification\".",
+  "rows": [
+   [
+    "ID on exam day",
+    "Valid, unexpired, government-issued photo ID; the name must match your registration exactly"
+   ],
+   [
+    "Accommodations",
+    "Must be requested and approved by Pearson VUE *before* you schedule — don't book first"
+   ],
+   [
+    "Retake waiting period",
+    "14 days after attempt 1, 30 days after attempt 2, 90 days after attempt 3"
+   ],
+   [
+    "Retake limit",
+    "Up to 4 attempts within a rolling 12-month period; the fee applies every time"
+   ],
+   [
+    "No-show / late arrival",
+    "Forfeits the exam fee — you must re-register"
+   ],
+   [
+    "During the exam",
+    "Stay in webcam view if online; no notes, phones, second monitors, or recording devices; no communicating with anyone; no capturing or reproducing exam content"
+   ],
+   [
+    "Misconduct consequences",
+    "Can mean an invalidated result, a revoked credential, and a ban from future exams"
+   ],
+   [
+    "Recertification",
+    "Free, non-proctored renewal assessment before the 12-month mark; a lapsed credential requires the full exam again at full fee"
+   ]
+  ]
+ },
+ "outOfScope": {
+  "title": "Explicitly out of scope — don't spend study time here",
+  "source": "Source: guide Appendix, \"Out-of-Scope Topics\". This list is also enforced in `CLAUDE.md` — no page or quiz question in this workbench is built on any of these.",
+  "items": [
+   "Fine-tuning Claude or training custom models",
+   "Claude API authentication, billing, or account management",
+   "Language/framework implementation detail beyond tool and schema configuration",
+   "Deploying or hosting MCP servers (infrastructure, networking, orchestration)",
+   "Claude's internal architecture, training process, or model weights",
+   "Constitutional AI, RLHF, or safety-training methodologies",
+   "Embedding models or vector-database implementation details",
+   "Computer use (browser automation, desktop interaction)",
+   "Vision / image-analysis capabilities",
+   "Streaming API implementation or server-sent events",
+   "Rate limits, quotas, or API pricing calculations",
+   "OAuth, API key rotation, or authentication protocol details",
+   "Specific cloud-provider configuration (AWS, GCP, Azure)",
+   "Benchmarking or model-comparison metrics",
+   "Prompt-caching implementation details (knowing it exists is enough)",
+   "Token-counting algorithms or tokenisation specifics"
+  ]
+ },
+ "next": "For *what* is tested (domains, task statements, scenarios), see **Home**."
+}

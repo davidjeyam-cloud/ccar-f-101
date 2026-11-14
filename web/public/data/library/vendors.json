@@ -1,0 +1,1114 @@
+{
+ "title": "Financial-data vendors — what they expose",
+ "readOn": "2026-10-04",
+ "caption": "What each vendor publishes over MCP and APIs, what it sells, and how a client gets it · read 2026-10-04 · ➕ Extra: not on the CCAR-F exam · not investment or procurement advice",
+ "noPriceNote": "No price appears on this page: none of the pages I read states one. Where a page did not say something, the table says “not stated”.",
+ "glanceNote": "MCP = a server an AI agent connects to and calls tools on. API = the vendor's own web or library interface for programs. “Not stated” means the vendor's page did not say.",
+ "basis": [
+  {
+   "label": "✅",
+   "meaning": "Read on the vendor's own page"
+  },
+  {
+   "label": "🔎",
+   "meaning": "From a search summary of the vendor's page; the page itself could not be fetched"
+  },
+  {
+   "label": "📰",
+   "meaning": "Vendor press release as republished on a news site; the vendor's own domain was blocked to my tools"
+  },
+  {
+   "label": "❓",
+   "meaning": "Not found, or not identified"
+  }
+ ],
+ "glance": [
+  {
+   "vendor": "Crunchbase",
+   "group": "Private companies",
+   "mcp": "`https://mcp.crunchbase.com` · 14 tools: natural-language answers, structured search, entity profiles, saved lists",
+   "api": "REST `https://api.crunchbase.com/v4/data/` · JSON · API key in a header · 200 calls per minute",
+   "sells": "Private-company data: company profiles, funding rounds, people, investors, acquisitions, plus predictions",
+   "access": "MCP: sign in with your Crunchbase account. MCP is bought per workspace and assigned to each user as a seat; ask Crunchbase sales. API: an API key",
+   "basis": "✅"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "group": "Contacts and accounts",
+   "mcp": "`https://mcp.zoominfo.com/mcp` · 19 tools listed on docs.gtm.ai: search, enrich and research companies and contacts; intent, scoops, news; audiences",
+   "api": "REST groups Search, Enrich, Lookup, Usage · OAuth 2.0 · base URL not on the page I read",
+   "sells": "B2B company and contact data: firmographics, technographics, funding, business signals, contact details",
+   "access": "A ZoomInfo licence (self-serve or enterprise); OAuth sign-in; plan limits and credits apply; a free trial is offered",
+   "basis": "✅"
+  },
+  {
+   "vendor": "FactSet",
+   "group": "Market and deal data",
+   "mcp": "`https://mcp.factset.com/content/v1` (Streamable HTTP) and 11 tools named `factset_…`, per a search summary; FactSet's own pages could not be read. Its article lists 8 content APIs behind the server: Fundamentals, Estimates, Ownership, M&A, Pricing, People, Events, Supply Chain",
+   "api": "REST content APIs on `developer.factset.com` (the catalogue page is script-built; I could not read it)",
+   "sells": "Financial data and analytics: fundamentals, estimates, ownership, M&A, prices, events, supply chain",
+   "access": "Through a FactSet relationship; a search summary says an MCP trial is requested from FactSet",
+   "basis": "🔎"
+  },
+  {
+   "vendor": "FactSet SharkRepellent",
+   "group": "Takeover defence and governance",
+   "mcp": "None found on the pages I read",
+   "api": "None found on the pages I read",
+   "sells": "Takeover-defence and corporate-governance data on thousands of US companies: poison pills, charter and bylaw provisions, state takeover laws, a “Bullet Proof” defence rating",
+   "access": "Not stated on the page I read. It describes a software platform with custom reports and company defence profiles",
+   "basis": "✅"
+  },
+  {
+   "vendor": "Moody's",
+   "group": "Credit ratings",
+   "mcp": "`https://api.moodys.com/genai-ready-data/m1/mcp` · 5 tools: find entity, get ratings, rating drivers, scorecard, search research",
+   "api": "“Smart APIs” are named on Moody's page; no endpoints are stated there",
+   "sells": "Credit ratings and research; company data on more than 600 million entities",
+   "access": "Request credentials and the endpoint from Moody's; OAuth sign-in through a Moody's login page",
+   "basis": "✅"
+  },
+  {
+   "vendor": "S&P Global Market Intelligence (Kensho)",
+   "group": "Financial data",
+   "mcp": "A remote MCP server for the Kensho LLM-ready API. URL not stated",
+   "api": "Kensho LLM-ready API (details not read). A search summary also names XpressAPI and Capital IQ API",
+   "sells": "Capital IQ financials, market prices, segment financials, company intelligence, competitors, M&A transactions, earnings-call transcripts",
+   "access": "Ask Kensho for testing; in Claude, add the S&P Global connector and log in to your authorised account. Licence terms not stated",
+   "basis": "✅"
+  },
+  {
+   "vendor": "S&P Global Ratings (RatingsDirect)",
+   "group": "Credit ratings",
+   "mcp": "None found",
+   "api": "Data feeds, cloud and API solutions, per a search summary of S&P's pages",
+   "sells": "Credit ratings and research; a search summary gives 9,500 issuers and 79,000 securities",
+   "access": "A search summary says customers with an S&P Global Market Intelligence subscription register for access; RatingsDirect sits inside Capital IQ",
+   "basis": "🔎"
+  },
+  {
+   "vendor": "Fitch (Fitch Solutions)",
+   "group": "Credit ratings",
+   "mcp": "A “Fitch Nexus” MCP connector. Endpoint not stated",
+   "api": "None found",
+   "sells": "Credit research, current and historical ratings and outlooks, financials and forecasts, rating factors and sensitivities; CreditSights, BMI and Sustainable Fitch “coming”",
+   "access": "Licence terms not stated. The release says clients need “a one-time only connection”",
+   "basis": "📰"
+  },
+  {
+   "vendor": "Bloomberg",
+   "group": "Market data and terminal",
+   "mcp": "Bloomberg Enterprise MCP, part of Data License Plus: more than 100 million securities and over 30,000 fields",
+   "api": "BLPAPI (C++, Java, .NET), Desktop API, Server API, B-PIPE; Data License over REST, SFTP, web services or cloud",
+   "sells": "Reference, pricing, fundamentals, estimates, ESG, risk, regulation and historical data",
+   "access": "Data License: a self-service catalogue at `data.bloomberg.com`. Data License Plus: request a demo. Terminal and server APIs: a Bloomberg subscription (not detailed on the page)",
+   "basis": "✅"
+  },
+  {
+   "vendor": "LSEG",
+   "group": "Market and deal data",
+   "mcp": "A managed MCP server: for Microsoft Copilot Studio, and in Databricks Marketplace (Financial Analytics, Lipper). Phased rollout. URL not stated",
+   "api": "LSEG Data Library (Python, TypeScript, .NET); Datastream Web Service",
+   "sells": "Market data and analytics, Lipper funds, and Deals data: M&A, private equity, capital raising (4.4 million deals, since 1960)",
+   "access": "Through LSEG product licences. The Data Library needs an app key (plus login for a platform session, or the Workspace app running for a desktop session). Deals: Workspace, SDC, DBI or an SFTP feed",
+   "basis": "✅"
+  },
+  {
+   "vendor": "DealInfo",
+   "group": "—",
+   "mcp": "Not identified",
+   "api": "Not identified",
+   "sells": "Not identified: my searches found no company with this name",
+   "access": "—",
+   "basis": "❓"
+  },
+  {
+   "vendor": "Contexa",
+   "group": "—",
+   "mcp": "Not identified",
+   "api": "Not identified",
+   "sells": "Not identified as a financial-data vendor: my searches found a WooCommerce search plugin, a document-extraction API and an MCP developer platform with this name",
+   "access": "—",
+   "basis": "❓"
+  },
+  {
+   "vendor": "SEC EDGAR (free, for comparison)",
+   "group": "Public filings",
+   "mcp": "No SEC MCP server found on the SEC pages I read. The community `sec-edgar-mcp` is used on page D2.3.1",
+   "api": "REST on `data.sec.gov` plus files on `www.sec.gov` · JSON · no key · 10 requests per second",
+   "sells": "Public company filings and the XBRL facts in them",
+   "access": "Nothing to buy: send a User-Agent that identifies you",
+   "basis": "✅"
+  }
+ ],
+ "details": [
+  {
+   "vendor": "Crunchbase",
+   "facts": [
+    {
+     "topic": "MCP tools (14 on its Tool Reference page)",
+     "text": "Expert: `cb_expert_query_answer`, `cb_expert_build_search`, `cb_expert_query_domain`, `cb_expert_resolve_entity`, `cb_expert_submit_feedback`. Structured: `cb_reference`, `cb_entity_autocomplete`, `cb_entity_get`, `cb_search_query`. Lists: `cb_list_query`, `cb_list_create`, `cb_list_add_entities`, `cb_list_get`. Utility: `cb_metering_get_state`"
+    },
+    {
+     "topic": "Clients named",
+     "text": "Claude, ChatGPT, VS Code with GitHub Copilot, Perplexity, Mistral Vibe, and any client that implements the current MCP specification"
+    },
+    {
+     "topic": "REST API",
+     "text": "Entity lookup, search and autocomplete families; example path `/entities/organizations/crunchbase`; HTTPS only; key as the `user_key` parameter or the `X-cb-user-key` header"
+    },
+    {
+     "topic": "Product-page figures",
+     "text": "790 data fields per company; 15 million+ private-company predictions refreshed weekly (as stated on the product page)"
+    }
+   ],
+   "sources": [
+    {
+     "label": "MCP overview",
+     "url": "https://data.crunchbase.com/docs/mcp-overview"
+    },
+    {
+     "label": "Getting started with MCP",
+     "url": "https://data.crunchbase.com/docs/getting-started-with-mcp"
+    },
+    {
+     "label": "Tool reference",
+     "url": "https://data.crunchbase.com/docs/tool-reference"
+    },
+    {
+     "label": "Using the API",
+     "url": "https://data.crunchbase.com/docs/using-the-api"
+    },
+    {
+     "label": "Crunchbase MCP product page",
+     "url": "https://about.crunchbase.com/products/crunchbase-mcp"
+    }
+   ]
+  },
+  {
+   "vendor": "ZoomInfo",
+   "facts": [
+    {
+     "topic": "MCP",
+     "text": "OAuth 2.0 sign-in through a browser, with ZoomInfo credentials or company single sign-on. Clients named: Claude Code, OpenAI Codex, Cursor, VS Code Copilot, Claude, ChatGPT, Perplexity. The docs say model training should be turned off in the AI client"
+    },
+    {
+     "topic": "REST groups",
+     "text": "Search: contacts, companies, intent, news, scoops. Enrich: contacts, companies, corporate hierarchy, intent, news, org charts, scoops, technologies, hashtags. Lookup. Usage"
+    },
+    {
+     "topic": "Licence note",
+     "text": "Intent endpoints need “the Intent SKU” in your package"
+    },
+    {
+     "topic": "Not found",
+     "text": "The REST base URL and the rate-limit numbers were not on the pages I fetched. The old API documentation is marked “Legacy”"
+    }
+   ],
+   "sources": [
+    {
+     "label": "ZoomInfo MCP solution page",
+     "url": "https://www.zoominfo.com/solutions/zoominfo-mcp"
+    },
+    {
+     "label": "Connect to ZoomInfo MCP",
+     "url": "https://docs.gtm.ai/docs/connect-to-zoominfo-mcp"
+    },
+    {
+     "label": "API documentation",
+     "url": "https://docs.gtm.ai/"
+    }
+   ]
+  },
+  {
+   "vendor": "FactSet",
+   "facts": [
+    {
+     "topic": "What FactSet itself says",
+     "text": "Its “Enterprise MCP” article lists “eight content APIs”: Fundamentals, Estimates, Ownership, M&A, Pricing (FGP), People, Events and Supply Chain. The same article discusses OAuth and scoped access for MCP in general; it does not describe FactSet's own enforcement"
+    },
+    {
+     "topic": "Not verified",
+     "text": "The endpoint URL and 11 tool names appear in a search summary (which also cites third-party listings), not on a FactSet page I could read, so they carry 🔎. The developer-portal pages are script-built and returned only a title to my fetch. A search summary mentions 24 tools and a trial by contacting FactSet; I could not confirm either on FactSet's page"
+    }
+   ],
+   "sources": [
+    {
+     "label": "FactSet developer portal — MCP",
+     "url": "https://developer.factset.com/mcp"
+    },
+    {
+     "label": "FactSet Enterprise MCP, part 3 (security and governance)",
+     "url": "https://insight.factset.com/enterprise-mcp-part-3-security-and-governance"
+    }
+   ]
+  },
+  {
+   "vendor": "FactSet SharkRepellent",
+   "facts": [
+    {
+     "topic": "What the page says",
+     "text": "“FactSet's corporate governance database, SharkRepellent, provides takeover defense and corporate governance data for thousands of US companies.” It compiles board structure and shareholder-rights data from articles of incorporation, bylaws, state takeover laws and shareholder rights plans, tracks poison pills, and scores defences with a “Bullet Proof Rating System”"
+    },
+    {
+     "topic": "Delivery",
+     "text": "Not stated. The page mentions custom reports and company defence profiles. A FactSet marketplace page for “FactSet Corporate Governance” returned only its title"
+    },
+    {
+     "topic": "For an agent",
+     "text": "I found no MCP server or API for SharkRepellent on the pages I read, and none of FactSet's MCP content areas is governance data"
+    }
+   ],
+   "sources": [
+    {
+     "label": "FactSet Insight — SharkRepellent",
+     "url": "https://insight.factset.com/takeover-defense-and-corporate-governance-data-is-available-through-factsets-sharkrepellent-database"
+    }
+   ]
+  },
+  {
+   "vendor": "Moody's",
+   "facts": [
+    {
+     "topic": "MCP tools (5)",
+     "text": "`findEntity`, `searchEntityDocuments`, `getEntityRatings`, `getEntityRatingDrivers`, `getEntityScorecard`"
+    },
+    {
+     "topic": "Access",
+     "text": "“Request credentials and endpoint URL from Moody's”; OAuth through a Moody's login page. Works with any LLM that supports the MCP standard, including Claude and OpenAI APIs"
+    },
+    {
+     "topic": "Pathways",
+     "text": "Moody's names three: “Smart APIs”, MCP servers, and integrations through Databricks Marketplace and Claude for Financial Services"
+    },
+    {
+     "topic": "Scale stated",
+     "text": "600 million entities and 2 billion ownership links (Moody's press release); 600 million+ public and private entities (Moody's blog)"
+    }
+   ],
+   "sources": [
+    {
+     "label": "Moody's — Model Context Protocol",
+     "url": "https://www.moodys.com/web/en/us/genai/model-context-protocol.html"
+    },
+    {
+     "label": "Moody's — GenAI-ready data pathways",
+     "url": "https://www.moodys.com/web/en/us/creditview/blog/gen-ai-ready-data-powered-for-adoption.html"
+    },
+    {
+     "label": "Moody's press release — Claude",
+     "url": "https://www.moodys.com/web/en/us/media-relations/press-releases/moodys-brings-credit-and-compliance-workflows-directly-into-anthropics-claude.html"
+    }
+   ]
+  },
+  {
+   "vendor": "S&P Global Market Intelligence (Kensho)",
+   "facts": [
+    {
+     "topic": "Datasets named",
+     "text": "Financial statements and line items; market prices and price charts; segment financials, market capitalisation, total enterprise value; company intelligence; competitors; M&A transactions; earnings-call transcripts. Private-company financials were “coming soon” and Capital IQ consensus estimates “in development” when the post was written"
+    },
+    {
+     "topic": "Built by",
+     "text": "Kensho, S&P Global's AI hub, for the Kensho LLM-ready API. S&P's press release says it works with any large language model"
+    },
+    {
+     "topic": "Not found",
+     "text": "The MCP endpoint URL, the tool names and the licence terms. S&P's own “AI for partners and developers” page returned an access error"
+    }
+   ],
+   "sources": [
+    {
+     "label": "S&P Global and Anthropic press release",
+     "url": "https://press.spglobal.com/2025-07-15-S-P-Global-and-Anthropic-Announce-Integration-of-S-P-Globals-Trusted-Financial-Data-into-Claude"
+    },
+    {
+     "label": "Kensho — LLM-ready API and MCP server access",
+     "url": "https://kensho.com/news/kensho-llm-ready-api-expands-mcp-server-access-dataset-support-integrations"
+    }
+   ]
+  },
+  {
+   "vendor": "S&P Global Ratings (RatingsDirect)",
+   "facts": [
+    {
+     "topic": "What I have",
+     "text": "Only search summaries of S&P's pages: RatingsDirect covers credit ratings and research, is integrated into the Capital IQ platform, and S&P offers data feeds, cloud and API solutions (XpressAPI, Capital IQ API)"
+    },
+    {
+     "topic": "Not found",
+     "text": "RatingsDirect and the S&P marketplace pages returned access errors or only a title when fetched, so no endpoint, protocol or licence detail is shown"
+    }
+   ],
+   "sources": [
+    {
+     "label": "RatingsDirect",
+     "url": "https://www.spglobal.com/marketintelligence/en/solutions/ratingsdirect"
+    },
+    {
+     "label": "S&P Global Marketplace — API solutions",
+     "url": "https://www.marketplace.spglobal.com/en/solutions/api-solutions-(61953ac7-ea64-4fac-926a-feb7f846c2be)"
+    }
+   ]
+  },
+  {
+   "vendor": "Fitch (Fitch Solutions)",
+   "facts": [
+    {
+     "topic": "What the release says",
+     "text": "Fitch Nexus gives access to Fitch Ratings credit research, current and historical ratings, outlooks and watch changes, company financials, forecasts and key ratios, and rating factors and sensitivities. CreditSights insights are “available soon”; BMI and Sustainable Fitch follow “in the following months”. It is described as built for “enterprise and regulated environments”"
+    },
+    {
+     "topic": "Why 📰",
+     "text": "Fitch's own domains (fitchratings.com, fitchsolutions.com) were blocked to my tools, and the business-wire copy returned an access error. This row rests on a republished press release"
+    },
+    {
+     "topic": "Not found",
+     "text": "Endpoint, tool names, API and licence terms"
+    }
+   ],
+   "sources": [
+    {
+     "label": "Fitch Nexus MCP — press release as republished",
+     "url": "https://ffnews.com/newsarticle/fitch-solutions-launches-fitch-nexus-mcp-to-deliver-greater-speed-to-credit-insights/"
+    }
+   ]
+  },
+  {
+   "vendor": "Bloomberg",
+   "facts": [
+    {
+     "topic": "APIs on its API library page",
+     "text": "BLPAPI (core API: C++, Java, C#/.NET), Desktop API (for terminal users), Server API and B-PIPE (server-side data feed), Data License"
+    },
+    {
+     "topic": "Data License",
+     "text": "“100B+ data points published daily”, “100M+ financial instruments”, “47k+ data fields”, “8k+ datasets”: reference, ESG, pricing, risk, regulation, fundamentals, estimates, historical. Delivered by REST API, SFTP, web services or cloud. A self-service portal lets clients browse, test and customise datasets"
+    },
+    {
+     "topic": "Data License Plus and Enterprise MCP",
+     "text": "Adds cloud data sharing, Bloomberg Enterprise MCP and the Qube Datastore with Python access. The MCP covers “more than 100 million securities and over 30,000 fields”, structured by issuer, portfolio and hierarchy. How agents authenticate is not stated on that page"
+    },
+    {
+     "topic": "Note",
+     "text": "The two pages give different field counts (47k+ for Data License, 30,000+ for the MCP). I did not check why"
+    }
+   ],
+   "sources": [
+    {
+     "label": "Bloomberg — API library",
+     "url": "https://professional.bloomberg.com/support/api-library/"
+    },
+    {
+     "label": "Bloomberg — Data License",
+     "url": "https://professional.bloomberg.com/products/data/data-license/"
+    },
+    {
+     "label": "Bloomberg — Data License Plus",
+     "url": "https://professional.bloomberg.com/products/data/data-license/dl-plus/"
+    }
+   ]
+  },
+  {
+   "vendor": "LSEG",
+   "facts": [
+    {
+     "topic": "MCP",
+     "text": "A managed MCP server announced with Microsoft, to connect Copilot Studio to LSEG APIs; and a first phase in Databricks Marketplace through Agent Bricks and Delta Sharing: LSEG Financial Analytics, Lipper Fund Data and Analytics, Historical Analytics. “AI-ready content will continue to roll out in phases through MCP”"
+    },
+    {
+     "topic": "APIs",
+     "text": "LSEG Data Library (Python, TypeScript, .NET): a desktop session needs the Workspace or Eikon app running locally plus an app key; a platform session needs an app key and user credentials. Datastream Web Service for time-series data. Eikon Data API is described as “very unlikely” to be needed"
+    },
+    {
+     "topic": "Deals data",
+     "text": "“M&A, private equity, capital raising, infrastructure, company events”; 4.4 million+ deals, 1.5 million+ M&A transactions, back to 1960. Desktop access through Workspace, SDC and DBI; an SFTP feed per dataset; the LSEG data catalogue"
+    }
+   ],
+   "sources": [
+    {
+     "label": "LSEG and Microsoft — MCP",
+     "url": "https://www.lseg.com/en/media-centre/press-releases/2025/lseg-and-microsoft-transform-access-to-ai-ready-financial-data-in-customer-workflows"
+    },
+    {
+     "label": "LSEG MCP in Databricks Marketplace",
+     "url": "https://www.lseg.com/en/solutions/ai-finance-solutions/updates/lseg-launches-mcp-server-databricks-marketplace-ai-ready-access"
+    },
+    {
+     "label": "LSEG APIs summary",
+     "url": "https://developers.lseg.com/en/article-catalog/article/summary-of-common-lseg-apis"
+    },
+    {
+     "label": "LSEG Deals data",
+     "url": "https://www.lseg.com/en/data-catalogue/deals"
+    }
+   ]
+  },
+  {
+   "vendor": "DealInfo and Contexa",
+   "facts": [
+    {
+     "topic": "What I found",
+     "text": "No vendor called “DealInfo”. “Contexa” matched three unrelated things: a WooCommerce search product (contexa.co), a document-extraction API (contexa.works) and an MCP developer platform (contexaai.com). None is a financial-data vendor, so I did not guess"
+    },
+    {
+     "topic": "Needed from you",
+     "text": "The exact vendor names or websites"
+    }
+   ],
+   "sources": []
+  }
+ ],
+ "agentMap": [
+  {
+   "question": "Public-company filings and reported financials",
+   "sources": "SEC EDGAR (free) · FactSet Fundamentals · S&P Capital IQ financials (Kensho) · Bloomberg Data License (fundamentals)"
+  },
+  {
+   "question": "Private companies, funding rounds, investors",
+   "sources": "Crunchbase"
+  },
+  {
+   "question": "Who to contact at a company",
+   "sources": "ZoomInfo"
+  },
+  {
+   "question": "Credit ratings, outlooks, rating drivers",
+   "sources": "Moody's (MCP) · Fitch Nexus (MCP) · S&P Global Ratings (no MCP found)"
+  },
+  {
+   "question": "M&A deals and comparables",
+   "sources": "LSEG Deals · FactSet M&A · S&P (M&A transactions, Kensho) · Crunchbase (acquisitions of private companies)"
+  },
+  {
+   "question": "Takeover defences and activism",
+   "sources": "FactSet SharkRepellent. No MCP or API found for it"
+  },
+  {
+   "question": "Prices and estimates",
+   "sources": "FactSet · Bloomberg · S&P (market prices; Capital IQ consensus estimates were “in development”)"
+  },
+  {
+   "question": "Ownership, events, transcripts, supply chain",
+   "sources": "FactSet (ownership, events, supply chain) · S&P (earnings-call transcripts)"
+  },
+  {
+   "question": "Macro and time-series data",
+   "sources": "LSEG Datastream Web Service"
+  }
+ ],
+ "patterns": [
+  {
+   "pattern": "The user signs in",
+   "text": "Crunchbase, ZoomInfo, Moody's and S&P/Kensho all have the person sign in with their own vendor account (OAuth or a vendor login)"
+  },
+  {
+   "pattern": "An account or licence comes first",
+   "text": "Crunchbase needs an MCP seat, ZoomInfo a licence (a trial is offered), Moody's credentials issued by Moody's, LSEG an LSEG product licence, and Bloomberg Data License Plus is requested through a demo form"
+  },
+  {
+   "pattern": "An API usually exists beside the MCP",
+   "text": "Crunchbase, ZoomInfo, Bloomberg and LSEG each also publish REST or library APIs. For Moody's and S&P Kensho the page names APIs but gives no endpoints"
+  },
+  {
+   "pattern": "Not every dataset is reachable by an agent",
+   "text": "SharkRepellent, S&P ratings and Fitch have no endpoint on the pages I could read"
+  },
+  {
+   "pattern": "No prices are published",
+   "text": "None of the pages read states a price; every vendor sends you to sales or a demo"
+  }
+ ],
+ "nextStep": "**Next step for the agent:** the MCP client on pages D2.3.1 and D2.3.2 connects to one MCP server by URL (Streamable HTTP) or by command (stdio). A vendor server that signs the user in with OAuth is the same client with a different URL and a sign-in step; this workbench's client does not do that sign-in yet.",
+ "gaps": [
+  "Fitch's own domains and the business-wire copy of its release were blocked to my tools; the Fitch row rests on a republished press release.",
+  "S&P Global's RatingsDirect, its marketplace API page and its “AI for partners and developers” page returned access errors or only a title.",
+  "FactSet's developer-portal pages are script-built and returned only a title; the MCP endpoint and tool count are unconfirmed.",
+  "ZoomInfo's REST base URL and rate-limit numbers were not on the pages I fetched.",
+  "No page states a price, a contract term or a licence tier for any vendor.",
+  "“DealInfo” and “Contexa” could not be identified as financial-data vendors.",
+  "Vendor pages change. Re-read a vendor's page before building on a row."
+ ],
+ "toolCounts": [
+  {
+   "vendor": "Crunchbase",
+   "tools": "14",
+   "url": "https://data.crunchbase.com/docs/tool-reference",
+   "note": "Page: “Tool Reference”"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tools": "19 (16 data tools + 3 agentic tools)",
+   "url": "https://docs.gtm.ai/docs/available-mcp-tools",
+   "note": "The ZoomInfo solution page I read earlier names 6 capabilities; the docs page lists 19. This table uses the docs page"
+  },
+  {
+   "vendor": "Moody's",
+   "tools": "5",
+   "url": "https://www.moodys.com/web/en/us/genai/model-context-protocol.html",
+   "note": "Page: “Model Context Protocol”"
+  },
+  {
+   "vendor": "FactSet",
+   "tools": "11 named in a search summary (🔎)",
+   "url": "https://developer.factset.com/mcp/factset-ai-ready-data-mcp",
+   "note": "FactSet's own pages are script-built and returned only a title; names come from a search summary. An earlier summary said 24 tools; neither is confirmed"
+  },
+  {
+   "vendor": "S&P Global (Kensho)",
+   "tools": "no tool list read",
+   "url": "",
+   "note": "Tool names not stated on the pages read"
+  },
+  {
+   "vendor": "Fitch",
+   "tools": "no tool list read",
+   "url": "",
+   "note": "Tool names not stated in the press release"
+  },
+  {
+   "vendor": "Bloomberg",
+   "tools": "no tool list read",
+   "url": "",
+   "note": "Enterprise MCP described by size only (securities, fields)"
+  },
+  {
+   "vendor": "LSEG",
+   "tools": "no tool list read",
+   "url": "",
+   "note": "Tool names not stated on the pages read"
+  }
+ ],
+ "mcpTools": [
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_expert_query_answer",
+   "description": "Answers a natural-language question using live Crunchbase data",
+   "inputs": "A natural-language question (string)",
+   "outputs": "An answer with supporting results and a request_id"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_expert_build_search",
+   "description": "Turns a plain-language description of entities into a compiled structured search",
+   "inputs": "A natural-language description (string)",
+   "outputs": "Compiled predicates for structured queries"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_expert_query_domain",
+   "description": "Answers questions about the shape of the Crunchbase data itself",
+   "inputs": "intent, question (strings); focus (array); max_suggestions (integer)",
+   "outputs": "A domain map, analytical paths, or answerability diagnostics"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_expert_resolve_entity",
+   "description": "Disambiguates an entity name against the Crunchbase catalogue",
+   "inputs": "name (required); collection_id, domains, context, cb_entity_get (optional)",
+   "outputs": "One match, or a ranked candidate list with optional full profiles"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_expert_submit_feedback",
+   "description": "Records feedback on an earlier query result",
+   "inputs": "subject_request_id, sentiment (required); feedback (optional)",
+   "outputs": "A confirmation; may include corrected results after negative feedback"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_reference",
+   "description": "The schema reference for the other tools",
+   "inputs": "path (string, defaults to the index)",
+   "outputs": "Markdown documentation for that schema path"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_entity_autocomplete",
+   "description": "Searches entities by name and returns matching identifiers",
+   "inputs": "query (required); collection_ids, limit (optional)",
+   "outputs": "Matching identifiers with brief descriptions"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_entity_get",
+   "description": "Gets the complete profile of an identified entity",
+   "inputs": "entity_id (required); entity_def_id, field_ids, card_ids, related_entity_limit, after_id (optional)",
+   "outputs": "The entity profile: fields and relationship cards"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_search_query",
+   "description": "Runs a structured search and returns matching entities",
+   "inputs": "collection_id (required); predicates or query, field_ids, order, limit, after_id",
+   "outputs": "Filtered entities with the requested fields and URLs"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_list_query",
+   "description": "Returns all saved lists owned by the caller",
+   "inputs": "not stated",
+   "outputs": "List names, entity counts, timestamps"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_list_create",
+   "description": "Creates a new empty list",
+   "inputs": "name (string)",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_list_add_entities",
+   "description": "Adds entities to an existing list",
+   "inputs": "list_id; an array of entity ids",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_list_get",
+   "description": "Returns the entity identifiers in a list",
+   "inputs": "list_id; after_id (pagination)",
+   "outputs": "Entity identifiers, paginated"
+  },
+  {
+   "vendor": "Crunchbase",
+   "tool": "cb_metering_get_state",
+   "description": "Returns the usage limits visible to the current user",
+   "inputs": "None",
+   "outputs": "Applicable limits and quota impact per tool"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Search Companies",
+   "description": "Find companies by firmographic criteria",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Search Contacts",
+   "description": "Find contacts by role, company or signal",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Enrich Companies",
+   "description": "Full firmographic details for up to 25 companies",
+   "inputs": "not stated",
+   "outputs": "Firmographic details"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Enrich Contacts",
+   "description": "Full contact details for up to 25 contacts",
+   "inputs": "not stated",
+   "outputs": "Contact details"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Lookup",
+   "description": "Returns valid filter values (industries, regions, job functions)",
+   "inputs": "not stated",
+   "outputs": "Filter values"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Find Similar Companies",
+   "description": "Finds companies resembling a given company",
+   "inputs": "not stated",
+   "outputs": "Similar companies"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Find Similar Contacts",
+   "description": "Finds contacts resembling a given contact",
+   "inputs": "not stated",
+   "outputs": "Similar contacts"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Find Recommended Contacts",
+   "description": "Outreach-ready contacts for a specific account",
+   "inputs": "An account identifier",
+   "outputs": "Contacts"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Search Intent",
+   "description": "Companies showing buyer-intent signals",
+   "inputs": "not stated",
+   "outputs": "Companies with intent signals"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Enrich Intent",
+   "description": "Intent signals for one company",
+   "inputs": "A company identifier",
+   "outputs": "Intent signals"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Search Scoops",
+   "description": "Companies based on real-world business events",
+   "inputs": "not stated",
+   "outputs": "Companies"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Enrich Scoops",
+   "description": "Business-event scoops for one company",
+   "inputs": "A company identifier",
+   "outputs": "Business events"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Enrich News",
+   "description": "Categorised news coverage for one company",
+   "inputs": "A company identifier",
+   "outputs": "News articles"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Browse Audiences",
+   "description": "Lists and searches your GTM Studio audiences",
+   "inputs": "not stated",
+   "outputs": "Audiences"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Get Audience",
+   "description": "An audience's columns and a preview of its rows",
+   "inputs": "An audience identifier",
+   "outputs": "Columns and preview rows"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "GTM Context",
+   "description": "The user's role and go-to-market context for the organisation",
+   "inputs": "not stated",
+   "outputs": "Role and context"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Account Research",
+   "description": "A comprehensive intelligence briefing on a company",
+   "inputs": "A company identifier",
+   "outputs": "An intelligence briefing"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Contact Research",
+   "description": "A comprehensive intelligence briefing on a contact",
+   "inputs": "A contact identifier",
+   "outputs": "An intelligence briefing"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "tool": "Update GTM Context",
+   "description": "Sets or changes the GTM context from unstructured content",
+   "inputs": "Unstructured content",
+   "outputs": "The updated configuration"
+  },
+  {
+   "vendor": "Moody's",
+   "tool": "findEntity",
+   "description": "Finds entities Moody's covers, by identifier, name or related metadata",
+   "inputs": "not stated",
+   "outputs": "Moody's unique entity ID for deeper queries"
+  },
+  {
+   "vendor": "Moody's",
+   "tool": "searchEntityDocuments",
+   "description": "Searches Moody's research library for an entity or topic",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "Moody's",
+   "tool": "getEntityRatings",
+   "description": "Current credit rating and outlook for an entity",
+   "inputs": "not stated",
+   "outputs": "Rating, outlook, rating date and rating details"
+  },
+  {
+   "vendor": "Moody's",
+   "tool": "getEntityRatingDrivers",
+   "description": "Main drivers behind a rating upgrade or downgrade",
+   "inputs": "not stated",
+   "outputs": "The drivers, with context"
+  },
+  {
+   "vendor": "Moody's",
+   "tool": "getEntityScorecard",
+   "description": "The Moody's rating scorecard for an entity",
+   "inputs": "not stated",
+   "outputs": "Factor weights, scoring components and rating rationale"
+  },
+  {
+   "vendor": "FactSet 🔎",
+   "tool": "factset_fundamentals",
+   "description": "Dataset “Fundamentals”",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "FactSet 🔎",
+   "tool": "factset_estimatesconsensus",
+   "description": "Dataset “Consensus Estimates”",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "FactSet 🔎",
+   "tool": "factset_globalprices",
+   "description": "Dataset “Global Pricing”",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "FactSet 🔎",
+   "tool": "factset_ownership",
+   "description": "Dataset “Ownership”",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "FactSet 🔎",
+   "tool": "factset_mergersacquisitions",
+   "description": "Dataset “Global M&A intelligence”",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "FactSet 🔎",
+   "tool": "factset_people",
+   "description": "Dataset “People profiles”",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "FactSet 🔎",
+   "tool": "factset_calendarevents",
+   "description": "Dataset “Events (live and historical)”",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "FactSet 🔎",
+   "tool": "factset_supplychain",
+   "description": "Dataset “Supply Chain insights”",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "FactSet 🔎",
+   "tool": "factset_georev",
+   "description": "Dataset “Geographic Revenue Exposure”",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "FactSet 🔎",
+   "tool": "factset_entityreference",
+   "description": "Name only; the summary gives no description",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "FactSet 🔎",
+   "tool": "factset_metrics",
+   "description": "Name only; the summary gives no description",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  }
+ ],
+ "restApis": [
+  {
+   "vendor": "Crunchbase",
+   "api": "REST `GET /v4/data/entities/organizations/{entity_name}` (the one example the page shows)",
+   "description": "Entity lookup; the page names three families: entity lookup, search, autocomplete",
+   "inputs": "API key as `user_key` (or the `X-cb-user-key` header)",
+   "outputs": "JSON implied; the page does not describe the fields. The full list is on the API Reference page, which I did not read"
+  },
+  {
+   "vendor": "ZoomInfo",
+   "api": "REST groups Search, Enrich, Lookup, Usage",
+   "description": "Same families as the MCP tools (search and enrich contacts and companies, intent, news, scoops)",
+   "inputs": "OAuth 2.0; per-endpoint parameters not read",
+   "outputs": "Not stated; the base URL was not on the pages read"
+  },
+  {
+   "vendor": "LSEG",
+   "api": "Datastream Web Service (DSWS)",
+   "description": "Low-frequency economic and financial time series",
+   "inputs": "Credentials (username and password); instrument identifiers; field names",
+   "outputs": "Time series. Endpoints not stated"
+  },
+  {
+   "vendor": "LSEG",
+   "api": "LSEG Data Library (Python, .NET, TypeScript)",
+   "description": "Most LSEG datasets beyond Datastream",
+   "inputs": "An app key; user login and password for a platform session; the Workspace app running for a desktop session",
+   "outputs": "Structured financial data such as pricing and fundamentals"
+  },
+  {
+   "vendor": "LSEG",
+   "api": "Eikon Data API",
+   "description": "Niche datasets the two above do not cover; the page calls it unlikely to be needed",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "SEC EDGAR",
+   "api": "REST on `data.sec.gov` and files on `www.sec.gov` (page D2.3.1)",
+   "description": "Filings and XBRL facts",
+   "inputs": "A User-Agent header; no key",
+   "outputs": "JSON and filing files"
+  },
+  {
+   "vendor": "Bloomberg",
+   "api": "BLPAPI, Server API, B-PIPE, Data License (REST, SFTP)",
+   "description": "Reference, pricing, fundamentals and more",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  },
+  {
+   "vendor": "Moody's, FactSet, S&P, Fitch",
+   "api": "Named, not described",
+   "description": "Moody's “Smart APIs”; FactSet content APIs; S&P XpressAPI and Capital IQ API (search summary)",
+   "inputs": "not stated",
+   "outputs": "not stated"
+  }
+ ],
+ "toolsNote": "“not stated” = the page I read did not say. Parameter names are the vendors' own. Vendors absent from the tool table publish no tool list on the pages I could read; I did not guess one.",
+ "dbx": {
+  "types": [
+   {
+    "type": "Datasets",
+    "note": "Named on the product page"
+   },
+   {
+    "type": "ML models",
+    "note": "Named on the product page"
+   },
+   {
+    "type": "Notebooks",
+    "note": "Named on the product page; the page also mentions prebuilt notebooks and sample data to evaluate products"
+   },
+   {
+    "type": "Applications",
+    "note": "Named on the product page"
+   },
+   {
+    "type": "Dashboards",
+    "note": "Named on the product page"
+   },
+   {
+    "type": "Solution accelerators",
+    "note": "Named on the product page"
+   },
+   {
+    "type": "MCP servers",
+    "note": "Named on the two blog posts below; governed through Unity Catalog"
+   }
+  ],
+  "mcp": [
+   {
+    "provider": "LSEG",
+    "product": "LSEG MCP",
+    "offers": "Live market data, pricing analytics and curve calculations, for trading workflows. LSEG's own page names a first phase: LSEG Financial Analytics, Lipper Fund Data and Analytics, Historical Analytics",
+    "access": "MCP integration",
+    "basis": "✅"
+   },
+   {
+    "provider": "FactSet",
+    "product": "FactSet MCP",
+    "offers": "Live fundamentals, earnings estimates and management call transcripts, for research",
+    "access": "MCP integration",
+    "basis": "✅"
+   },
+   {
+    "provider": "Nasdaq",
+    "product": "Data Link MCP Server",
+    "offers": "Time-series and tabular inputs, earnings trends, holdings, sector flows and alternative signals",
+    "access": "MCP server through Unity Catalog / Genie",
+    "basis": "✅"
+   },
+   {
+    "provider": "Moody's",
+    "product": "Moody's MCP Server",
+    "offers": "Current rating outlooks, credit opinions and related research, for credit analysis",
+    "access": "Secure access through Genie Spaces",
+    "basis": "✅"
+   },
+   {
+    "provider": "S&P Global",
+    "product": "Market Intelligence MCP Server",
+    "offers": "Not stated on the page",
+    "access": "MCP integration",
+    "basis": "✅"
+   },
+   {
+    "provider": "S&P Global",
+    "product": "Commodity Insights MCP Server",
+    "offers": "Live commodity curves and supply forecasts, for deal modelling",
+    "access": "MCP server",
+    "basis": "✅"
+   },
+   {
+    "provider": "Dun & Bradstreet",
+    "product": "D&B.AI MCP agent-ready data",
+    "offers": "Firmographic profiles, ownership hierarchies and payment behaviours, for underwriting",
+    "access": "Agent-ready data format",
+    "basis": "✅"
+   },
+   {
+    "provider": "Cotality",
+    "product": "CLIP MCP",
+    "offers": "Property, valuation and risk data; property resolution and AI-ready datasets, for mortgage and collateral assessment",
+    "access": "MCP agent connection",
+    "basis": "✅"
+   },
+   {
+    "provider": "You.com",
+    "product": "You.com MCP (web search API)",
+    "offers": "Real-time web intelligence and market sentiment: live market news, competitor pricing, regulatory changes",
+    "access": "Not stated",
+    "basis": "✅"
+   },
+   {
+    "provider": "Arcesium",
+    "product": "Not stated",
+    "offers": "Not stated",
+    "access": "Listed as an MCP partner only",
+    "basis": "✅"
+   }
+  ],
+  "sources": [
+   {
+    "label": "Databricks — Marketplace product page",
+    "url": "https://www.databricks.com/product/marketplace"
+   },
+   {
+    "label": "Databricks blog — MCP Marketplace brings real-time intelligence to agentic applications",
+    "url": "https://www.databricks.com/blog/mcp-marketplace-brings-real-time-intelligence-agentic-applications"
+   },
+   {
+    "label": "Databricks blog — MCP-powered financial AI workflows",
+    "url": "https://www.databricks.com/blog/mcp-powered-financial-ai-workflows-databricks"
+   },
+   {
+    "label": "LSEG — MCP in Databricks Marketplace",
+    "url": "https://www.lseg.com/en/solutions/ai-finance-solutions/updates/lseg-launches-mcp-server-databricks-marketplace-ai-ready-access"
+   }
+  ],
+  "gaps": [
+   "The live catalogue at marketplace.databricks.com is built with scripts; my fetch returned only the title. This is the list Databricks' own blog posts name, not the full catalogue, and it will have grown.",
+   "None of the pages I read states prices, free or paid terms, or how a listing is requested. Marketplace listings are normally set by each provider; I did not verify that.",
+   "Fitch, Bloomberg, Crunchbase and ZoomInfo are not named on the Databricks pages I read, so I do not show them as available there.",
+   "Vendor pages change. Re-read Databricks' pages before building on this list."
+  ]
+ }
+}

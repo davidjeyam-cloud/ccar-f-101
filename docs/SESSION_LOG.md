@@ -772,3 +772,7 @@ The user asked to "run all of D5". The concept list has two numbered D5 concepts
 
 ## 2026-11-14 - Source of truth switched to web/
 - web/public/data is the source for questions, course map and concept pages; lab Python copied to web/pylab (88 modules) and packed by web/scripts/build-pylab.mjs; legacy exporters guarded (--overwrite-from-python); deploy_web.ps1 and push.ps1 no longer regenerate from Python. Pyodide 937/937 identical with the new archive.
+
+## 2026-11-14 - Static pages ported (step 2 of the sunset)
+- Eight parallel agents ported Exam Blueprint, Exam Day, 10.0 sources, 10.1-10.3 MCQs, vendors, Oracle, the Live MCP write-up and the Hello Claude write-up into web/src/pages/library with data in web/public/data/library. Coordinator added the Library hub, a Mermaid component and a 5th nav item, then built everything together and checked all 11 routes in headless Edge at phone width.
+- Fixes from that check: sources tables to cards, vendor label contrast, swipe hint under diagrams. CLAUDE.md docs-based MCQ count corrected 9 -> 14.

@@ -1,0 +1,1315 @@
+{
+ "retired": "The live version of these two pages (a real MCP client talking to a server, an Ask form, a Start/Stop box and Gemini answers) was retired with Streamlit on 2026-11-14, because a static site cannot run servers. What follows is the frozen record: the facts keep the dates they were observed on. The live pages can be reproduced from the git tag `streamlit-final`.",
+ "readOn": "2026-10-04",
+ "versions": "sec-edgar-mcp 1.0.8 · edgartools 5.60.0",
+ "compare": [
+  {
+   "row": "Who starts the server",
+   "hosted": "Its owner. It is already running; the client never starts it",
+   "local": "The client. It launches the server as a child process and the server exits when the client closes"
+  },
+  {
+   "row": "How the client finds it",
+   "hosted": "A URL (`http://…/mcp`)",
+   "local": "A command line (which program and file to run)"
+  },
+  {
+   "row": "Transport",
+   "hosted": "Streamable HTTP — each message is an HTTP POST",
+   "local": "stdio — messages go over the process's stdin / stdout"
+  },
+  {
+   "row": "Where the tools run",
+   "hosted": "Inside the separate service, outside this app",
+   "local": "Inside the child process, on this PC"
+  },
+  {
+   "row": "Who wrote the tools",
+   "hosted": "Someone else (the community `sec-edgar-mcp`). You cannot change them",
+   "local": "You (`mcp_servers/laptop_server.py`). You write the descriptions and the errors"
+  },
+  {
+   "row": "What the client can see",
+   "hosted": "Requests and results only — not what the server does behind its URL*",
+   "local": "The same protocol view, plus you can read the server's code and log"
+  },
+  {
+   "row": "Who it can serve",
+   "hosted": "Many clients at once",
+   "local": "One client (the one that started it)"
+  },
+  {
+   "row": "The same in both",
+   "hosted": "`initialize` → `tools/list` → `tools/call`; the model chooses the tool from its description",
+   "local": "`initialize` → `tools/list` → `tools/call`; the model chooses the tool from its description"
+  }
+ ],
+ "compareNote": "*On the hosted page the stand-in service ran on the PC, so the page could read its log to show the sec.gov requests. With a server hosted by someone else you would not see those.",
+ "features": [
+  {
+   "feature": "Tools",
+   "control": "The MODEL — it decides when to call one",
+   "calls": "`tools/list`, `tools/call`",
+   "local": "9 tools",
+   "hosted": "21 tools (the community package's)"
+  },
+  {
+   "feature": "Resources",
+   "control": "The APPLICATION — it decides what to read and attach",
+   "calls": "`resources/list`, `resources/read`",
+   "local": "3: folder catalogue, clean-up policy, notes",
+   "hosted": "2: ticker list, form types"
+  },
+  {
+   "feature": "Resource templates",
+   "control": "The APPLICATION — one definition, many URIs",
+   "calls": "`resources/templates/list`, `resources/read`",
+   "local": "`laptop://drive/{letter}`",
+   "hosted": "`edgar://company/{ticker}`"
+  },
+  {
+   "feature": "Prompts",
+   "control": "The USER — you pick one and fill its blanks",
+   "calls": "`prompts/list`, `prompts/get`",
+   "local": "3: health check, clean-up plan, can it run",
+   "hosted": "3: compare companies, latest filing, insider activity"
+  },
+  {
+   "feature": "Progress and log notifications",
+   "control": "The SERVER sends them while a slow tool runs",
+   "calls": "`notifications/progress`, `notifications/message`",
+   "local": "`get_folder_sizes`, `summarize_file_types`",
+   "hosted": "— not used"
+  },
+  {
+   "feature": "Elicitation",
+   "control": "The SERVER asks the user a question mid-call",
+   "calls": "`elicitation/create`",
+   "local": "`save_note` asks before it writes",
+   "hosted": "— not used"
+  },
+  {
+   "feature": "Tool annotations",
+   "control": "The SERVER hints: read-only? touches the outside world?",
+   "calls": "a field in `tools/list`",
+   "local": "On every tool",
+   "hosted": "— the package sets none"
+  },
+  {
+   "feature": "Sampling, roots, subscriptions, list-changed, completion",
+   "control": "—",
+   "calls": "—",
+   "local": "Not built",
+   "hosted": "Not built"
+  }
+ ],
+ "featuresNote": "The first three rows are the server features in the MCP docs, with the docs' own answer to \"who controls it\". The current MCP docs mark sampling and logging as deprecated; this workbench's SDK still supported logging, and the local server used it.",
+ "setups": {
+  "hosted": {
+   "num": "D2.3.1",
+   "title": "MCP client to a server hosted separately (SEC EDGAR)",
+   "caption": "The app was only the CLIENT. The MCP server ran as its own service and was reached by a URL; its tools fetch from sec.gov.",
+   "whereMermaid": "flowchart TB\n  subgraph PC[\"THE MACHINE RUNNING THE APP (on the original: your laptop)\"]\n    tab[\"Your browser tab\"]\n    app[\"Streamlit app: the agent + the MCP client\"]\n    subgraph LH[\"localhost = 127.0.0.1 : only this machine can connect (loopback)\"]\n      srv[\"MCP server process: the sec-edgar tools<br/>listens on port 9870<br/>started by the Start the service button\"]\n    end\n  end\n  subgraph NET[\"SOMEWHERE ELSE: across the internet, on other people's computers\"]\n    g[\"Google: the Gemini model<br/>generativelanguage.googleapis.com\"]\n    subgraph SEC[\"THE SEC's SERVERS\"]\n      d[\"data.sec.gov<br/>REST API to JSON\"]\n      w[\"www.sec.gov<br/>files: filing text, the ticker list\"]\n    end\n  end\n  tab <--> app\n  app <-->|\"HTTPS: leaves this machine\"| g\n  app <-->|\"HTTP POST http://127.0.0.1:9870/mcp<br/>stays inside this machine\"| srv\n  srv -->|\"HTTPS GET\"| d\n  srv -->|\"HTTPS GET\"| w\n",
+   "whereLegend": "The first box is the machine running the app. The dashed inner box is localhost, the machine talking to itself. The second box is somewhere else: anything that crosses from the first box into the second leaves this machine.",
+   "whereRows": [
+    [
+     "Your browser tab",
+     "Your laptop",
+     "`http://localhost:8501` when the app ran on the PC"
+    ],
+    [
+     "Streamlit app: the agent and the MCP client",
+     "The machine running the app (a Windows laptop on the original; on the hosted copy, Streamlit's server)",
+     "The app itself"
+    ],
+    [
+     "**The MCP server** (the sec-edgar tools)",
+     "**A separate process on that same machine.** You host it; nobody else does",
+     "`http://127.0.0.1:9870/mcp`, started by the Start the service button, which ran `edgar_hosted_server.py`. It is bound to `127.0.0.1` (loopback), so only this machine can connect"
+    ],
+    [
+     "The Gemini model",
+     "Google's servers, across the internet",
+     "`generativelanguage.googleapis.com` (the google-genai SDK's default address)"
+    ],
+    [
+     "The SEC's data",
+     "The SEC's servers, across the internet",
+     "`data.sec.gov` and `www.sec.gov` (the hosts in the MCP server's request log)"
+    ]
+   ],
+   "whereNote": "**Is the MCP server hosted somewhere else?** No. Here it is a process on the same machine as the app, reached through `localhost`. If someone else hosted it, the URL would point at their machine and the client would change in one place (the URL). Nothing in this setup is hosted by a third party. The `sec-edgar-mcp` project says it is not affiliated with or endorsed by the SEC, and the SEC pages I read list data APIs and files, none mentions an MCP server.",
+   "seqTitle": "Hosted separately: the server is already running; the client only knows its URL",
+   "seqMermaid": "sequenceDiagram\n  autonumber\n  participant you as You\n  participant agent as Agent + MCP client\n  participant model as Model (Gemini)\n  participant server as MCP server (separate service, URL)\n  participant sec as sec.gov\n  you->>agent: question\n  agent->>server: HTTP POST initialize → the server's URL\n  server-->>agent: protocol version, capabilities\n  agent->>server: tools/list\n  server-->>agent: tools (name, description, inputSchema)\n  agent->>model: question + ALL tool descriptions\n  model-->>agent: function_call X  (Claude: tool_use)\n  agent->>server: HTTP POST tools/call X\n  server->>sec: HTTPS to sec.gov\n  server-->>agent: result (content, isError)\n  agent->>model: history + tool result\n  model-->>agent: text, no function_call  (Claude: end_turn)\n  agent->>server: close the HTTP session (the server keeps running)\n  agent->>you: answer",
+   "offers": {
+    "tools": [
+     {
+      "name": "get_cik_by_ticker",
+      "summary": "Get the CIK (Central Index Key) for a company based on its ticker symbol.",
+      "inputs": [
+       "ticker"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_company_info",
+      "summary": "Get detailed information about a company from SEC records.",
+      "inputs": [
+       "identifier"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "search_companies",
+      "summary": "Search for companies by name.",
+      "inputs": [
+       "query",
+       "limit"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_company_facts",
+      "summary": "Get company facts and key financial metrics.",
+      "inputs": [
+       "identifier"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_recent_filings",
+      "summary": "Get recent SEC filings for a company or across all companies.",
+      "inputs": [
+       "identifier",
+       "form_type",
+       "days",
+       "limit"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_filing_content",
+      "summary": "Get the content of a specific SEC filing.",
+      "inputs": [
+       "identifier",
+       "accession_number"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "analyze_8k",
+      "summary": "Analyze an 8-K filing for specific events and items.",
+      "inputs": [
+       "identifier",
+       "accession_number"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_filing_sections",
+      "summary": "Get specific sections from a filing (e.g., business description, risk factors, MD&A).",
+      "inputs": [
+       "identifier",
+       "accession_number",
+       "form_type"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_financials",
+      "summary": "Get financial statements for a company.",
+      "inputs": [
+       "identifier",
+       "statement_type"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_segment_data",
+      "summary": "Get revenue breakdown by segments (geographic, product, etc.).",
+      "inputs": [
+       "identifier",
+       "segment_type"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_key_metrics",
+      "summary": "Get key financial metrics for a company.",
+      "inputs": [
+       "identifier",
+       "metrics"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "compare_periods",
+      "summary": "Compare a financial metric across different time periods.",
+      "inputs": [
+       "identifier",
+       "metric",
+       "start_year",
+       "end_year"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "discover_company_metrics",
+      "summary": "Discover available financial metrics for a company.",
+      "inputs": [
+       "identifier",
+       "search_term"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_xbrl_concepts",
+      "summary": "ADVANCED TOOL: Extract specific XBRL concepts from a filing.",
+      "inputs": [
+       "identifier",
+       "accession_number",
+       "concepts",
+       "form_type"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "discover_xbrl_concepts",
+      "summary": "Discover all available XBRL concepts in a filing, including company-specific ones.",
+      "inputs": [
+       "identifier",
+       "accession_number",
+       "form_type",
+       "namespace_filter"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_insider_transactions",
+      "summary": "Get insider trading transactions for a company from SEC filings.",
+      "inputs": [
+       "identifier",
+       "form_types",
+       "days",
+       "limit"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_insider_summary",
+      "summary": "Get a summary of insider trading activity for a company from SEC filings.",
+      "inputs": [
+       "identifier",
+       "days"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_form4_details",
+      "summary": "Get detailed information from a specific Form 4 filing.",
+      "inputs": [
+       "identifier",
+       "accession_number"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "analyze_form4_transactions",
+      "summary": "Analyze Form 4 filings and extract detailed transaction data including insider names, transaction amounts, share counts, prices, and ownership details.",
+      "inputs": [
+       "identifier",
+       "days",
+       "limit"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "analyze_insider_sentiment",
+      "summary": "Analyze insider trading sentiment and trends over time.",
+      "inputs": [
+       "identifier",
+       "months"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     },
+     {
+      "name": "get_recommended_tools",
+      "summary": "Get recommended tools for analyzing specific form types.",
+      "inputs": [
+       "form_type"
+      ],
+      "readOnly": null,
+      "openWorld": null,
+      "full": null
+     }
+    ],
+    "resources": [
+     {
+      "uri": "edgar://tickers",
+      "name": "tickers",
+      "mime": "text/csv",
+      "description": "Ticker, company name, CIK and exchange for 40 large US-listed companies. Use it to turn a company name into a ticker or CIK without a search. From sec.gov, fetched 2026-10-04."
+     },
+     {
+      "uri": "edgar://forms",
+      "name": "forms",
+      "mime": "text/csv",
+      "description": "What each common SEC form is (10-K, 10-Q, 8-K, 4 …) and how often it is filed. Short descriptions written for this workbench."
+     }
+    ],
+    "templates": [
+     {
+      "uri": "edgar://company/{ticker}",
+      "name": "company",
+      "mime": "application/json",
+      "description": "One row of the ticker list as JSON. Put the ticker in the URI, e.g. edgar://company/AAPL. A resource TEMPLATE: one definition, many URIs."
+     }
+    ],
+    "prompts": [
+     {
+      "name": "compare_companies",
+      "description": "Compare one measure across several companies from their latest filings.",
+      "args": [
+       {
+        "name": "tickers",
+        "required": true
+       },
+       {
+        "name": "measure",
+        "required": false
+       }
+      ]
+     },
+     {
+      "name": "latest_filing",
+      "description": "Find a company's most recent filing of one form type.",
+      "args": [
+       {
+        "name": "ticker",
+        "required": true
+       },
+       {
+        "name": "form_type",
+        "required": false
+       }
+      ]
+     },
+     {
+      "name": "insider_activity",
+      "description": "Summarise recent insider transactions at a company.",
+      "args": [
+       {
+        "name": "ticker",
+        "required": true
+       },
+       {
+        "name": "days",
+        "required": false
+       }
+      ]
+     }
+    ]
+   },
+   "offersNote": "\"Not stated\": the community package sets no annotations, so a client cannot tell from the tool list which tools are safe. On the local page every tool states both.",
+   "examples": [
+    "What was Apple's revenue and net income in its latest filing?",
+    "Compare the revenue and net income of Apple, Microsoft and Alphabet in their latest filings.",
+    "List the two most recent 10-K filings for Microsoft.",
+    "Company facts for ticker AAPL"
+   ],
+   "aboutNotes": [
+    "**Is this server hosted by the SEC?** No. `sec-edgar-mcp` is a community program that says it is not affiliated with the SEC; the SEC pages I read describe data APIs and files, not an MCP server. It ran as a separate service on the PC, listening only on `127.0.0.1`.",
+    "**How could you tell when sec.gov was contacted?** The page read the stand-in service's log. That was only possible because the service ran on the PC.",
+    "**Who chooses the tool?** The model. It reads each tool's description and picks one; the MCP client only carries the request and the result. *(On the exam: tool descriptions drive tool selection, TS 2.1.)*",
+    "**Two agents.** A research agent chose and called the tools. A synthesis agent with no tools then wrote the answer and chose any chart from the question and the tool results alone. *(On the exam: a subagent's context is passed in, not inherited, TS 1.3.)*",
+    "**Was the result changed?** No. The tables printed the values the tool returned; the untouched JSON was under Details.",
+    "**The model** was Gemini; the Claude terms were shown beside it. No API key was passed to a server."
+   ],
+   "resourceExtras": {
+    "edgar://tickers": {
+     "kind": "csv",
+     "note": "40 real rows: the first 40 of https://www.sec.gov/files/company_tickers_exchange.json, fetched 2026-10-04.",
+     "rows": [
+      [
+       "ticker",
+       "company",
+       "cik",
+       "exchange"
+      ],
+      [
+       "NVDA",
+       "NVIDIA CORP",
+       "0001045810",
+       "Nasdaq"
+      ],
+      [
+       "AAPL",
+       "Apple Inc.",
+       "0000320193",
+       "Nasdaq"
+      ],
+      [
+       "GOOGL",
+       "Alphabet Inc.",
+       "0001652044",
+       "Nasdaq"
+      ],
+      [
+       "MSFT",
+       "MICROSOFT CORP",
+       "0000789019",
+       "Nasdaq"
+      ],
+      [
+       "AMZN",
+       "AMAZON COM INC",
+       "0001018724",
+       "Nasdaq"
+      ],
+      [
+       "META",
+       "Meta Platforms, Inc.",
+       "0001326801",
+       "Nasdaq"
+      ],
+      [
+       "AVGO",
+       "Broadcom Inc.",
+       "0001730168",
+       "Nasdaq"
+      ],
+      [
+       "TSLA",
+       "Tesla, Inc.",
+       "0001318605",
+       "Nasdaq"
+      ],
+      [
+       "MU",
+       "MICRON TECHNOLOGY INC",
+       "0000723125",
+       "Nasdaq"
+      ],
+      [
+       "BRK-B",
+       "BERKSHIRE HATHAWAY INC",
+       "0001067983",
+       "NYSE"
+      ],
+      [
+       "LLY",
+       "ELI LILLY & Co",
+       "0000059478",
+       "NYSE"
+      ],
+      [
+       "AMD",
+       "ADVANCED MICRO DEVICES INC",
+       "0000002488",
+       "Nasdaq"
+      ],
+      [
+       "JPM",
+       "JPMORGAN CHASE & CO",
+       "0000019617",
+       "NYSE"
+      ],
+      [
+       "WMT",
+       "Walmart Inc.",
+       "0000104169",
+       "Nasdaq"
+      ],
+      [
+       "ASML",
+       "ASML HOLDING NV",
+       "0000937966",
+       "Nasdaq"
+      ],
+      [
+       "V",
+       "VISA INC.",
+       "0001403161",
+       "NYSE"
+      ],
+      [
+       "XOM",
+       "ExxonMobil Holdings Corp",
+       "0002115436",
+       "NYSE"
+      ],
+      [
+       "JNJ",
+       "JOHNSON & JOHNSON",
+       "0000200406",
+       "NYSE"
+      ],
+      [
+       "INTC",
+       "INTEL CORP",
+       "0000050863",
+       "Nasdaq"
+      ],
+      [
+       "MA",
+       "Mastercard Inc",
+       "0001141391",
+       "NYSE"
+      ],
+      [
+       "ABBV",
+       "AbbVie Inc.",
+       "0001551152",
+       "NYSE"
+      ],
+      [
+       "PLTR",
+       "Palantir Technologies Inc.",
+       "0001321655",
+       "Nasdaq"
+      ],
+      [
+       "CSCO",
+       "CISCO SYSTEMS, INC.",
+       "0000858877",
+       "Nasdaq"
+      ],
+      [
+       "ORCL",
+       "ORACLE CORP",
+       "0001341439",
+       "NYSE"
+      ],
+      [
+       "COST",
+       "COSTCO WHOLESALE CORP /NEW",
+       "0000909832",
+       "Nasdaq"
+      ],
+      [
+       "LRCX",
+       "LAM RESEARCH CORP",
+       "0000707549",
+       "Nasdaq"
+      ],
+      [
+       "AMAT",
+       "APPLIED MATERIALS INC /DE",
+       "0000006951",
+       "Nasdaq"
+      ],
+      [
+       "CVX",
+       "CHEVRON CORP",
+       "0000093410",
+       "NYSE"
+      ],
+      [
+       "BAC",
+       "BANK OF AMERICA CORP /DE/",
+       "0000070858",
+       "NYSE"
+      ],
+      [
+       "CAT",
+       "CATERPILLAR INC",
+       "0000018230",
+       "NYSE"
+      ],
+      [
+       "KO",
+       "COCA COLA CO",
+       "0000021344",
+       "NYSE"
+      ],
+      [
+       "MRK",
+       "Merck & Co., Inc.",
+       "0000310158",
+       "NYSE"
+      ],
+      [
+       "DELL",
+       "Dell Technologies Inc.",
+       "0001571996",
+       "NYSE"
+      ],
+      [
+       "PG",
+       "PROCTER & GAMBLE Co",
+       "0000080424",
+       "NYSE"
+      ],
+      [
+       "HSBC",
+       "HSBC HOLDINGS PLC",
+       "0001089113",
+       "NYSE"
+      ],
+      [
+       "UNH",
+       "UNITEDHEALTH GROUP INC",
+       "0000731766",
+       "NYSE"
+      ],
+      [
+       "GE",
+       "GENERAL ELECTRIC CO",
+       "0000040545",
+       "NYSE"
+      ],
+      [
+       "SMFG",
+       "SUMITOMO MITSUI FINANCIAL GROUP, INC.",
+       "0001022837",
+       "NYSE"
+      ],
+      [
+       "ARM",
+       "ARM HOLDINGS PLC /UK",
+       "0001973239",
+       "Nasdaq"
+      ],
+      [
+       "PANW",
+       "Palo Alto Networks Inc",
+       "0001327567",
+       "Nasdaq"
+      ]
+     ]
+    },
+    "edgar://forms": {
+     "kind": "csv",
+     "note": "Short descriptions written for this workbench.",
+     "rows": [
+      [
+       "form",
+       "what_it_is",
+       "how_often"
+      ],
+      [
+       "10-K",
+       "Annual report with audited full-year financial statements",
+       "Once a year"
+      ],
+      [
+       "10-Q",
+       "Quarterly report with unaudited financial statements",
+       "Three times a year"
+      ],
+      [
+       "8-K",
+       "Report of a significant event between periodic reports",
+       "When an event happens"
+      ],
+      [
+       "3",
+       "Initial statement of an insider's holdings",
+       "When someone becomes an insider"
+      ],
+      [
+       "4",
+       "Change in an insider's holdings (a purchase or sale)",
+       "After each transaction"
+      ],
+      [
+       "5",
+       "Annual statement of insider holdings not reported earlier",
+       "Once a year if needed"
+      ],
+      [
+       "DEF 14A",
+       "Proxy statement sent to shareholders before a vote",
+       "Before shareholder meetings"
+      ],
+      [
+       "S-1",
+       "Registration statement for a new public offering",
+       "Before an offering"
+      ],
+      [
+       "13F",
+       "Quarterly list of holdings filed by large investment managers",
+       "Four times a year"
+      ],
+      [
+       "20-F",
+       "Annual report filed by a foreign company listed in the US",
+       "Once a year"
+      ]
+     ]
+    }
+   }
+  },
+  "local": {
+   "num": "D2.3.2",
+   "title": "My own MCP server, hosted on this PC (my-laptop)",
+   "caption": "The app was the CLIENT and also STARTED the server: your own tools, in a child process on the PC.",
+   "whereMermaid": "flowchart TB\n  subgraph PC[\"THE MACHINE RUNNING THE APP (on the original: your laptop)\"]\n    tab[\"Your browser tab\"]\n    app[\"Streamlit app: the agent + the MCP client\"]\n    srv[\"MCP server process (a child process)<br/>laptop_server.py<br/>started by the app for each question\"]\n    data[\"This computer's own data<br/>hardware, disks, folders, notes file\"]\n  end\n  subgraph NET[\"SOMEWHERE ELSE: across the internet, on other people's computers\"]\n    g[\"Google: the Gemini model<br/>generativelanguage.googleapis.com\"]\n    web[\"A public search engine and three well-known websites<br/>(web_search, check_internet)\"]\n  end\n  tab <--> app\n  app <-->|\"HTTPS: leaves this machine\"| g\n  app <-->|\"stdio: stdin / stdout pipes<br/>no network port at all\"| srv\n  srv -->|\"reads directly, no request\"| data\n  srv -.->|\"HTTPS, 2 tools only\"| web\n",
+   "whereLegend": "The first box is the machine running the app. The second box is somewhere else. Only the Gemini call and the two web tools (web_search, check_internet) leave the machine.",
+   "whereRows": [
+    [
+     "Your browser tab",
+     "Your laptop",
+     "`http://localhost:8501` when the app ran on the PC"
+    ],
+    [
+     "Streamlit app: the agent and the MCP client",
+     "The machine running the app (a Windows laptop on the original; on the hosted copy, Streamlit's server)",
+     "The app itself"
+    ],
+    [
+     "**The MCP server** (your own tools)",
+     "**A child process of the app, on that same machine**",
+     "Started by the client with `python mcp_servers/laptop_server.py`; it ends when the client closes the pipes. It has no network address at all: the connection is its stdin and stdout"
+    ],
+    [
+     "This computer's own data",
+     "That same machine",
+     "Read directly by the server: no request is made"
+    ],
+    [
+     "The Gemini model",
+     "Google's servers, across the internet",
+     "`generativelanguage.googleapis.com`"
+    ],
+    [
+     "A search engine and three websites",
+     "Other people's servers, across the internet",
+     "Contacted only by `web_search` and `check_internet`"
+    ]
+   ],
+   "whereNote": "**On a hosted copy, \"this computer\" is not your laptop.** The server was started on the machine the app ran on, so on the hosted copy \"this computer\" meant that hosted Linux machine. `laptop_server.py` has Linux code paths for that.",
+   "seqTitle": "Local: the client starts the server and talks to it over stdin / stdout",
+   "seqMermaid": "sequenceDiagram\n  autonumber\n  participant you as You\n  participant agent as Agent + MCP client\n  participant model as Model (Gemini)\n  participant server as MCP server (child process)\n  participant sec as This PC / the web\n  you->>agent: question\n  agent->>server: START the server process (the client launches it)\n  agent->>server: initialize  (over stdin / stdout)\n  server-->>agent: protocol version, capabilities\n  agent->>server: tools/list\n  server-->>agent: tools (name, description, inputSchema)\n  agent->>model: question + ALL tool descriptions\n  model-->>agent: function_call X  (Claude: tool_use)\n  agent->>server: tools/call X  (over stdin / stdout)\n  server->>sec: read this PC  (or search the web)\n  server-->>agent: result (content, isError)\n  agent->>model: history + tool result\n  model-->>agent: text, no function_call  (Claude: end_turn)\n  agent->>server: close the pipes → the server process exits\n  agent->>you: answer",
+   "offers": {
+    "tools": [
+     {
+      "name": "get_hardware_spec",
+      "summary": "Describe this computer's hardware and operating system: maker and model, processor name, physical and logical core counts, total and currently available memory (RAM) in GB, graphics adapters, battery charge if it has a battery, and the Windows version.",
+      "inputs": [],
+      "readOnly": true,
+      "openWorld": false,
+      "full": "Describe this computer's hardware and operating system: maker and model, processor name, physical\nand logical core counts, total and currently available memory (RAM) in GB, graphics adapters, battery\ncharge if it has a battery, and the Windows version.\n\nTakes no input. Use it for questions like \"what laptop is this?\", \"how much RAM do I have?\" or\n\"is this machine good enough for X?\".\nIt does NOT report disk space (use get_storage), which folders are large (use get_folder_sizes) or\nwhich programs are using memory right now (use get_top_processes).\nIt never returns the computer name, user name, serial numbers or network addresses."
+     },
+     {
+      "name": "get_storage",
+      "summary": "Report how full each disk drive on this computer is: total size, space used, space free (in GB) and the percentage used, one row per drive.",
+      "inputs": [],
+      "readOnly": true,
+      "openWorld": false,
+      "full": "Report how full each disk drive on this computer is: total size, space used, space free (in GB) and\nthe percentage used, one row per drive.\n\nTakes no input. Use it for \"how much disk space is left?\" or \"which drive is nearly full?\".\nIt reports whole drives only. To see WHICH folders take the space use get_folder_sizes; for WHAT KIND of\nfiles use summarize_file_types; to project when a drive fills up use estimate_disk_runway."
+     },
+     {
+      "name": "get_folder_sizes",
+      "summary": "List the folders directly inside one folder with the size of each (GB) and its file count, largest first.",
+      "inputs": [
+       "path"
+      ],
+      "readOnly": true,
+      "openWorld": false,
+      "full": "List the folders directly inside one folder with the size of each (GB) and its file count, largest\nfirst. Use it to find WHICH folders take up disk space.\n\nInput: `path` — a folder inside your home folder, either absolute (\"C:\\Users\\you\\Downloads\") or\nrelative to home (\"Downloads\", \"Documents\\Projects\"). Leave it empty for the home folder itself.\nExample questions: \"what's using the space in my Downloads folder?\", \"which of my folders is biggest?\".\n\nLimits: only folders inside the home folder are allowed (anything else is refused); it returns names\nand sizes, never file contents; counting stops after about 8 seconds, and `complete` is then false with\nthe sizes counted so far. For whole-drive totals use get_storage; for a breakdown by kind of file\n(documents, images, video…) use summarize_file_types."
+     },
+     {
+      "name": "summarize_file_types",
+      "summary": "Break a folder's contents down by KIND of file — documents, images, video, audio, archives and installers, code, other — with the total size (GB) and file count of each kind, largest first.",
+      "inputs": [
+       "path"
+      ],
+      "readOnly": true,
+      "openWorld": false,
+      "full": "Break a folder's contents down by KIND of file — documents, images, video, audio, archives and\ninstallers, code, other — with the total size (GB) and file count of each kind, largest first.\n\nInput: `path` — a folder inside your home folder (absolute, or relative to home such as \"Downloads\").\nLeave it empty for the whole home folder.\nUse it for \"what kind of files fill my Downloads?\" or \"how much of my space is video?\".\nIt returns totals per kind only: no file or folder names. Counting stops after about 8 seconds and\n`complete` is then false. For sizes per folder use get_folder_sizes instead."
+     },
+     {
+      "name": "get_top_processes",
+      "summary": "List the programs currently using the most memory or processor time on this computer: program name, memory in MB, processor seconds used so far, and how many copies are running.",
+      "inputs": [
+       "by",
+       "limit"
+      ],
+      "readOnly": true,
+      "openWorld": false,
+      "full": "List the programs currently using the most memory or processor time on this computer: program name,\nmemory in MB, processor seconds used so far, and how many copies are running.\n\nInput: `by` — \"memory\" (default) or \"cpu\". `limit` — 1 to 20, default 8.\nUse it for \"what is using my memory?\", \"why is my laptop slow right now?\".\nIt reports what is running NOW. For the computer's total and free memory use get_hardware_spec.\nIt returns program names only: no window titles, file paths or user names."
+     },
+     {
+      "name": "estimate_disk_runway",
+      "summary": "Project when a drive will be full if it keeps filling at a steady rate.",
+      "inputs": [
+       "daily_growth_gb",
+       "drive"
+      ],
+      "readOnly": true,
+      "openWorld": false,
+      "full": "Project when a drive will be full if it keeps filling at a steady rate. Returns the days left until\nfull, the date it would fill up, and the expected used space (GB) today and after 30, 90, 180 and 365\ndays.\n\nInput: `daily_growth_gb` — GB added per day, e.g. 0.5 (must be above 0). `drive` — the drive letter,\ndefault \"C\".\nUse it for \"how long until my disk is full if I add 2 GB a day?\". It is arithmetic on today's free\nspace: a projection, not a measurement. For today's figures alone use get_storage."
+     },
+     {
+      "name": "check_internet",
+      "summary": "Test whether this computer can reach the internet right now, and how quickly: it opens a connection to three well-known websites and reports, for each, whether it worked and the time taken in ms.",
+      "inputs": [],
+      "readOnly": true,
+      "openWorld": true,
+      "full": "Test whether this computer can reach the internet right now, and how quickly: it opens a connection\nto three well-known websites and reports, for each, whether it worked and the time taken in ms.\n\nTakes no input. Use it for \"am I online?\", \"is my connection slow?\" or before blaming a website.\nIt does not measure download speed and returns no network addresses. To look something up on the web\nuse web_search."
+     },
+     {
+      "name": "web_search",
+      "summary": "Search the public web and return the top results: title, URL and a short snippet for each.",
+      "inputs": [
+       "query",
+       "max_results"
+      ],
+      "readOnly": true,
+      "openWorld": true,
+      "full": "Search the public web and return the top results: title, URL and a short snippet for each.\n\nInput: `query` — plain search words, e.g. \"Intel Core i7-1165G7 release date\" or \"Windows 11 minimum\nRAM\". `max_results` — 1 to 10, default 5.\nUse it for facts that are NOT on this computer: product details, prices, release dates, how-to pages.\nDo not use it for this computer's own hardware, disk space or running programs — the other tools answer\nthose directly — or to test the connection (use check_internet).\n\nIt returns search-result snippets, not full pages, and the text comes from third-party websites, so\ntreat it as unverified. No results is a valid answer (count is 0), not an error."
+     },
+     {
+      "name": "save_note",
+      "summary": "Save a short note to this computer's notes file, with today's date.",
+      "inputs": [
+       "text"
+      ],
+      "readOnly": false,
+      "openWorld": false,
+      "full": "Save a short note to this computer's notes file, with today's date. The ONLY tool here that changes\nanything. Before writing, the server asks the user to confirm; if the user declines, nothing is saved.\n\nInput: `text` — the note, up to 500 characters, e.g. \"Cleared Downloads on 4 Oct, freed 12 GB\".\nUse it only when the user asks to remember, record or note something down. The saved notes can be read\nback as the resource laptop://notes. Do not use it to store an answer the user did not ask to keep."
+     }
+    ],
+    "resources": [
+     {
+      "uri": "laptop://catalog/folders",
+      "name": "folder_catalog",
+      "mime": "text/csv",
+      "description": "What each common folder is for, whether it is safe to clear, and how many days to keep its files. Example data for learning — not read from this computer."
+     },
+     {
+      "uri": "laptop://policy/cleanup",
+      "name": "cleanup_policy",
+      "mime": "text/markdown",
+      "description": "The rules for clearing disk space: what may be deleted, what needs a person to review, and how much free space to keep. Example data for learning."
+     },
+     {
+      "uri": "laptop://notes",
+      "name": "my_notes",
+      "mime": "text/plain",
+      "description": "The notes saved with the save_note tool, one per line with its date. Empty until a note is saved."
+     }
+    ],
+    "templates": [
+     {
+      "uri": "laptop://drive/{letter}",
+      "name": "drive",
+      "mime": "application/json",
+      "description": "Live figures for one drive: total, used and free space in GB. Put the drive letter in the URI, e.g. laptop://drive/C. A resource TEMPLATE: one definition, many URIs."
+     }
+    ],
+    "prompts": [
+     {
+      "name": "health_check",
+      "description": "A full check of this laptop: hardware, memory in use, disk space and connection.",
+      "args": []
+     },
+     {
+      "name": "cleanup_plan",
+      "description": "Find what fills a folder and propose what to clear, following the clean-up policy.",
+      "args": [
+       {
+        "name": "folder",
+        "required": false
+       }
+      ]
+     },
+     {
+      "name": "can_it_run",
+      "description": "Compare this laptop's hardware with a program's or game's published requirements.",
+      "args": [
+       {
+        "name": "software",
+        "required": true
+       }
+      ]
+     }
+    ]
+   },
+   "offersNote": "",
+   "examples": [
+    "What laptop is this, and how much memory is free?",
+    "How full are my drives?",
+    "What processor does this computer have, and when was it released? Search the web.",
+    "Which folders in my Downloads folder are the biggest?"
+   ],
+   "aboutNotes": [
+    "**The server is yours:** `mcp_servers/laptop_server.py`. Change a tool's description there and ask the same question again to see the choice change.",
+    "**Privacy.** Whatever a tool returns is sent to the model (Google's Gemini). The server never returns the computer name, user name, serial numbers, network addresses or file contents, and it only looks inside your home folder, but hardware details and folder names it does return leave the PC that way.",
+    "**Web search results are unverified** text from third-party sites; the answer said so.",
+    "**Who chooses the tool?** The model. It reads each tool's description and picks one; the MCP client only carries the request and the result. *(On the exam: tool descriptions drive tool selection, TS 2.1.)*",
+    "**Two agents.** A research agent chose and called the tools; a synthesis agent with no tools wrote the answer. *(On the exam: a subagent's context is passed in, not inherited, TS 1.3.)*"
+   ],
+   "resourceExtras": {
+    "laptop://catalog/folders": {
+     "kind": "csv",
+     "note": "MOCK: example data for learning, not read from this computer.",
+     "rows": [
+      [
+       "folder",
+       "purpose",
+       "safe_to_clear",
+       "keep_days",
+       "notes"
+      ],
+      [
+       "Downloads",
+       "Files saved from the browser",
+       "yes",
+       "30",
+       "Installers and duplicates collect here; clear anything older than keep_days"
+      ],
+      [
+       "Desktop",
+       "Shortcuts and work in progress",
+       "no",
+       "",
+       "Move finished work to Documents instead of deleting"
+      ],
+      [
+       "Documents",
+       "Finished work and records",
+       "no",
+       "",
+       "Back up before any clean-up"
+      ],
+      [
+       "Pictures",
+       "Photos and screenshots",
+       "no",
+       "",
+       "Screenshots older than 90 days can be reviewed by hand"
+      ],
+      [
+       "Videos",
+       "Recordings and screen captures",
+       "review",
+       "180",
+       "Usually the largest files; review before deleting"
+      ],
+      [
+       "Music",
+       "Audio files",
+       "no",
+       "",
+       ""
+      ],
+      [
+       "Projects",
+       "Source code and study projects",
+       "no",
+       "",
+       "Virtual environments (.venv) can be rebuilt and are safe to delete"
+      ],
+      [
+       "Temp",
+       "Scratch files",
+       "yes",
+       "7",
+       "Safe to clear when no program is using it"
+      ],
+      [
+       "Backups",
+       "Copies of important folders",
+       "no",
+       "",
+       "Never delete without a newer backup"
+      ]
+     ]
+    },
+    "laptop://policy/cleanup": {
+     "kind": "text",
+     "note": "MOCK: example data for learning.",
+     "text": "# Laptop clean-up policy (MOCK - example data for learning)\n\n1. Never delete from a folder marked `safe_to_clear = no` in the folder catalog.\n2. A folder marked `review` needs a person to look at the files first.\n3. Keep at least 15% of a drive free. Below that, plan a clean-up.\n4. Clear `Temp` first, then `Downloads` items older than their keep_days.\n5. Rebuildable folders (for example `.venv`) may be deleted to free space.\n6. Write down what was cleared, and when, with the save_note tool.\n"
+    }
+   }
+  }
+ },
+ "serverRules": {
+  "heading": "What a server author controls (laptop_server.py)",
+  "rules": [
+   "**Descriptions.** The description of each tool is the only thing a model reads when it chooses (guide TS 2.1). Each says what the tool returns, its input, and when to use a different tool.",
+   "**Failures are failures.** `fail()` raises, the SDK sets `isError: true`, and the message carries `errorCategory`, `isRetryable` and a plain explanation (guide TS 2.2). An empty result is not an error: an empty search is a valid result (`count` is 0).",
+   "**Resources give a catalogue up front**, so the agent does not have to explore with tool calls (guide TS 2.4).",
+   "**The server decides what it will NOT reveal.** No tool returns the computer name, user name, serial numbers, network addresses or file contents, and file-system tools are limited to the home folder. Whatever a tool does return is sent to the model, so treat every field as leaving the machine.",
+   "**Time budget.** `get_folder_sizes` and `summarize_file_types` stop counting after about 8 seconds and say so (`complete` is false).",
+   "**Elicitation.** `save_note` is the only tool that changes anything. It asks the user to confirm before writing; if the user declines, nothing is saved. On the original page a web form could not pause mid-call, so the Decline / Approve choice was a pre-set answer.",
+   "**Notifications.** Progress and log messages are sent while `get_folder_sizes` and `summarize_file_types` run. They were shown to the user and never sent to the model."
+  ],
+  "hostedWho": "**What is whose on the hosted server.** The 21 tools are the community `sec-edgar-mcp` package's, registered unchanged (AGPL-3.0, not written or endorsed by the SEC, per its README). The resources and prompts were added by this workbench so every MCP server feature could be shown; the upstream package ships none.",
+  "hostedWhy": "**Why the ticker list matters** (guide TS 2.4: a resource is a catalogue that saves exploratory tool calls). In live runs the package's `search_companies` tool returned nothing for well-known names, so the model fell back on tickers it remembered. With `edgar://tickers` attached, the name to ticker to CIK step is read from data instead of guessed."
+ },
+ "sec": {
+  "sources": [
+   {
+    "name": "SEC — EDGAR Application Programming Interfaces",
+    "url": "https://www.sec.gov/search-filings/edgar-application-programming-interfaces"
+   },
+   {
+    "name": "SEC — Developer resources and fair access",
+    "url": "https://www.sec.gov/about/developer-resources"
+   }
+  ],
+  "legend": "Each row says how I know: 📘 the SEC's own pages (read 2026-10-04) · 📦 the server's source code (sec-edgar-mcp 1.0.8 · edgartools 5.60.0) · 👁 observed in the MCP server's request log.",
+  "endpoints": [
+   {
+    "host": "data.sec.gov",
+    "path": "/submissions/CIK##########.json",
+    "what": "One company: its details and its filing history (JSON). Long histories continue in extra files such as `CIK##########-submissions-001.json`",
+    "how": "📘 SEC · 👁 observed",
+    "used": "Yes — every company tool"
+   },
+   {
+    "host": "data.sec.gov",
+    "path": "/api/xbrl/companyfacts/CIK##########.json",
+    "what": "Every XBRL fact one company has ever reported, in one JSON file",
+    "how": "📘 SEC · 👁 observed",
+    "used": "Yes — `get_company_facts`, `get_key_metrics`"
+   },
+   {
+    "host": "data.sec.gov",
+    "path": "/api/xbrl/companyconcept/CIK##########/us-gaap/{concept}.json",
+    "what": "One company's values for one concept (for example `NetIncomeLoss`)",
+    "how": "📘 SEC",
+    "used": "Not seen in my runs"
+   },
+   {
+    "host": "data.sec.gov",
+    "path": "/api/xbrl/frames/us-gaap/{concept}/USD/{period}.json",
+    "what": "One concept across all companies for one period",
+    "how": "📘 SEC",
+    "used": "Not seen in my runs"
+   },
+   {
+    "host": "www.sec.gov",
+    "path": "/files/company_tickers_exchange.json",
+    "what": "The list of ticker, company name, CIK and exchange (JSON)",
+    "how": "👁 observed (not on the API page I read)",
+    "used": "Yes — turns a ticker into a CIK"
+   },
+   {
+    "host": "www.sec.gov",
+    "path": "/Archives/edgar/data/{cik}/{accession without dashes}/{accession}.txt",
+    "what": "One complete filing as a single text file, including its XBRL data",
+    "how": "👁 observed (not on the API page I read)",
+    "used": "Yes — `get_financials`, filings, insider tools"
+   },
+   {
+    "host": "www.sec.gov",
+    "path": "companyfacts.zip · submissions.zip",
+    "what": "Bulk downloads of the two data sets above, refreshed nightly",
+    "how": "📘 SEC",
+    "used": "Not used"
+   }
+  ],
+  "rules": [
+   {
+    "topic": "API key or login",
+    "fact": "None. The SEC page states: “These APIs do not require any authentication or API keys to access.”",
+    "source": "📘 SEC API page"
+   },
+   {
+    "topic": "How often",
+    "fact": "The SEC asks for no more than 10 requests per second per user. The library this server uses throttles itself to 8 per second (`max_requests_per_second = 8`).",
+    "source": "📘 SEC developer page · 📦 edgar/httprequests.py"
+   },
+   {
+    "topic": "Who is asking",
+    "fact": "Each request carries a `User-Agent` header with the text of `SEC_EDGAR_USER_AGENT` (`headers[\"User-Agent\"] = identity`). The SEC developer page says it does not allow automated tools that identify themselves as unclassified bots.",
+    "source": "📦 edgar/httprequests.py · 📘 SEC developer page"
+   },
+   {
+    "topic": "A query language",
+    "fact": "None described. The SEC pages list RESTful JSON APIs, RSS feeds, index files, daily archives and an HTTPS file system; no SQL or query interface is mentioned. In my 44 logged requests, none had a query string (nothing after a `?`).",
+    "source": "📘 SEC developer page · 👁 observed"
+   },
+   {
+    "topic": "From a web page",
+    "fact": "`data.sec.gov` does not support CORS, so a browser page cannot call it directly. A program on a server — like this MCP server — makes the call instead.",
+    "source": "📘 SEC API page"
+   },
+   {
+    "topic": "What comes back",
+    "fact": "The data APIs return JSON. A filing is a text file.",
+    "source": "📘 SEC API page · 👁 observed"
+   }
+  ],
+  "hops": [
+   {
+    "n": "1",
+    "what": "You type a question",
+    "over": "Plain English",
+    "sent": "—"
+   },
+   {
+    "n": "2",
+    "what": "The agent sends the question and all the tools' names, descriptions and input schemas to Gemini",
+    "over": "HTTPS to Google (`generativelanguage.googleapis.com`)",
+    "sent": "Gemini answers with a **function call**: a tool name plus arguments, as JSON. It is a choice of tool, not a query"
+   },
+   {
+    "n": "3",
+    "what": "The MCP client sends that call to the MCP server",
+    "over": "HTTP POST to `http://127.0.0.1:9870/mcp` — a JSON-RPC message with `method: tools/call`; it never leaves this machine",
+    "sent": "`name` and `arguments`, copied from the function call"
+   },
+   {
+    "n": "4",
+    "what": "The tool runs. It is an ordinary Python function in the server process",
+    "over": "HTTPS GET to `data.sec.gov` and `www.sec.gov` — the only step that goes to the SEC",
+    "sent": "It builds URLs from the CIK or accession number. Filtering and parsing happen in Python, on the JSON or text that came back"
+   }
+  ],
+  "tools": [
+   {
+    "tool": "get_cik_by_ticker",
+    "question": "What is Apple's CIK?",
+    "args": {
+     "ticker": "AAPL"
+    },
+    "code": "def get_cik_by_ticker(ticker=\"AAPL\"):                 # sec_edgar_mcp/utils/cache.py\n    if ticker_cache is empty:                         # only the FIRST call in a server process\n        GET https://www.sec.gov/files/company_tickers_exchange.json\n            # a static JSON file: a list of [cik, name, ticker, exchange]\n        ticker_cache = { ticker: cik  for each row in the file }\n    cik = ticker_cache.get(\"AAPL\")                    # a dictionary lookup in memory: no SEC call\n    return {\"success\": True, \"cik\": zero_pad(cik, 10), \"ticker\": \"AAPL\"}",
+    "first": [
+     "https://www.sec.gov/files/company_tickers_exchange.json"
+    ],
+    "second": [],
+    "note": "The second call made no request at all: the ticker list is kept in memory for the life of the server process."
+   },
+   {
+    "tool": "get_recent_filings",
+    "question": "List the two most recent 10-K filings for Apple.",
+    "args": {
+     "identifier": "AAPL",
+     "form_type": "10-K",
+     "limit": 2
+    },
+    "code": "def get_recent_filings(identifier=\"AAPL\", form_type=\"10-K\", days=30, limit=2):\n    company = get_company(identifier)                 # ticker -> CIK (see get_cik_by_ticker), then edgartools Company(cik)\n    filings = company.get_filings(form=\"10-K\")\n        GET https://data.sec.gov/submissions/CIK0000320193.json\n            # REST: the company's details and its recent filings, as JSON\n        GET https://data.sec.gov/submissions/CIK0000320193-submissions-001.json\n            # older filings; the first file names these extra files (edgartools entity/data.py)\n        # \"10-K only\" is applied in Python on the downloaded list: no query string is sent\n    rows = []\n    for filing in filings:                            # newest first\n        if len(rows) >= limit: break\n        rows.append({accession_number, filing_date, form, company, cik, period_of_report})\n        # observed: one more GET of  /Archives/edgar/data/320193/<accession>.txt  per filing returned\n        # (why edgartools fetches that file was not checked)\n    return {\"success\": True, \"filings\": rows, \"count\": len(rows)}",
+    "first": [
+     "https://www.sec.gov/files/company_tickers_exchange.json",
+     "https://data.sec.gov/submissions/CIK0000320193.json",
+     "https://data.sec.gov/submissions/CIK0000320193-submissions-001.json",
+     "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079.txt",
+     "https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123.txt"
+    ],
+    "second": [
+     "https://data.sec.gov/submissions/CIK0000320193.json",
+     "https://data.sec.gov/submissions/CIK0000320193-submissions-001.json",
+     "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079.txt",
+     "https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123.txt"
+    ],
+    "note": "The `days` argument is accepted but never used: in the code it appears only in the function's signature."
+   },
+   {
+    "tool": "get_financials",
+    "question": "What was Apple's revenue and net income in its latest filing?",
+    "args": {
+     "identifier": "AAPL",
+     "statement_type": "income"
+    },
+    "code": "def get_financials(identifier=\"AAPL\", statement_type=\"income\"):    # sec_edgar_mcp/tools/financial.py\n    company = get_company(identifier)\n    latest_10k = company.get_filings(form=\"10-K\").latest()    # the two submissions files, as above\n    latest_10q = company.get_filings(form=\"10-Q\").latest()\n    latest = whichever has the LATER filing_date              # so \"latest\" can be a quarterly 10-Q\n    financials = Financials.extract(latest)\n        GET https://www.sec.gov/Archives/edgar/data/320193/000032019326000020/0000320193-26-000020.txt\n            # the whole filing as one text file; it contains the XBRL data\n            # (the folder name is the accession number without its dashes)\n            # observed: this file was fetched twice\n    income = financials.income_statement()                    # parsed from that XBRL, in Python\n    return {\"success\": True, \"statements\": {\"income_statement\": income},\n            \"filing_reference\": {accession_number, filing_date, form_type, sec_url}}",
+    "first": [
+     "https://www.sec.gov/files/company_tickers_exchange.json",
+     "https://data.sec.gov/submissions/CIK0000320193.json",
+     "https://data.sec.gov/submissions/CIK0000320193-submissions-001.json",
+     "https://www.sec.gov/Archives/edgar/data/320193/000032019326000020/0000320193-26-000020.txt",
+     "https://www.sec.gov/Archives/edgar/data/320193/000032019326000020/0000320193-26-000020.txt"
+    ],
+    "second": [
+     "https://data.sec.gov/submissions/CIK0000320193.json",
+     "https://data.sec.gov/submissions/CIK0000320193-submissions-001.json",
+     "https://www.sec.gov/Archives/edgar/data/320193/000032019326000020/0000320193-26-000020.txt",
+     "https://www.sec.gov/Archives/edgar/data/320193/000032019326000020/0000320193-26-000020.txt"
+    ],
+    "note": "No XBRL query was sent to the SEC: the numbers were read out of the filing text after it arrived."
+   },
+   {
+    "tool": "get_insider_transactions",
+    "question": "Any insider transactions at Apple in the last 30 days?",
+    "args": {
+     "identifier": "AAPL",
+     "days": 30,
+     "limit": 3
+    },
+    "code": "def get_insider_transactions(identifier=\"AAPL\", form_types=None, days=30, limit=3):   # tools/insider.py\n    company = get_company(identifier)\n    filings = company.get_filings(form=[\"3\", \"4\", \"5\"])      # the same two submissions files; form filter in Python\n    for filing in filings:                                   # newest first\n        if count >= limit: break\n        if filing_date is older than `days` days: continue   # the date check is Python too\n        row = {filing_date, form_type, accession_number, url, sec_url}\n        owner = filing.obj()                                 # edgartools reads the filing\n            GET https://www.sec.gov/Archives/edgar/data/320193/<accession>.txt     # the Form 4 itself\n            # observed: also GET https://data.sec.gov/submissions/CIK<another filer>.json\n            # (a different CIK from Apple's; why it is fetched was not checked)\n    return {\"success\": True, \"transactions\": rows, ...}",
+    "first": [
+     "https://www.sec.gov/files/company_tickers_exchange.json",
+     "https://data.sec.gov/submissions/CIK0000320193.json",
+     "https://data.sec.gov/submissions/CIK0000320193-submissions-001.json",
+     "https://www.sec.gov/Archives/edgar/data/320193/<accession of a Form 4>.txt",
+     "https://data.sec.gov/submissions/CIK<another filer>.json",
+     "https://www.sec.gov/Archives/edgar/data/320193/<accession of a Form 4>.txt",
+     "https://data.sec.gov/submissions/CIK<another filer>.json",
+     "https://www.sec.gov/Archives/edgar/data/320193/<accession of a Form 4>.txt",
+     "https://data.sec.gov/submissions/CIK<another filer>.json"
+    ],
+    "second": [
+     "https://data.sec.gov/submissions/CIK0000320193.json",
+     "https://data.sec.gov/submissions/CIK0000320193-submissions-001.json",
+     "https://data.sec.gov/submissions/CIK<another filer>.json",
+     "https://data.sec.gov/submissions/CIK<another filer>.json",
+     "https://data.sec.gov/submissions/CIK<another filer>.json"
+    ],
+    "note": "One Form 4 file and one more submissions file per filing: nine requests for three transactions."
+   },
+   {
+    "tool": "get_company_facts",
+    "question": "Give me Apple's key figures from its company facts.",
+    "args": {
+     "identifier": "AAPL"
+    },
+    "code": "def get_company_facts(identifier=\"AAPL\"):                 # tools/company.py\n    company = get_company(identifier)\n    facts = company.get_facts()\n        GET https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json\n            # REST: every XBRL fact the company has reported, as one JSON file\n    metrics = {}\n    if hasattr(facts, \"data\"):                            # <- the tool only looks inside facts.data\n        for name in [Assets, Liabilities, StockholdersEquity, Revenues, NetIncomeLoss,\n                     EarningsPerShareBasic, CashAndCashEquivalents, CommonStockSharesOutstanding]:\n            if name in facts.data[\"us-gaap\"]: metrics[name] = the latest value\n    return {\"success\": True, \"metrics\": metrics, \"has_facts\": True}",
+    "first": [
+     "https://www.sec.gov/files/company_tickers_exchange.json",
+     "https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json",
+     "https://data.sec.gov/submissions/CIK0000320193.json"
+    ],
+    "second": [
+     "https://data.sec.gov/submissions/CIK0000320193.json"
+    ],
+    "note": "This one returned `\"metrics\": {}` with `success: true` for Apple. The SEC file arrived (HTTP 200), but the installed edgartools returns an `EntityFacts` object that has no `.data` attribute, so the tool's loop never ran. An empty result that looks like success: the case the exam asks you to tell apart from a failure (TS 2.2)."
+   }
+  ],
+  "observedNote": "👁 observed 2026-10-04 for Apple, on a freshly started service (8 tools, 44 requests in all: every one a GET, to two hosts, answered 200, and none carried a query string). The pseudo code is simplified from the code it names; comments marked \"observed\" are log lines, not code."
+ }
+}

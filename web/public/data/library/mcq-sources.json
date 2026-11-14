@@ -1,0 +1,203 @@
+{
+ "foundOn": "2026-10-10",
+ "github": [
+  {
+   "repo": "paullarionov/claude-certified-architect",
+   "stars": 5004,
+   "licence": "none",
+   "lastPush": "2026-10-02",
+   "what": "Study guide in 15 languages (EN markdown, PDF, EPUB) + Anki deck; chapters on API, tools, Agent SDK, MCP, Claude Code, prompts, batch, context, provenance",
+   "read": "yes — the MCP chapter, the commands/skills sections and the README"
+  },
+  {
+   "repo": "OlivierAlter/Claude-Certified-Architect-Foundations-Certification-Exam",
+   "stars": 242,
+   "licence": "none",
+   "lastPush": "2026-03-15",
+   "what": "77 scenario-based practice questions with answers (a Claude Code skill runs them interactively)",
+   "read": "yes — the README, the task index, and the MCP / skills questions (for topic coverage only)"
+  },
+  {
+   "repo": "daronyondem/claude-architect-exam-guide",
+   "stars": 1116,
+   "licence": "other",
+   "lastPush": "2026-06-10",
+   "what": "One long exam-preparation guide (about 180 KB of markdown)",
+   "read": "tree only"
+  },
+  {
+   "repo": "dnacenta/claude-certified-architect",
+   "stars": 129,
+   "licence": "none",
+   "lastPush": "2026-09-26",
+   "what": "Domain-by-domain guide with code, anti-patterns and practice questions; also a website and a PDF",
+   "read": "yes — domain 2 (MCP configuration) and the skills section of domain 3"
+  },
+  {
+   "repo": "hamzafarooq/claude-certified-architect",
+   "stars": 159,
+   "licence": "MIT",
+   "lastPush": "2026-09-10",
+   "what": "Domain cheat sheets, sample questions and a local HTML practice exam",
+   "read": "tree only"
+  },
+  {
+   "repo": "timothywarner-org/claude-architect",
+   "stars": 93,
+   "licence": "MIT",
+   "lastPush": "2026-09-19",
+   "what": "Study path, a 136 KB practice-questions file, claude-cookbooks code and skills examples",
+   "read": "tree only"
+  },
+  {
+   "repo": "aderegil/claude-certified-architect",
+   "stars": 108,
+   "licence": "other",
+   "lastPush": "2026-05-19",
+   "what": "Guided labs: 6 scenarios, 5 domains, 30 tasks",
+   "read": "not opened"
+  },
+  {
+   "repo": "utkarsh1agarwal/claude-architect-exam-guide",
+   "stars": 30,
+   "licence": "other",
+   "lastPush": "2026-07-28",
+   "what": "Study guide and 6 mock exams (360 questions, per its description)",
+   "read": "not opened"
+  },
+  {
+   "repo": "haytamAroui/Claude-Certified-Architect",
+   "stars": 8,
+   "licence": "MIT",
+   "lastPush": "2026-03-27",
+   "what": "6 courses and 120 practice questions (per its description)",
+   "read": "not opened"
+  },
+  {
+   "repo": "Connectry-io/connectrylab-architect-cert-mcp",
+   "stars": 38,
+   "licence": "MIT",
+   "lastPush": "2026-03-19",
+   "what": "An MCP server for exam prep; 390 questions with spaced repetition (per its description)",
+   "read": "not opened"
+  },
+  {
+   "repo": "hong-chu/claude-certified-architect-foundations-llm-wiki",
+   "stars": 28,
+   "licence": "CC-BY-4.0",
+   "lastPush": "2026-06-12",
+   "what": "Domain-organised study wiki",
+   "read": "not opened"
+  },
+  {
+   "repo": "termidy/CCAR-F",
+   "stars": 39,
+   "licence": "none",
+   "lastPush": "2026-09-21",
+   "what": "Repository named CCAR-F",
+   "read": "not opened"
+  },
+  {
+   "repo": "ankitrahejagatech/claude-certified-architect-prep",
+   "stars": 27,
+   "licence": "none",
+   "lastPush": "2026-06-23",
+   "what": "Interactive practice exam, 5 domain cheat sheets, official sample questions",
+   "read": "not opened"
+  },
+  {
+   "repo": "wbhm/claude-certified-architect-foundations-study-guide",
+   "stars": null,
+   "licence": "unknown",
+   "lastPush": "unknown",
+   "what": "Notes on all 5 domains, decision rules, practice sets, runnable Claude API exercises",
+   "read": "found by web search; stats not fetched"
+  },
+  {
+   "repo": "sarveshtalele/claude-architect-exam-guide",
+   "stars": null,
+   "licence": "unknown",
+   "lastPush": "unknown",
+   "what": "Curated resources, Claude skills and a learning path (CCAR-F and CCAR-P)",
+   "read": "found by web search; stats not fetched"
+  }
+ ],
+ "gitlab": "No GitLab project was found. GitLab's public project-search API returned 0 results for “claude-certified-architect” and “claude architect exam”, and the one hit for “CCA-F” was unrelated (a 2022 ESG project). Web search surfaced only GitHub repositories. Private or unindexed GitLab projects would not appear.",
+ "websites": [
+  {
+   "name": "tutorialsdojo.com",
+   "url": "https://tutorialsdojo.com/ccar-f-claude-certified-architect-foundations-study-guide/",
+   "note": "study guide; practice tests listed as paid"
+  },
+  {
+   "name": "certified-architect.com",
+   "url": "https://certified-architect.com/",
+   "note": "mock exam and study guides (free trial, then paid, per the search result)"
+  },
+  {
+   "name": "claudecertificationguide.com",
+   "url": "https://claudecertificationguide.com/",
+   "note": "lessons, practice questions and a mock exam, described as free"
+  },
+  {
+   "name": "open-exam-prep.com",
+   "url": "https://open-exam-prep.com/practice/anthropic-cca-f",
+   "note": "100 free exam-style questions, per the search result"
+  },
+  {
+   "name": "claudecertifiedarchitects.com",
+   "url": "https://www.claudecertifiedarchitects.com/cca-practice-questions/",
+   "note": "free sample, larger bank behind it"
+  },
+  {
+   "name": "certsafari.com",
+   "url": "https://www.certsafari.com/anthropic/claude-certified-architect-foundations",
+   "note": "practice questions (paid)"
+  },
+  {
+   "name": "preporato.com",
+   "url": "https://preporato.com/certificates/claude-certified-architect",
+   "note": "practice tests (paid)"
+  },
+  {
+   "name": "re-cinq.com blog",
+   "url": "https://re-cinq.com/blog/claude-certified-architect-foundations-exam",
+   "note": "a study write-up"
+  },
+  {
+   "name": "Udemy",
+   "url": "https://www.udemy.com/course/new-claude-certified-architect-foundations-cca-f-exams/",
+   "note": "a paid practice-test course"
+  }
+ ],
+ "disagreements": [
+  {
+   "source": "paullarionov guide, §5.5 (frontmatter table)",
+   "says": "`allowed-tools`: “Restricts which tools are available”",
+   "docsSay": "`allowed-tools` pre-approves the listed tools for the turn; it “does not restrict which tools are available: every tool remains callable”. `disallowed-tools` or a deny rule removes tools.",
+   "agrees": "dnacenta §3.2 (“Tools pre-approved while this skill is active”)",
+   "usedIn": "Skills Q3"
+  },
+  {
+   "source": "paullarionov guide, §4.3",
+   "says": "MCP scoping is two-way: project (`.mcp.json`) and user (`~/.claude.json`)",
+   "docsSay": "Three scopes. The default for `claude mcp add` is LOCAL: private to you, per project, also stored in `~/.claude.json`. Same-name precedence is local, then project, then user; the whole entry is used, nothing is merged.",
+   "agrees": "dnacenta §2.4 lists local, project, user and managed",
+   "usedIn": "MCP Q1 and Q10"
+  },
+  {
+   "source": "paullarionov guide, §5.5 (frontmatter table)",
+   "says": "`argument-hint`: “asks for an argument when invoked without parameters”",
+   "docsSay": "A hint “shown during autocomplete”. It does not prompt or validate. If no placeholder in the body uses an argument, Claude Code appends `ARGUMENTS: <value>` to the skill.",
+   "agrees": "dnacenta §3.2 (“Hint shown in autocomplete”)",
+   "usedIn": "Skills Q4"
+  },
+  {
+   "source": "Exam guide TS 3.2, skills bullet 3",
+   "says": "Use `allowed-tools` “to restrict tool access during skill execution”",
+   "docsSay": "The docs are more precise (pre-approval, not restriction). Project rule: the guide decides what is examinable, the docs decide technical facts, so the question tests the docs' behaviour and the explanation says where the wording differs.",
+   "agrees": "—",
+   "usedIn": "Skills Q3 explanation"
+  }
+ ]
+}

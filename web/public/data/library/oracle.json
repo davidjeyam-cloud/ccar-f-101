@@ -1,0 +1,150 @@
+{
+ "readOn": "2026-10-08",
+ "keyIdea": "MCP does not turn English into SQL. The **LLM** writes the SQL and passes it as a tool argument; the **MCP server** only carries it to the database and the rows back. The database user's privileges decide what the SQL may touch.",
+ "main": {
+  "mermaid": "flowchart TB\n    subgraph L1[\"① YOU\"]\n        U[\"💬 Chat box\"]\n    end\n    subgraph L2[\"② APP — the chat window and the LLM\"]\n        LLM[\"🧠 LLM<br/><b>writes the SQL</b><br/>(MCP does not)\"]\n    end\n    subgraph L3[\"③ MCP CLIENT — a part of the app\"]\n        CL[\"🔌 MCP client<br/>speaks MCP to one server\"]\n    end\n    subgraph L4[\"④ MCP SERVER — Oracle\"]\n        direction LR\n        T[\"🛠 TOOLS — the model decides<br/><b>run-sql</b> runs a SQL statement<br/><b>connect</b> opens a connection<br/><b>list-connections</b> lists saved ones\"]\n        R[\"📄 RESOURCES* — the app decides<br/><b>schema notes</b>: tables + columns<br/><b>glossary</b>: spend = qty x price\"]\n        PR[\"✍️ PROMPTS* — the user decides<br/><b>top-customers</b>(year)<br/>a ready-made question\"]\n    end\n    subgraph L5[\"⑤ ORACLE DATABASE\"]\n        DB[(\"🗄 Runs the SQL as one limited user<br/><b>CUSTOMERS ⟷ ORDERS ⟷ ORDER_ITEMS</b>\")]\n    end\n\n    U -->|\"1 question\"| LLM\n    LLM -->|\"2 tool call + SQL\"| CL\n    CL -->|\"3 tools/call (JSON-RPC)\"| T\n    T -->|\"4 run the SQL\"| DB\n    DB -.->|\"5 rows\"| T\n    T -.-> CL\n    CL -.-> LLM\n    LLM -.->|\"6 answer in words\"| U\n\n    style L1 fill:#f4f8ff,stroke:#3b6fd4,stroke-width:2px\n    style L2 fill:#fffaf0,stroke:#c98a00,stroke-width:2px\n    style L3 fill:#fff4e0,stroke:#d9822b,stroke-width:2px\n    style L4 fill:#f3fbf5,stroke:#2f9e57,stroke-width:2px\n    style L5 fill:#fff5f5,stroke:#c0392b,stroke-width:2px\n    classDef user fill:#e8f1ff,stroke:#3b6fd4,color:#12305e\n    classDef app fill:#fff3d6,stroke:#c98a00,color:#5a3d00\n    classDef client fill:#ffe9c7,stroke:#d9822b,color:#5a2f00\n    classDef server fill:#e3f6e8,stroke:#2f9e57,color:#0e4a26\n    classDef db fill:#fde8e8,stroke:#c0392b,color:#5e1510\n    class U user\n    class LLM app\n    class CL client\n    class T,R,PR server\n    class DB db\n",
+  "chat": "Which 5 customers spent the most in 2025?",
+  "sql": "SELECT c.name, SUM(oi.quantity * oi.unit_price) AS total_spent\nFROM   customers c\nJOIN   orders o       ON o.customer_id = c.id\nJOIN   order_items oi ON oi.order_id   = o.id\nWHERE  o.order_date >= DATE '2025-01-01' AND o.order_date < DATE '2026-01-01'\nGROUP  BY c.name\nORDER  BY total_spent DESC\nFETCH FIRST 5 ROWS ONLY",
+  "call": {
+   "jsonrpc": "2.0",
+   "id": 1,
+   "method": "tools/call",
+   "params": {
+    "name": "run-sql",
+    "arguments": {
+     "sql": "SELECT c.name, SUM(…) … FETCH FIRST 5 ROWS ONLY"
+    }
+   }
+  },
+  "rowHeads": [
+   "name",
+   "total_spent"
+  ],
+  "rows": [
+   [
+    "Customer A",
+    "48,210.00"
+   ],
+   [
+    "Customer B",
+    "41,875.50"
+   ],
+   [
+    "Customer C",
+    "39,002.25"
+   ],
+   [
+    "Customer D",
+    "35,560.00"
+   ],
+   [
+    "Customer E",
+    "31,944.80"
+   ]
+  ],
+  "answer": "Your top 5 customers by 2025 spend were Customer A (48,210.00), Customer B (41,875.50), Customer C (39,002.25), Customer D (35,560.00) and Customer E (31,944.80)."
+ },
+ "zoom1": {
+  "mermaid": "flowchart TB\n    subgraph L2[\"② APP\"]\n        LLM[\"🧠 LLM<br/>needs the table + column names<br/>to write the join\"]\n    end\n    subgraph L3[\"③ MCP CLIENT\"]\n        CL[\"🔌 MCP client\"]\n    end\n    subgraph L4[\"④ MCP SERVER — Oracle\"]\n        A[\"📄 <b>A · resource*</b><br/>schema notes\"]\n        B[\"🛠 <b>B · tool*</b><br/>describe-schema<br/>❓ not stated for Oracle\"]\n        C[\"🛠 <b>C · tool</b><br/>run-sql on the<br/>catalogue views\"]\n    end\n    subgraph L5[\"⑤ ORACLE DATABASE\"]\n        DB[(\"🗄 Catalogue view<br/>USER_TAB_COLUMNS\")]\n    end\n\n    LLM -->|\"0 asks for the schema\"| CL\n    CL -->|\"A resources/read\"| A\n    CL -->|\"B tools/call\"| B\n    CL -->|\"C tools/call\"| C\n    C -->|\"C query\"| DB\n    DB -.->|\"C rows\"| C\n    A -.-> CL\n    B -.-> CL\n    C -.-> CL\n    CL -.->|\"schema in hand\"| LLM\n\n    style L2 fill:#fffaf0,stroke:#c98a00,stroke-width:2px\n    style L3 fill:#fff4e0,stroke:#d9822b,stroke-width:2px\n    style L4 fill:#f3fbf5,stroke:#2f9e57,stroke-width:2px\n    style L5 fill:#fff5f5,stroke:#c0392b,stroke-width:2px\n    classDef app fill:#fff3d6,stroke:#c98a00,color:#5a3d00\n    classDef client fill:#ffe9c7,stroke:#d9822b,color:#5a2f00\n    classDef server fill:#e3f6e8,stroke:#2f9e57,color:#0e4a26\n    classDef db fill:#fde8e8,stroke:#c0392b,color:#5e1510\n    class LLM app\n    class CL client\n    class A,B,C server\n    class DB db\n",
+  "uri": "oracle://schema/notes",
+  "notes": "CUSTOMERS   (id, name)\nORDERS      (id, customer_id -> CUSTOMERS.id, order_date)\nORDER_ITEMS (id, order_id -> ORDERS.id, product_id, quantity, unit_price)",
+  "toolCall": {
+   "method": "tools/call",
+   "params": {
+    "name": "describe-schema",
+    "arguments": {
+     "table": "ORDERS"
+    }
+   }
+  },
+  "catalogueSql": "SELECT table_name, column_name\nFROM   user_tab_columns\nWHERE  table_name IN ('CUSTOMERS', 'ORDERS', 'ORDER_ITEMS')\nORDER  BY table_name, column_id",
+  "catalogueRows": [
+   [
+    "CUSTOMERS",
+    "ID"
+   ],
+   [
+    "CUSTOMERS",
+    "NAME"
+   ],
+   [
+    "ORDERS",
+    "ID"
+   ],
+   [
+    "ORDERS",
+    "CUSTOMER_ID"
+   ],
+   [
+    "ORDERS",
+    "ORDER_DATE"
+   ],
+   [
+    "ORDER_ITEMS",
+    "ID"
+   ],
+   [
+    "ORDER_ITEMS",
+    "ORDER_ID"
+   ],
+   [
+    "ORDER_ITEMS",
+    "PRODUCT_ID"
+   ],
+   [
+    "ORDER_ITEMS",
+    "QUANTITY"
+   ],
+   [
+    "ORDER_ITEMS",
+    "UNIT_PRICE"
+   ]
+  ]
+ },
+ "zoom2": {
+  "mermaid": "flowchart TB\n    subgraph L1[\"① YOU\"]\n        U[\"💬 Chat box\"]\n    end\n    subgraph L2[\"② APP\"]\n        LLM[\"🧠 LLM<br/>shown the tools of BOTH servers<br/>and picks which to call\"]\n    end\n    subgraph L3[\"③ MCP CLIENTS — one per server\"]\n        CA[\"🔌 client A\"]\n        CB[\"🔌 client B\"]\n    end\n    subgraph SA[\"④ SERVER A\"]\n        TA[\"🛠 Oracle<br/>run-sql · connect …\"]\n    end\n    subgraph SB[\"④ SERVER B (example)\"]\n        TB[\"🛠 web search<br/>search\"]\n    end\n    subgraph L5[\"⑤ DATA\"]\n        DB[(\"🗄 Oracle<br/>Database\")]\n        WEB[(\"🌐 public<br/>web\")]\n    end\n\n    U -->|\"1 question\"| LLM\n    LLM -->|\"2 needs the data\"| CA\n    LLM -->|\"3 needs the web\"| CB\n    CA --> TA\n    TA --> DB\n    CB --> TB\n    TB --> WEB\n    DB -.-> TA\n    TA -.-> CA\n    CA -.-> LLM\n    WEB -.-> TB\n    TB -.-> CB\n    CB -.-> LLM\n    LLM -.->|\"4 one answer\"| U\n\n    style L1 fill:#f4f8ff,stroke:#3b6fd4,stroke-width:2px\n    style L2 fill:#fffaf0,stroke:#c98a00,stroke-width:2px\n    style L3 fill:#fff4e0,stroke:#d9822b,stroke-width:2px\n    style SA fill:#f3fbf5,stroke:#2f9e57,stroke-width:2px\n    style SB fill:#f1f5fb,stroke:#5b7db1,stroke-width:2px,stroke-dasharray:5 4\n    style L5 fill:#fff5f5,stroke:#c0392b,stroke-width:2px\n    classDef user fill:#e8f1ff,stroke:#3b6fd4,color:#12305e\n    classDef app fill:#fff3d6,stroke:#c98a00,color:#5a3d00\n    classDef client fill:#ffe9c7,stroke:#d9822b,color:#5a2f00\n    classDef server fill:#e3f6e8,stroke:#2f9e57,color:#0e4a26\n    classDef serverb fill:#e4ecf8,stroke:#5b7db1,color:#1d3557\n    classDef db fill:#fde8e8,stroke:#c0392b,color:#5e1510\n    class U user\n    class LLM app\n    class CA,CB client\n    class TA server\n    class TB serverb\n    class DB,WEB db\n",
+  "intro": "A host can connect to several servers at once, one client each. The LLM is shown the tools of all of them and picks. 📘",
+  "question": "Who was our top customer in 2025, and is there any recent news about them?",
+  "toolsSeen": [
+   [
+    "Server A (Oracle) 🏛",
+    "run-sql, connect, list-connections …"
+   ],
+   [
+    "Server B (web, invented) 🧪",
+    "search"
+   ]
+  ],
+  "searchCall": {
+   "method": "tools/call",
+   "params": {
+    "name": "search",
+    "arguments": {
+     "query": "Customer A recent news"
+    }
+   }
+  },
+  "answer": "Customer A was the top customer in 2025 (48,210.00). The web search returned a few items about them, summarised here. (Invented example.)"
+ },
+ "oracleLine": "Oracle's SQLcl MCP server lists 5 tools (`list-connections`, `connect`, `disconnect`, `run-sql`, `run-sqlcl`) and advises a least-privilege database user and no direct access to production. 🏛",
+ "notStated": "Not stated on the pages I read: the tools' inputs and outputs, the transport, any read-only or approval mode, and whether it offers resources or prompts. The * boxes show what an MCP server can offer, not what Oracle's does. The second server is an invented example.",
+ "sources": [
+  [
+   "Oracle: SQLcl MCP tools",
+   "https://docs.oracle.com/en/database/oracle/sql-developer-command-line/25.3/sqcug/sqlcl-mcp-server-tools.html"
+  ],
+  [
+   "Oracle: using the SQLcl MCP server",
+   "https://docs.oracle.com/en/database/oracle/sql-developer-command-line/25.2/sqcug/using-oracle-sqlcl-mcp-server.html"
+  ],
+  [
+   "Oracle: USER_TAB_COLUMNS",
+   "https://docs.oracle.com/en/database/oracle/oracle-database/23/refrn/USER_TAB_COLUMNS.html"
+  ],
+  [
+   "MCP: understanding servers",
+   "https://modelcontextprotocol.io/docs/learn/server-concepts"
+  ]
+ ],
+ "nextSteps": "failure paths (a SQL error coming back) · asking the user to approve a tool call"
+}

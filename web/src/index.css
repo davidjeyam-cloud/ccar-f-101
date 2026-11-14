@@ -121,3 +121,7 @@ select { min-height: 44px; font: inherit; padding: 0 .6rem; border-radius: 10px;
 pre { background: var(--color-muted); border-radius: 8px; padding: .75rem; overflow-x: auto; font-size: .8rem; line-height: 1.45; }
 .ok-dot, .bad-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .ok-dot { background: var(--color-success); } .bad-dot { background: var(--color-destructive); }
+
+.diagram-hint { display: none; margin: -.4rem 0 .75rem; }
+@media (max-width: 760px) { .diagram-hint { display: block; } }
+.card .chips { margin: .2rem 0; }

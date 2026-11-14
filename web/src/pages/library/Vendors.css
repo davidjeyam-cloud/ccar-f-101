@@ -1,0 +1,7 @@
+.vd-tabs, .vd-filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; align-items: center; }
+.vd-tabs .btn, .vd-filter .btn { min-height: 44px; }
+.vd-on { border-color: var(--color-primary); color: var(--color-primary); font-weight: 600; }
+.vd-card h3 { margin-top: 0; overflow-wrap: anywhere; }
+.vd-field { margin: 8px 0; overflow-wrap: anywhere; }
+.vd-name { font-size: 0.8rem; color: var(--color-muted-foreground); text-transform: uppercase; letter-spacing: 0.03em; }
+.vd-links { overflow-wrap: anywhere; }
