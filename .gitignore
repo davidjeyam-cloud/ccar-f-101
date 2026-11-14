@@ -20,3 +20,7 @@ mcp_servers/data/my_notes.txt
 
 # Graphify output (generated knowledge graph of this repo; rebuild with: graphify update .)
 graphify-out/
+
+# React app (web/): dependencies and build output
+web/node_modules/
+web/dist/

@@ -1,0 +1,37 @@
+import { NavLink, Route, Routes } from 'react-router-dom'
+import Home from './pages/Home'
+import Concepts from './pages/Concepts'
+import Practice from './pages/Practice'
+import Mock from './pages/Mock'
+
+const links = [
+  { to: '/', label: 'Home', d: 'M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z' },
+  { to: '/concepts', label: 'Concepts', d: 'M12 3l9 4.5-9 4.5-9-4.5zM3 12l9 4.5 9-4.5M3 16.5L12 21l9-4.5' },
+  { to: '/practice', label: 'Practice', d: 'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h9' },
+  { to: '/mock', label: 'Mock exam', d: 'M12 8v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z' },
+]
+
+export default function App() {
+  return (
+    <div className="shell">
+      <nav className="nav" aria-label="Main">
+        <div className="brand">CCAR-F <span>Workbench</span></div>
+        {links.map((l) => (
+          <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={l.d} /></svg>
+            <span>{l.label}</span>
+          </NavLink>
+        ))}
+      </nav>
+      <main className="main">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/concepts" element={<Concepts />} />
+          <Route path="/practice" element={<Practice />} />
+          <Route path="/mock" element={<Mock />} />
+          <Route path="*" element={<p>Page not found.</p>} />
+        </Routes>
+      </main>
+    </div>
+  )
+}
