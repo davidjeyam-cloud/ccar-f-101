@@ -6,7 +6,7 @@
 # NOTE: ASCII only on purpose - Windows PowerShell 5.1 misreads UTF-8 without a BOM.
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$url = "https://ccar-f-web.ccar-f-web.workers.dev"
+$url = "https://ccar.ccar-f-web.workers.dev"
 Set-Location $root
 
 function Fail($msg) { Write-Host "DEPLOY FAILED: $msg" -ForegroundColor Red; exit 1 }

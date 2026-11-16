@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "ccar-f-web",
+  "name": "ccar",
   "compatibility_date": "2026-11-13",
   "observability": {
     "enabled": true

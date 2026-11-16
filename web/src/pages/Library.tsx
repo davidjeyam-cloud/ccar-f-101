@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 const CORE = [
   { to: '/library/blueprint', title: 'Exam Blueprint', text: 'Format, timing, scoring, policies and the out-of-scope list.' },
   { to: '/library/exam-day', title: 'Exam Day', text: 'Registration, ID, rules of conduct, retakes, plus a checklist.' },
+  { to: '/library/reading', title: 'Reading: cheatsheets', text: 'TS 1.3 subagents and the Claude Messages API: read here or download (.docx, .pdf).' },
 ]
 const EXTRA = [
   { to: '/library/mcqs/mcp', title: '10.1 MCQs: MCP', text: '10 questions, each backed by word-for-word official quotes.' },
@@ -19,7 +20,7 @@ export default function Library() {
   return (
     <>
       <h1>Library</h1>
-      <p className="lead">Reference pages and extras that are not concept labs. The first two are on the exam path; the rest are extras (not on the exam).</p>
+      <p className="lead">Reference pages and extras that are not concept labs. The first three are on the exam path; the rest are extras (not on the exam).</p>
       <h2>Exam path</h2>
       <div className="grid">
         {CORE.map((c) => <div className="card" key={c.to}><b><Link to={c.to}>{c.title}</Link></b><div className="small muted">{c.text}</div></div>)}

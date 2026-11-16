@@ -1,0 +1,91 @@
+{
+  "intro": "Supplementary reading: cheatsheets to download or read on a phone. They sit beside the concept pages and do not replace them.",
+  "items": [
+    {
+      "id": "ts13",
+      "title": "TS 1.3 cheatsheet: subagent invocation and context",
+      "kind": "Exam path - Domain 1 (guide pp.6-7)",
+      "text": "Seven questions with their answers and traps, three diagrams, the eight wrong answers and a 90-minute study plan. Built from the Subagents concept page.",
+      "read": "/library/reading/ts-1-3",
+      "files": [{ "label": "Download .docx", "href": "/reading/TS_1.3_cheatsheet.docx", "size": "540 KB" }],
+      "caveat": "Written from this workbench's own Subagents concept page (guide and docs grounded there). Two points (permission rules reach the subagent; an unapproved call goes to the permission mode or canUseTool) were last checked against the docs on 2026-09-28."
+    },
+    {
+      "id": "api",
+      "title": "Claude Messages API cheatsheet",
+      "kind": "Exam path - Domains 1, 2, 5 and part of 4",
+      "text": "One turn, the loop, the seven stop_reason values, request and response fields, content blocks, tool-result rules, streaming events and ten rules to memorise. Every box and row has an ID (A1, B3, C5 ...) that later sections point back to.",
+      "read": "/reading/Claude_Messages_API_cheatsheet.pdf",
+      "readLabel": "Open PDF",
+      "files": [
+        { "label": "Download .pdf", "href": "/reading/Claude_Messages_API_cheatsheet.pdf", "size": "740 KB" },
+        { "label": "Download .docx", "href": "/reading/Claude_Messages_API_cheatsheet.docx", "size": "500 KB" }
+      ],
+      "caveat": "Checked against the Claude docs pages on 14 Nov 2026. Its exam facts and domain tags come from two third-party summaries, not the official guide, and the sheet says so. The API changes: reopen the stop-reasons page before relying on it."
+    }
+  ],
+  "ts13": {
+    "title": "TS 1.3 cheatsheet: subagent invocation and context",
+    "sub": "CCAR-F guide pp.6-7 - Domain 1 (27%)",
+    "picture": "The coordinator is a project manager who can only send emails to contractors. A contractor sees just the email, never the manager's inbox, and sends back only a final report. Leave the facts out of the email and the work is wrong.",
+    "flowAlt": "Flow: a coordinator with the spawn tool in allowedTools sends all independent spawn calls in one response; each subagent knows only its own system prompt, the prompt string and its tools; only the final message returns; the coordinator checks for gaps and re-delegates.",
+    "toolsAlt": "Worked example: tools = [Read, Grep] on the subagent and allowedTools = [Read, Write] on the query. Read runs at once, Grep runs after approval, Write cannot be called.",
+    "perspectiveAlt": "One tool call seen from the coordinator and from the subagent: Gate 1 is whether the tool is in the subagent's tools, Gate 2 is whether it is pre-approved.",
+    "questions": {
+      "headers": ["#", "Question", "Answer", "Trap"],
+      "rows": [
+        ["1", "Can it spawn?", "The spawn tool must be in the coordinator's allowedTools (Task on the exam, Agent in current docs).", "Subagents defined but the tool is not listed: nothing errors, the coordinator answers alone, unsourced."],
+        ["2", "What does the subagent know?", "Only its own system prompt and the prompt string you write. No history, no shared memory.", "\"The coordinator already has the findings.\" The subagent does not."],
+        ["3", "How is it set up?", "An AgentDefinition: description (when to use it), system prompt (its role), tool restrictions (tools).", "Mixing up tools (what it can SEE) with allowedTools (what runs WITHOUT ASKING)."],
+        ["4", "How do I pass context?", "Complete findings in the prompt, in a structured format: claim, source URL, document, page.", "A prose summary loses the sources."],
+        ["5", "How do I run several at once?", "Emit all independent spawn calls in ONE response.", "One spawn per turn: slower, same result."],
+        ["6", "How do I write the prompt?", "Goals and quality criteria, not step-by-step procedures.", "Rigid checklists break when the case differs."],
+        ["7", "How do I explore alternatives?", "Fork the session from a shared analysis baseline.", "Re-running the whole analysis for each option."]
+      ]
+    },
+    "sides": {
+      "coordinator": [
+        "**allowedTools = [Task, Read, Write]** is set on the query. It answers one question only: which tools run without asking.",
+        "**Task is in the list** so the coordinator can spawn subagents (the exam names this requirement).",
+        "**It adds and removes nothing.** Listing Write there does not give any subagent a Write tool.",
+        "**Permission rules are inherited** by the subagent it spawns, so the same pre-approvals apply inside it."
+      ],
+      "subagent": [
+        "**tools = [Read, Grep]** is set on its AgentDefinition. It is the only list that decides what the subagent can see.",
+        "**Write is not in its session at all**, so a call to it cannot happen, whatever the coordinator pre-approved.",
+        "**Grep is visible but not pre-approved**, so a call goes through the normal approval path (permission mode or canUseTool).",
+        "**Leave tools out entirely** and the subagent inherits every tool available to subagents."
+      ],
+      "habit": "To limit what a subagent can do, change tools on its AgentDefinition. Editing allowedTools will not restrict it."
+    },
+    "receives": {
+      "headers": ["#", "Receives", "Does NOT receive"],
+      "rows": [
+        ["1", "Its own system prompt (AgentDefinition prompt) and the spawn tool's prompt string", "The parent's conversation history or tool results"],
+        ["2", "Project CLAUDE.md files (unless the definition sets omitClaudeMd)", "Preloaded skill content, unless listed in skills"],
+        ["3", "Its tool definitions (all available, or only those in tools)", "The parent's system prompt"]
+      ]
+    },
+    "wrong": {
+      "headers": ["", "Wrong answer", "Why it fails"],
+      "rows": [
+        ["A", "No spawn tool in allowedTools", "Nothing callable; the coordinator answers alone, unsourced."],
+        ["B", "Assume subagents inherit context", "It starts fresh: only the prompt reaches it."],
+        ["C", "Always run the full pipeline", "One-fact questions pay for three subagents; broad ones never decompose."],
+        ["D", "Decompose too narrowly", "Every subagent succeeds, yet the report covers a third of the topic."],
+        ["E", "One spawn call per turn", "Independent work is serialised: more turns, more time."],
+        ["F", "Route results around the coordinator", "The coordinator is blind to failures and cannot handle errors."],
+        ["G", "No gap review or re-delegation", "A missing area is never noticed."],
+        ["H", "Return the whole subagent transcript", "Context balloons, defeating isolation (docs only, not in the guide)."]
+      ]
+    },
+    "wrongNote": "A to G are exam topics. H comes from the official docs only.",
+    "plan": [
+      "**Read** the Subagents concept page: summary, mental model, the receives table (15 min).",
+      "**Run the lab** variants A, B, E and the correct one; watch each distractor fail (25 min).",
+      "**Play** the Isolated context, Spawn tool and Parallel spawning tabs; predict before you press Send (15 min).",
+      "**Practice** the 24 TS 1.3 questions, aim for 80% or better; log which of the seven questions each miss hit (30 min).",
+      "**Next day:** redo only your misses, then 5 questions from TS 1.2, which overlaps on isolated context."
+    ]
+  }
+}

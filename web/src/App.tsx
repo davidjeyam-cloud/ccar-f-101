@@ -13,6 +13,8 @@ import Vendors from './pages/library/Vendors'
 import Oracle from './pages/library/Oracle'
 import LiveMcp from './pages/library/LiveMcp'
 import HelloClaude from './pages/library/HelloClaude'
+import Reading from './pages/library/Reading'
+import ReadingTs13 from './pages/library/ReadingTs13'
 
 const links = [
   { to: '/', label: 'Home', d: 'M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z' },
@@ -50,6 +52,8 @@ export default function App() {
           <Route path="/library/oracle" element={<Oracle />} />
           <Route path="/library/live-mcp" element={<LiveMcp />} />
           <Route path="/library/hello-claude" element={<HelloClaude />} />
+          <Route path="/library/reading" element={<Reading />} />
+          <Route path="/library/reading/ts-1-3" element={<ReadingTs13 />} />
           <Route path="*" element={<p>Page not found.</p>} />
         </Routes>
       </main>
