@@ -15,6 +15,7 @@ import LiveMcp from './pages/library/LiveMcp'
 import HelloClaude from './pages/library/HelloClaude'
 import Reading from './pages/library/Reading'
 import ReadingTs13 from './pages/library/ReadingTs13'
+import ReadingDoc from './pages/library/ReadingDoc'
 
 const links = [
   { to: '/', label: 'Home', d: 'M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z' },
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/library/hello-claude" element={<HelloClaude />} />
           <Route path="/library/reading" element={<Reading />} />
           <Route path="/library/reading/ts-1-3" element={<ReadingTs13 />} />
+          <Route path="/library/reading/claude-api" element={<ReadingDoc name="reading-claude-api" docx="/reading/Claude_Messages_API_cheatsheet.docx" />} />
           <Route path="*" element={<p>Page not found.</p>} />
         </Routes>
       </main>

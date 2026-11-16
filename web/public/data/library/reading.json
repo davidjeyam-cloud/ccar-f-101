@@ -14,11 +14,9 @@
       "id": "api",
       "title": "Claude Messages API cheatsheet",
       "kind": "Exam path - Domains 1, 2, 5 and part of 4",
-      "text": "One turn, the loop, the seven stop_reason values, request and response fields, content blocks, tool-result rules, streaming events and ten rules to memorise. Every box and row has an ID (A1, B3, C5 ...) that later sections point back to.",
-      "read": "/reading/Claude_Messages_API_cheatsheet.pdf",
-      "readLabel": "Open PDF",
+      "text": "One turn, the loop, the seven stop_reason values, request and response fields, content blocks, tool-result rules (including the subagent tool, T14 and T15), streaming events and ten rules to memorise. Every box and row has an ID (A1, B3, C5 ...) that later sections point back to.",
+      "read": "/library/reading/claude-api",
       "files": [
-        { "label": "Download .pdf", "href": "/reading/Claude_Messages_API_cheatsheet.pdf", "size": "740 KB" },
         { "label": "Download .docx", "href": "/reading/Claude_Messages_API_cheatsheet.docx", "size": "500 KB" }
       ],
       "caveat": "Checked against the Claude docs pages on 14 Nov 2026. Its exam facts and domain tags come from two third-party summaries, not the official guide, and the sheet says so. The API changes: reopen the stop-reasons page before relying on it."

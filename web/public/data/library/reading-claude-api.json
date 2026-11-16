@@ -1,0 +1,823 @@
+{
+ "title": "Claude Messages API cheatsheet",
+ "sub": "Supplementary reading - Domains 1, 2, 5 and part of 4",
+ "blocks": [
+  {
+   "type": "p",
+   "md": "Nov 14, 2026 · @DJ"
+  },
+  {
+   "type": "p",
+   "md": "One turn is: you send a request, Claude writes one reply and a stop_reason, and your code decides what happens next."
+  },
+  {
+   "type": "p",
+   "md": "Every box in a diagram and every table row has an ID. Later sections point back to them."
+  },
+  {
+   "type": "table",
+   "headers": [
+    "Prefix",
+    "Where",
+    "Meaning"
+   ],
+   "rows": [
+    [
+     "A1 to A6",
+     "Diagram A",
+     "Steps of the loop"
+    ],
+    [
+     "B1 to B7",
+     "Diagram B, stop reasons table",
+     "The seven `stop_reason` values"
+    ],
+    [
+     "C1 to C19",
+     "Request diagram and table",
+     "Request fields"
+    ],
+    [
+     "D1 to D8",
+     "Response diagram and table",
+     "Response fields"
+    ],
+    [
+     "K1 to K8",
+     "Response diagram and block table",
+     "Content block types"
+    ],
+    [
+     "V1 to V4",
+     "Tool kinds table",
+     "Client tools versus server tools"
+    ],
+    [
+     "T1 to T15",
+     "Tool rules table",
+     "Rules for sending results back, and for subagents"
+    ],
+    [
+     "E1 to E8",
+     "Streaming table",
+     "Stream events"
+    ],
+    [
+     "R1 to R10",
+     "Rules to memorise",
+     "Exam rules"
+    ]
+   ]
+  },
+  {
+   "type": "h",
+   "level": 2,
+   "text": "Big picture"
+  },
+  {
+   "type": "img",
+   "alt": "diagram A: one conversation turn and the loop, steps A1 to A6",
+   "src": "/reading/api/image1.png"
+  },
+  {
+   "type": "p",
+   "md": "diagram A: one conversation turn and the loop, steps A1 to A6"
+  },
+  {
+   "type": "p",
+   "md": "Claude writes one reply per call. Everything else, including the loop, is your code. Where each step is explained:"
+  },
+  {
+   "type": "ul",
+   "items": [
+    "A1 sends the request: fields C1 to C19.",
+    "A2 returns the reply: fields D1 to D8, blocks K1 to K8.",
+    "A3 reads `stop_reason`: values B1 to B7.",
+    "A4 ends the turn on `end_turn` (B1).",
+    "A5 and A6 run when `stop_reason` is `tool_use` (B3): rules T1 to T13. Then you call again. A subagent is started the same way (T14, T15)."
+   ]
+  },
+  {
+   "type": "h",
+   "level": 2,
+   "text": "Request fields"
+  },
+  {
+   "type": "img",
+   "alt": "request fields C1 to C19 in six groups",
+   "src": "/reading/api/image2.png"
+  },
+  {
+   "type": "p",
+   "md": "request fields C1 to C19 in six groups"
+  },
+  {
+   "type": "p",
+   "md": "A1 sends these fields. Three are required: `model` (C1), `max_tokens` (C2) and `messages` (C3). Everything else shapes the reply. Each row below carries the same ID as its box above."
+  },
+  {
+   "type": "table",
+   "headers": [
+    "Ref",
+    "Field",
+    "Required",
+    "What it does",
+    "Watch out"
+   ],
+   "rows": [
+    [
+     "C1",
+     "`model`",
+     "Yes",
+     "Which Claude model answers",
+     "Use the exact model ID from the docs"
+    ],
+    [
+     "C2",
+     "`max_tokens`",
+     "Yes",
+     "Most tokens Claude may write",
+     "Hitting it gives `max_tokens` (B5). Thinking tokens count toward it. Setting it to 0 only warms the prompt cache and returns no reply"
+    ],
+    [
+     "C3",
+     "`messages`",
+     "Yes",
+     "The chat so far, alternating `user` and `assistant` turns",
+     "No `system` role exists. Up to 100,000 messages per request. Consecutive turns with the same role are combined. A final `assistant` message is a prefill: models that don't support it return a 400. You resend the whole history every call"
+    ],
+    [
+     "C4",
+     "`system`",
+     "No",
+     "Standing instructions such as goal or role",
+     "A top-level field, not a message. Resend it every call"
+    ],
+    [
+     "C5",
+     "`tools`",
+     "No",
+     "Tool definitions, each with an `input_schema`",
+     "Names, descriptions and schemas cost input tokens. `strict: true` enforces the schema. When continuing (A6), keep the same array: omitting a tool's definition gives a 400"
+    ],
+    [
+     "C6",
+     "`tool_choice`",
+     "No",
+     "`auto` (default), `any`, `tool`, `none`",
+     "`disable_parallel_tool_use` goes inside it. Not verified: which models allow `any` or `tool` with extended thinking. Check your model"
+    ],
+    [
+     "C7",
+     "`thinking`",
+     "No",
+     "Turns on extended thinking",
+     "Type `adaptive`, or type `enabled` with a `budget_tokens` of at least 1,024. Accepted types depend on the model. Adds `thinking` blocks (K2)"
+    ],
+    [
+     "C8",
+     "`stop_sequences`",
+     "No",
+     "Custom text that makes Claude stop",
+     "A match gives `stop_sequence` (B2), and the `stop_sequence` field (D4) names it"
+    ],
+    [
+     "C9",
+     "`stream`",
+     "No",
+     "Send the reply as server-sent events",
+     "`stop_reason` arrives only in the `message_delta` event (E5)"
+    ],
+    [
+     "C10",
+     "`output_config`",
+     "No",
+     "Output options such as effort and format",
+     "Listed in the API reference. Details not checked here"
+    ],
+    [
+     "C11",
+     "`speed`",
+     "No",
+     "A speed option",
+     "Listed in the API reference. Details not checked here"
+    ],
+    [
+     "C12",
+     "`cache_control`",
+     "No",
+     "Top-level prompt caching. Applies to the last cacheable block",
+     "Cache token counts show up in `usage` (D6)"
+    ],
+    [
+     "C13",
+     "`container`",
+     "No",
+     "Reuse a server-tool container",
+     "Pass back the ID from the last response (D7) or earlier files are lost"
+    ],
+    [
+     "C14",
+     "`diagnostics`",
+     "No",
+     "Ask for diagnostics, with `previous_message_id`",
+     "The response field (D8) is null unless you ask"
+    ],
+    [
+     "C15",
+     "`service_tier`",
+     "No",
+     "Priority or standard capacity",
+     "SDK values are `auto` and `standard_only`"
+    ],
+    [
+     "C16",
+     "`inference_geo`",
+     "No",
+     "A region option for inference",
+     "Listed in the API reference. Details not checked here"
+    ],
+    [
+     "C17",
+     "`metadata`",
+     "No",
+     "Extra info about the request, such as `user_id`",
+     "Tracking only, not instructions"
+    ],
+    [
+     "C18",
+     "`userProfileID`, `workspaceID`",
+     "No",
+     "Header parameters, not body fields",
+     "Listed in the API reference. Details not checked here"
+    ],
+    [
+     "C19",
+     "`temperature`, `top_p`, `top_k`",
+     "No",
+     "Sampling controls",
+     "Appear in older SDK signatures but not on the current reference page. Verify for your model before relying on them"
+    ]
+   ]
+  },
+  {
+   "type": "h",
+   "level": 2,
+   "text": "Response fields and content blocks"
+  },
+  {
+   "type": "img",
+   "alt": "response fields D1 to D8 and content blocks K1 to K8",
+   "src": "/reading/api/image3.png"
+  },
+  {
+   "type": "p",
+   "md": "response fields D1 to D8 and content blocks K1 to K8"
+  },
+  {
+   "type": "p",
+   "md": "A2 returns these fields. Every successful response carries them. Errors (4xx and 5xx) are separate and mean the request failed. Rows below use the box IDs: D for fields, K for content blocks."
+  },
+  {
+   "type": "table",
+   "headers": [
+    "Ref",
+    "Field",
+    "Holds",
+    "Watch out"
+   ],
+   "rows": [
+    [
+     "D1",
+     "`id`, `type`, `role`, `model`",
+     "Who answered. `type` is `message`",
+     "`role` is always `assistant`"
+    ],
+    [
+     "D2",
+     "`content`",
+     "A list of blocks, see K1 to K8",
+     "Loop over every block. Never assume `content[0]` is the text"
+    ],
+    [
+     "D3",
+     "`stop_reason`",
+     "Why Claude stopped",
+     "Present on every successful response. Branch on it every time (A3, B1 to B7). While streaming it is `null` in `message_start`"
+    ],
+    [
+     "D4",
+     "`stop_sequence`",
+     "The marker that fired",
+     "`null` unless `stop_reason` is `stop_sequence` (B2)"
+    ],
+    [
+     "D5",
+     "`stop_details`",
+     "For a refusal: `type`, `category`, `explanation`, `recommended_model`",
+     "`null` for every other stop reason. `category` may be null. `explanation` is for display only: don't parse it"
+    ],
+    [
+     "D6",
+     "`usage`",
+     "Token counts",
+     "Total input = `input_tokens` + `cache_creation_input_tokens` + `cache_read_input_tokens`. `output_tokens` is above zero even for an empty reply. Final figures arrive in `message_delta` when streaming"
+    ],
+    [
+     "D7",
+     "`container`",
+     "Server-tool container, if one ran",
+     "Send its ID back when you continue (C13)"
+    ],
+    [
+     "D8",
+     "`diagnostics`",
+     "Diagnostics you asked for",
+     "`null` unless you requested it (C14)"
+    ]
+   ]
+  },
+  {
+   "type": "p",
+   "md": "The `content` list (D2) can hold these block types."
+  },
+  {
+   "type": "table",
+   "headers": [
+    "Ref",
+    "Block",
+    "Who runs it",
+    "Notes"
+   ],
+   "rows": [
+    [
+     "K1",
+     "`text`",
+     "Nobody",
+     "Words for the user"
+    ],
+    [
+     "K2",
+     "`thinking`",
+     "Nobody",
+     "Only when extended thinking is on (C7)"
+    ],
+    [
+     "K3",
+     "`redacted_thinking`",
+     "Nobody",
+     "Reasoning you cannot read. Details not checked here"
+    ],
+    [
+     "K4",
+     "`tool_use`",
+     "Your code",
+     "Has `id`, `name`, `input`. Answer it with a `tool_result` that has the same ID (A5, A6)"
+    ],
+    [
+     "K5",
+     "`server_tool_use`",
+     "Anthropic",
+     "Its result block (K7) comes back in the same response, unless the call is unfinished (see B3)"
+    ],
+    [
+     "K6",
+     "`mcp_tool_use`",
+     "An MCP server",
+     "Check each block's `id` for a matching result block"
+    ],
+    [
+     "K7",
+     "Server tool results, for example `web_search_tool_result`",
+     "Anthropic",
+     "Follows its `server_tool_use` block"
+    ],
+    [
+     "K8",
+     "`fallback`",
+     "Anthropic",
+     "Marks the point where a server-side fallback happened (B7)"
+    ]
+   ]
+  },
+  {
+   "type": "h",
+   "level": 2,
+   "text": "Stop reasons"
+  },
+  {
+   "type": "p",
+   "md": "Seven values exist today. A stop reason is a normal HTTP 200, not an error. Write a branch for each one, plus a catch-all that logs unknown values, because the list has grown before."
+  },
+  {
+   "type": "img",
+   "alt": "7 stop_reason values in 3 groups, with the action for each",
+   "src": "/reading/api/image4.png"
+  },
+  {
+   "type": "p",
+   "md": "7 stop_reason values in 3 groups, with the action for each"
+  },
+  {
+   "type": "p",
+   "md": "Green means show the answer. Blue means call the API again. Amber means the reply is cut short or refused: handle it, never show it as complete. The table below carries the edge cases."
+  },
+  {
+   "type": "table",
+   "headers": [
+    "Ref",
+    "Value",
+    "Group",
+    "What happened",
+    "Your code should",
+    "Edge cases"
+   ],
+   "rows": [
+    [
+     "B1",
+     "`end_turn`",
+     "Finished",
+     "Claude finished naturally",
+     "Use the response",
+     "Can be empty (2 to 3 tokens). Causes: text added right after `tool_result` blocks, or sending Claude's finished reply back with nothing new. Don't retry it unchanged. Last resort: add a new user message such as \"Please continue\""
+    ],
+    [
+     "B2",
+     "`stop_sequence`",
+     "Finished",
+     "Claude produced one of your stop markers (C8)",
+     "Read the `stop_sequence` field (D4)",
+     "The field is `null` for every other reason"
+    ],
+    [
+     "B3",
+     "`tool_use`",
+     "Keep going",
+     "Claude asks you to run client tools",
+     "Run them and return `tool_result` blocks (A5, A6, T1 to T13)",
+     "May also hold a `server_tool_use` block with no result yet (a server tool and a client tool in one parallel group). Then send only the client results, keep the same `tools` array, and add no text after them. Code-execution calls carry a `caller` field: send results back and pass the `container` ID"
+    ],
+    [
+     "B4",
+     "`pause_turn`",
+     "Keep going",
+     "A server-tool loop hit its limit (default 10 per request)",
+     "Send Claude's reply back unchanged",
+     "If the response has a `container`, send its ID next time or earlier files are lost. Never used while your own client tool is waiting: that is always `tool_use`"
+    ],
+    [
+     "B5",
+     "`max_tokens`",
+     "Problem",
+     "Reached your `max_tokens` limit (C2)",
+     "Raise the limit, or continue the reply",
+     "If it ends in a `tool_use` block the input is incomplete: retry with a higher limit. To continue text, resend the partial reply as an `assistant` message plus \"Please continue from where you left off\""
+    ],
+    [
+     "B6",
+     "`model_context_window_exceeded`",
+     "Problem",
+     "The reply filled the model's context window",
+     "Treat it as truncated",
+     "Lets you ask for a large `max_tokens` without counting input. On by default from Sonnet 4.5. Older models need beta header `model-context-window-exceeded-2025-08-26`. SDKs type it in the beta namespace"
+    ],
+    [
+     "B7",
+     "`refusal`",
+     "Problem",
+     "Claude declined",
+     "Read `stop_details` (D5), discard the partial output, retry on a different model",
+     "Arrives as HTTP 200. `stop_details` has `type`, `category` (cyber, bio, frontier_llm, reasoning_extraction, general_harms, or null), `explanation` and `recommended_model`. Billing differs by category. Fallback options: server-side (beta header `server-side-fallback-2026-07-01`, `fallbacks` parameter, up to 3 models, not on the Batches API), SDK middleware, or a manual retry. Haiku 5.5 has no server-side fallback. Branch on `stop_reason`, not on `category`"
+    ]
+   ]
+  },
+  {
+   "type": "p",
+   "md": "While streaming, `stop_reason` is `null` in `message_start` and appears only in `message_delta`."
+  },
+  {
+   "type": "h",
+   "level": 2,
+   "text": "Tool use rules"
+  },
+  {
+   "type": "p",
+   "md": "Tools differ mainly by where the code runs. Claude never executes anything itself: for your tools it only asks."
+  },
+  {
+   "type": "table",
+   "headers": [
+    "Ref",
+    "",
+    "Client tools",
+    "Server tools"
+   ],
+   "rows": [
+    [
+     "V1",
+     "Examples",
+     "Your own functions, plus Anthropic-defined `bash`, `text_editor`, `computer`. In the Agent SDK and Claude Code, also the subagent tool `Task` (now named `Agent`)",
+     "`web_search`, `web_fetch`, `code_execution`, `tool_search`"
+    ],
+    [
+     "V2",
+     "Who runs it",
+     "Your application",
+     "Anthropic's servers"
+    ],
+    [
+     "V3",
+     "What comes back",
+     "`stop_reason: tool_use` with `tool_use` blocks (K4)",
+     "The results, with nothing for you to handle (K5, K7)"
+    ],
+    [
+     "V4",
+     "Your job",
+     "Run the call and send a `tool_result`. For `Task`, that means starting the subagent and returning its result",
+     "Nothing, unless a server tool shares a parallel group with a client tool, or you get `pause_turn` (B4)"
+    ]
+   ]
+  },
+  {
+   "type": "p",
+   "md": "Rules for sending results back."
+  },
+  {
+   "type": "table",
+   "headers": [
+    "Ref",
+    "Rule",
+    "Detail"
+   ],
+   "rows": [
+    [
+     "T1",
+     "Echo the assistant turn",
+     "Send Claude's reply back unchanged, then a user message with the results"
+    ],
+    [
+     "T2",
+     "Match every ID",
+     "`tool_use_id` in each result must equal the `id` of its `tool_use` block"
+    ],
+    [
+     "T3",
+     "Stay adjacent",
+     "`tool_result` blocks must come immediately after their `tool_use` blocks, with no message in between. Breaking this gives the error \"tool_use ids were found without tool_result blocks immediately after\""
+    ],
+    [
+     "T4",
+     "One user message",
+     "With parallel calls, put every `tool_result` in a single user message. Separate messages teach Claude to avoid parallel calls"
+    ],
+    [
+     "T5",
+     "Results first",
+     "`tool_result` blocks come first in that message, any text after. With a server tool in the group, add no text after the results: that gives a 400"
+    ],
+    [
+     "T6",
+     "Failed or skipped call",
+     "Still return a result, with `is_error: true` and a message that tells Claude what went wrong and what to try. Claude retries invalid calls 2 to 3 times"
+    ],
+    [
+     "T7",
+     "Result content is optional",
+     "`content` can be a string, or text, image, document or search_result blocks"
+    ],
+    [
+     "T8",
+     "Parallel calls",
+     "On by default. Turn off with `disable_parallel_tool_use: true` inside `tool_choice`"
+    ],
+    [
+     "T9",
+     "`tool_choice` values",
+     "`auto` (default), `any`, `tool`, `none` (C6)"
+    ],
+    [
+     "T10",
+     "Strict schemas",
+     "Claude may omit required parameters. `strict: true` on a custom tool forces your schema"
+    ],
+    [
+     "T11",
+     "Untrusted content",
+     "Keep untrusted content inside `tool_result` blocks, not in `system` or plain user text"
+    ],
+    [
+     "T12",
+     "Cost",
+     "Tool definitions count as input tokens. Server tools can add usage charges, such as per search"
+    ],
+    [
+     "T13",
+     "Loop helper",
+     "The SDK tool runner handles the loop, result formatting and retries for you"
+    ],
+    [
+     "T14",
+     "Subagent tool (`Task`)",
+     "In the Agent SDK and Claude Code, Claude spawns a subagent by calling a tool. It was renamed from `Task` to `Agent` in Claude Code v2.1.63. Current SDKs emit `Agent` in `tool_use` blocks but still use `Task` in the `system:init` tools list and in `permission_denials`, so check for both names. Put it in `allowedTools` so calls are approved without a prompt. Exam guides call it required for a coordinator to spawn subagents"
+    ],
+    [
+     "T15",
+     "Subagent context",
+     "A subagent starts with a fresh context window and no parent conversation. The only channel from parent to subagent is the tool's prompt string, so put file paths, errors and decisions in it. Messages from inside a subagent carry a `parent_tool_use_id`"
+    ]
+   ]
+  },
+  {
+   "type": "h",
+   "level": 2,
+   "text": "Streaming events"
+  },
+  {
+   "type": "p",
+   "md": "Set `stream: true` and the reply arrives as events in this order. The loop is unchanged: you just wait for the end of the stream before acting."
+  },
+  {
+   "type": "table",
+   "headers": [
+    "Ref",
+    "Event",
+    "What it carries",
+    "Watch out"
+   ],
+   "rows": [
+    [
+     "E1",
+     "`message_start`",
+     "An empty message shell",
+     "`stop_reason` is `null` here"
+    ],
+    [
+     "E2",
+     "`content_block_start`",
+     "A block begins: text, `tool_use`, thinking",
+     "One per block. Some blocks arrive whole in one event"
+    ],
+    [
+     "E3",
+     "`content_block_delta`",
+     "Small pieces: `text_delta`, `input_json_delta` (`partial_json`), `thinking_delta`, `signature_delta`",
+     "Many per block. Tool JSON arrives in fragments. By default it is buffered; `eager_input_streaming` lowers latency"
+    ],
+    [
+     "E4",
+     "`content_block_stop`",
+     "The block is complete",
+     "Parse the tool JSON now, not earlier"
+    ],
+    [
+     "E5",
+     "`message_delta`",
+     "`stop_reason`, `stop_sequence`, cumulative usage",
+     "The only place `stop_reason` appears. There can be one or more of these"
+    ],
+    [
+     "E6",
+     "`message_stop`",
+     "End of stream",
+     "There is no `[DONE]` marker. SDK helpers such as `get_final_message()` collect the final message for you"
+    ],
+    [
+     "E7",
+     "`ping`, `error`",
+     "Keep-alive, or an error",
+     "Can arrive anywhere. An error can come in-stream after an HTTP 200 (`overloaded_error` matches 529). Handle unknown event types instead of failing"
+    ],
+    [
+     "E8",
+     "Interrupted stream",
+     "Recovering a partial reply",
+     "Claude 4.5 and earlier: put the partial text in an `assistant` message. Claude 4.6 and later: put it in a `user` message. Tool use and thinking blocks can't be partially recovered"
+    ]
+   ]
+  },
+  {
+   "type": "h",
+   "level": 2,
+   "text": "Ten rules to memorise, mapped to the exam"
+  },
+  {
+   "type": "p",
+   "md": "The exam is Claude Certified Architect, Foundations. Facts about it here come from two third-party summaries, not the official guide, so check them: 60 scenario-based questions, 120 minutes, closed book, pass mark 720 of 1000. Five domains: D1 Agentic Architecture and Orchestration (27%), D2 Tool Design and MCP Integration (18%), D3 Claude Code Configuration and Workflows (20%), D4 Prompt Engineering and Structured Output (20%), D5 Context Management and Reliability (15%). The domain tags below are my own mapping. This sheet covers D1, D2, D5 and part of D4. It does not cover D3."
+  },
+  {
+   "type": "table",
+   "headers": [
+    "Ref",
+    "Rule",
+    "See",
+    "Domain"
+   ],
+   "rows": [
+    [
+     "R1",
+     "Drive the loop from `stop_reason`: continue on `tool_use`, stop on `end_turn`. Don't parse the reply text to guess if it is done. Don't use an iteration cap as the main stop condition",
+     "A3, B1, B3",
+     "D1"
+    ],
+    [
+     "R2",
+     "Claude only asks for tools. Your code runs them. Spawning a subagent is also a tool call (`Task`, now `Agent`), and the subagent sees only the prompt you pass it",
+     "A5, V2, T14, T15",
+     "D1"
+    ],
+    [
+     "R3",
+     "The API remembers nothing: resend `system`, `tools` and `messages` every call. Put facts that must survive in a block you always resend",
+     "C3, C4, C5",
+     "D5"
+    ],
+    [
+     "R4",
+     "Enforce business rules in code, not in the prompt. A prompt is advice. Code is a guarantee",
+     "C4",
+     "D1"
+    ],
+    [
+     "R5",
+     "On `tool_use`: echo Claude's reply, then send all `tool_result` blocks in one user message, results first, IDs matching",
+     "A6, T1 to T5",
+     "D2"
+    ],
+    [
+     "R6",
+     "If a tool fails or is skipped, still return a `tool_result` with `is_error: true` and a message Claude can act on",
+     "T6",
+     "D2, D5"
+    ],
+    [
+     "R7",
+     "Give each tool a clear description, keep the tool list short, and use `tool_choice` or `strict: true` when the output must follow a schema",
+     "C5, C6, T10",
+     "D2, D4"
+    ],
+    [
+     "R8",
+     "On `pause_turn`: send the reply back unchanged, with the `container` ID if there is one",
+     "B4, C13",
+     "D1"
+    ],
+    [
+     "R9",
+     "`max_tokens` and `model_context_window_exceeded` mean truncated: never show them as complete. `refusal` is HTTP 200: read `stop_details`, discard the partial output, use a fallback model",
+     "B5, B6, B7",
+     "D5"
+    ],
+    [
+     "R10",
+     "When streaming, parse tool JSON only after `content_block_stop`. `stop_reason` arrives only in `message_delta`",
+     "E3, E4, E5",
+     "API detail, little exam weight (my judgement)"
+    ]
+   ]
+  },
+  {
+   "type": "p",
+   "md": "One conflict with my earlier advice: I told you to cap loop rounds. R1 says the stop condition is `stop_reason`, and exam sources describe a round cap as the wrong primary stop. A cap as a backstop against runaway loops is still sensible engineering. Treat it as a safety net, never as the way the loop ends."
+  },
+  {
+   "type": "h",
+   "level": 2,
+   "text": "Sources and what is not verified"
+  },
+  {
+   "type": "p",
+   "md": "Checked against these pages on 14 Nov 2026. The API changes, so reopen the stop-reasons page before teaching from this sheet."
+  },
+  {
+   "type": "ul",
+   "items": [
+    "[Stop reasons and fallback](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons)",
+    "[Tool use overview](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview)",
+    "[Handle tool calls](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls)",
+    "[Parallel tool use](https://platform.claude.com/docs/agents-and-tools/tool-use/parallel-tool-use)",
+    "[Streaming messages](https://platform.claude.com/docs/en/build-with-claude/streaming)",
+    "[Refusals and fallback](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback)",
+    "[Create a Message, API reference](https://platform.claude.com/docs/en/api/php/messages/create)",
+    "[Agent SDK subagents](https://code.claude.com/docs/en/agent-sdk/sub-agents)",
+    "[Exam guide summary, studytech.ai (third party)](https://studytech.ai/blog/claude-certified-architect-exam-guide)",
+    "[Exam summary, oracore.dev (third party)](https://oracore.dev/claude-architect)",
+    "[Exam task 1.3 on the Task tool (third party)](https://claudecertificationguide.com/learn/1-agentic-architecture/1-3-subagent-invocation-context)"
+   ]
+  },
+  {
+   "type": "p",
+   "md": "Not verified:"
+  },
+  {
+   "type": "ul",
+   "items": [
+    "The official exam guide was not read. Exam facts, domain weights and my domain tags come from third-party summaries.",
+    "Which newest models reject forced `tool_choice`, and whether `any` or `tool` work with extended thinking. Two doc snippets disagree. Check your model.",
+    "`output_config`, `speed`, `inference_geo`, the ID headers and `redacted_thinking`: named in the reference, details not checked.",
+    "`temperature`, `top_p`, `top_k` are absent from the current reference page. I could not confirm they are accepted by every model.",
+    "Two points are my own advice, not doc rules: use a round cap only as a backstop, and don't put secrets in `system`."
+   ]
+  }
+ ]
+}
