@@ -19,12 +19,15 @@ Pop-Location
 if ($code -ne 0) { Fail "npm run deploy failed (is wrangler logged in? run: npx wrangler login). The site was NOT refreshed." }
 
 Write-Host "2/2 Checking the live site..." -ForegroundColor Cyan
-$localText = [IO.File]::ReadAllText((Join-Path $root "web\public\data\course.json"), [Text.Encoding]::UTF8)
+# Compare raw bytes: the server sends no charset, so Windows PowerShell 5.1 would decode .Content as Latin-1 and report a false mismatch.
+$localBytes = [IO.File]::ReadAllBytes((Join-Path $root "web\public\data\course.json"))
+$localHash = (Get-FileHash -InputStream ([IO.MemoryStream]::new($localBytes)) -Algorithm SHA256).Hash
 $live = $false
 for ($i = 1; $i -le 6 -and -not $live; $i++) {
     try {
         $r = Invoke-WebRequest -UseBasicParsing -Uri "$url/data/course.json?cb=$([guid]::NewGuid())" -TimeoutSec 30
-        if ($r.Content -eq $localText) { $live = $true }
+        $liveHash = (Get-FileHash -InputStream ([IO.MemoryStream]::new($r.RawContentStream.ToArray())) -Algorithm SHA256).Hash
+        if ($liveHash -eq $localHash) { $live = $true }
     } catch { }
     if (-not $live) { Start-Sleep -Seconds 5 }
 }
